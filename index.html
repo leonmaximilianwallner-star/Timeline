@@ -915,7 +915,7 @@ function applyTimelineWidth() {
   tl.style.width = `${width}px`;
   const tlH = isDailyView ? dayViewBottom() + 32 : (currentLayout ? currentLayout.totalH : 250);
   tl.style.height = `${tlH}px`;
-  tlOuter.style.overflowX = isDailyView ? 'auto';
+  tlOuter.style.overflowX = isDailyView ? 'auto' :
   tlOuter.style.overflowY = isDailyView ? 'auto' : 'hidden';
   hourRail.style.display = isDailyView ? 'block' : 'none';
   if (document.documentElement.getAttribute('data-theme') === 'light') hourRail.classList.add('light');
