@@ -5,10 +5,9 @@
   RENDER: renderGrid() 1812, renderPhaseBar() 1940, renderAll() 2580
   EVENTS: mousedown 2625, mousemove 2727, mouseup 2835
 -->
-i
 
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -176,7 +175,7 @@ i
   .todo-add-row button { font-family: var(--ui-font); font-size: 12px; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius-sm); color: var(--text); padding: 6px 12px; cursor: pointer; }
   .todo-add-row button:hover { background: var(--note-bg); }
   .daily-item { position: absolute; border-radius: 4px; padding: 4px 6px; overflow: hidden; font-family: var(--ui-font); font-size: 12px; cursor: pointer; z-index: 5; display: flex; flex-direction: column; gap: 2px; }
-  .daily-item-title { font-weight: 500; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .daily-item-title { font-weight: 500; line-height: 1.2; white-space: normal; overflow: hidden; word-break: normal; overflow-wrap: break-word; }
   .daily-item-meta { font-size: 10px; opacity: 0.7; display: flex; gap: 4px; align-items: center; }
   .daily-preview { position: absolute; border: 2px dashed var(--text2); background: rgba(255,255,255,0.04); border-radius: 4px; pointer-events: none; z-index: 6; }
   .daily-hover-line { position: absolute; left: 0; right: 0; height: 2px; pointer-events: none; z-index: 8; background: var(--text); opacity: 0.42; display: none; }
@@ -191,11 +190,11 @@ i
   .day-size-strip.dragging::before { opacity: 0.7; }
   .daily-todo-panel { position: absolute; min-width: 200px; max-width: 300px; border-radius: 5px; padding: 10px 12px; z-index: 25; font-family: var(--ui-font); box-shadow: 0 10px 28px rgba(0,0,0,0.55); }
   .daily-todo-panel.animate-in { animation: pop-right 0.2s cubic-bezier(0.34,1.28,0.64,1) both; }
-  .daily-item.flash-done { animation: done-flash 0.7s cubic-bezier(0.4,0,0.2,1) forwards; }
+  .daily-item.flash-done { animation: done-flash 0.7s cubic-bezier(0.1,0.2,0,1) forwards; }
   @keyframes done-flash {
     0%   { transform: scale(1);    box-shadow: 0 2px 6px rgba(0,0,0,0.38); }
-    35%  { transform: scale(1.02); box-shadow: 0 0 22px 5px rgba(143,193,78,0.55), 0 2px 6px rgba(0,0,0,0.3); }
-    100% { transform: scale(0.97); box-shadow: 0 1px 5px rgba(143,193,78,0.22), 0 1px 4px rgba(0,0,0,0.3), inset 0 0 0 1000px rgba(143,193,78,0.11); }
+    35%  { transform: scale(1.2); box-shadow: 0 0 12px 5px rgba(143, 193, 78, 0.277), 0 2px 6px rgba(0,0,0,0.3); }
+    100% { transform: scale(0.97); box-shadow: 0 0px 0px rgba(143,193,78,0.22), 0 1px 4px rgba(0,0,0,0.3), inset 0 0 0 1000px rgba(143, 193, 78, 0); }
   }
   @keyframes pop-right { from { opacity:0; transform: translateX(-8px) scale(0.95); } to { opacity:1; transform: translateX(0) scale(1); } }
   .dtodo-row { display: flex; align-items: center; gap: 9px; padding: 5px 0; font-size: 12px; cursor: default; }
@@ -306,7 +305,7 @@ i
   .icon-btn:disabled { opacity: 0.3; cursor: default; pointer-events: none; }
   .settings-modal { position: fixed; inset: 0; z-index: 200; display: none; justify-content: flex-end; background: rgba(0,0,0,0.4); }
   .settings-modal.open { display: flex; animation: modal-fade .15s ease forwards; }
-  .settings-panel { width: min(380px, 92vw); background: var(--surface); border-left: 1px solid var(--border); display: flex; flex-direction: column; transform: translateX(100%); animation: panel-slide-in 0.22s cubic-bezier(0.34,1.1,0.64,1) forwards; }
+  .settings-panel { width: min(260px, 92vw); background: var(--surface); border-left: 1px solid var(--border); display: flex; flex-direction: column; transform: translateX(100%); animation: panel-slide-in 0.22s cubic-bezier(0.34,1.1,0.64,1) forwards; }
   @keyframes panel-slide-in { to { transform: translateX(0); } }
   .settings-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
   .settings-title { font-size: 14px; font-weight: 600; color: var(--text); letter-spacing: .01em; }
@@ -352,7 +351,7 @@ i
       <button class="icon-btn" id="redoBtn" type="button" title="Wiederholen (Strg+Y)" disabled>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M21 13C18.5 8 14 6 9 7.5A9 9 0 0 0 3 17"/></svg>
       </button>
-      <button class="icon-btn" id="settingsBtn" type="button" title="Einstellungen">
+      <button class="icon-btn" id="settingsBtn" type="button" title="Settings">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       </button>
       <button class="add-toggle" id="addToggle" type="button" title="Event/Phase hinzufügen (A)">+</button>
@@ -429,16 +428,16 @@ i
 <div id="settingsModal" class="settings-modal">
   <div class="settings-panel">
     <div class="settings-header">
-      <span class="settings-title">Einstellungen</span>
+      <span class="settings-title">Settings</span>
       <button class="icon-btn" id="settingsClose" type="button">✕</button>
     </div>
     <div class="settings-body">
-      <p class="section-label" style="margin-top:0">Kategorien</p>
+      <p class="section-label" style="margin-top:0">Categories</p>
       <div class="cat-list" id="catList"></div>
       <div class="cat-add-row">
         <input id="catNameInput" type="text" placeholder="Neue Kategorie…" maxlength="28">
         <div class="cat-color-picker" id="catColorPicker"></div>
-        <button type="button" id="catAddBtn">+ Hinzufügen</button>
+        <button type="button" id="catAddBtn">+ Add</button>
       </div>
     </div>
   </div>
@@ -960,7 +959,7 @@ function renderGrid() {
     if (detailed) { const cx = pctCenterFromDate(d); mk(`position:absolute;left:${cx}%;top:5px;font-size:10px;color:var(--grid-label);transform:translateX(-50%);white-space:nowrap`, `${weekdays[d.getDay()]} ${d.getDate()}.${d.getMonth()+1}`); }
   }
   if (detailed) {
-    viewToggle.textContent = 'Timeline';
+    viewToggle.textContent = 'Line';
     for (let d = new Date(S); d < E; d = new Date(d.getTime() + DAY_MS)) {
       const cx = pctCenterFromDate(d);
       const isToday = d.toDateString() === new Date().toDateString();
@@ -970,7 +969,7 @@ function renderGrid() {
     for (let h = DAY_VIEW.fromHour; h <= DAY_VIEW.toHour; h++) { const y = hourLineY(h); const alpha = h % 3 === 0 ? 0.22 : 0.12; mk(`position:absolute;left:0;right:0;top:${y}px;height:1px;background:var(--grid-major);opacity:${alpha}`); }
     if (!document.getElementById('dailyHoverLine')) { const hl = document.createElement('div'); hl.id = 'dailyHoverLine'; hl.className = 'daily-hover-line'; tl.appendChild(hl); }
   } else {
-    viewToggle.textContent = 'Daly';
+    viewToggle.textContent = 'Day';
     const MONTH_NAMES = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
     let lastM = -1;
     for (let d = new Date(S); d <= E; d = new Date(d.getTime() + DAY_MS)) {
@@ -1120,7 +1119,7 @@ function renderBaseTimeline() {
       if (allCancelled) { bgColor = 'rgba(80,80,88,0.6)'; borderColor = 'rgba(120,120,130,0.3)'; boxShadow = '0 2px 6px rgba(0,0,0,0.28)'; }
       else if (allDone && hasTodos) { bgColor = `${diHex}90`; borderColor = '#8fc14e66'; boxShadow = '0 1px 5px rgba(143,193,78,0.22), 0 1px 4px rgba(0,0,0,0.3)'; }
       else { bgColor = `${diHex}D0`; borderColor = `${diHex}40`; boxShadow = '0 2px 6px rgba(0,0,0,0.38)'; }
-      el.style.cssText = `left:${itemLeftPct}%;top:${startY}px;width:calc(${itemWidPct}% - 4px);margin-left:2px;height:${height - 2}px;background:${bgColor};color:${allCancelled ? 'rgba(200,200,210,0.45)' : allDone && hasTodos ? '#a8d96a' : '#ededec'};border:1px solid ${borderColor};border-radius:8px;padding:${isShort ? '0' : '5px'} ${hasTodos ? 28 : 6}px 2px 6px;justify-content:${isShort ? 'center' : 'flex-start'};box-shadow:${boxShadow};overflow:hidden;${allDone && hasTodos ? 'transform:scale(0.97);' : ''}`;
+      el.style.cssText = `left:${itemLeftPct}%;top:${startY}px;width:calc(${itemWidPct}% - 4px);margin-left:2px;height:${height - 2}px;background:${bgColor};color:${allCancelled ? 'rgba(200,200,210,0.45)' : allDone && hasTodos ? '#a8d96a' : '#ededec'};border:1px solid ${borderColor};border-radius:8px;padding:${isShort ? '0' : '0px'} ${hasTodos ? 8 : 0}px 2px 3px;justify-content:${isShort ? 'center' : 'flex-start'};box-shadow:${boxShadow};overflow:hidden;${allDone && hasTodos ? 'transform:scale(0.97);' : ''}`;
       const EDGE = 7;
       el.addEventListener('mousemove', (evt) => { if (addMode) return; const ly = evt.clientY - el.getBoundingClientRect().top; el.style.cursor = (ly < EDGE || ly > el.offsetHeight - EDGE) ? 'ns-resize' : 'grab'; });
       el.addEventListener('mouseleave', () => { if (!dailyItemResizeDrag && !dailyItemMoveDrag) el.style.cursor = 'grab'; });
@@ -1142,7 +1141,7 @@ function renderBaseTimeline() {
       if (allDone && hasTodos && justCompletedId === item.id) { el.classList.add('flash-done'); justCompletedId = null; }
       if (hasTodos) {
         const zone = document.createElement('div');
-        zone.style.cssText = `position:absolute;top:0;bottom:0;right:0;width:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:3;opacity:0.8;font-size:15px;line-height:1;pointer-events:auto;`;
+        zone.style.cssText = `position:absolute;top:0;bottom:0;right:0;width:26px;cursor:pointer;display:flex;align-items:center;justify-content:flex-end;padding-right:4px;z-index:3;opacity:1;font-size:15px;line-height:1;pointer-events:auto;`;
         zone.textContent = isExpanded ? '‹' : '›';
         zone.addEventListener('mousedown', (evt) => evt.stopPropagation());
         zone.onclick = (evt) => { evt.stopPropagation(); if (expandedDailyIds.has(item.id)) expandedDailyIds.delete(item.id); else { expandedDailyIds.add(item.id); justExpandedId = item.id; } renderAll(); };
@@ -1208,7 +1207,7 @@ async function loadFromStorage() {
     if (json.updated_at) { // e.g. "2026-05-15T14:32:00Z"
       const d = new Date(json.updated_at);
       document.getElementById('subtitleRange').textContent =
-        `Version · BUILD_NUMBER · last change ${formatDateDE(d)} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+        ` · last change ${formatDateEN(d)} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
     }
 
   } catch(e) {}
