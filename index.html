@@ -1208,7 +1208,7 @@ async function loadFromStorage() {
     if (json.updated_at) { // e.g. "2026-05-15T14:32:00Z"
       const d = new Date(json.updated_at);
       document.getElementById('subtitleRange').textContent =
-        `Version · #BUILD_NUMBER · last change ${formatDateDE(d)} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+        `Version · BUILD_NUMBER · last change ${formatDateDE(d)} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
     }
 
   } catch(e) {}
