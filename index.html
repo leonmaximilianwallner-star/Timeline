@@ -228,7 +228,7 @@
   border-radius: var(--radius-md); 
   background: linear-gradient(180deg, var(--timeline-grad-start) 0%, var(--timeline-grad-end) 100%); 
   box-shadow: 0 4px 24px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.04) inset;
-  touch-action: none;
+  touch-action: pan-x pan-y pinch-zoom;
   }
 
   body {
@@ -1329,7 +1329,7 @@ tlOuter.addEventListener('touchmove', (e) => {
     if (newH !== DAY_VIEW.rowHeight) {
       DAY_VIEW.rowHeight = newH;
       rowHeightLevel = newH < 33 ? 0 : newH < 66 ? 1 : 2;
-      renderAll();
+      requestAnimationFrame(() => renderAll();
     }
   }
 }, { passive: false });
@@ -1342,6 +1342,7 @@ tlOuter.addEventListener('touchend', (e) => {
 window.addEventListener('touchmove', (e) => {
   const anyDrag = dailyDrag || dragStartDate || dailyItemResizeDrag ||
                   dailyItemMoveDrag || daySizeDrag || resizeDrag;
+  if (!anyDrag && e.touches.length === 1) return;                
   if (anyDrag) e.preventDefault();
   const { clientX, clientY } = normTouch(e);
 
