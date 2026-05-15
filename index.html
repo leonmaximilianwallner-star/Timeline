@@ -7,7 +7,7 @@
 -->
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -324,7 +324,7 @@
   <div class="header-top">
     <span class="title" style="display:inline-flex;align-items:center;gap:10px;">
       <img src="Timeliner logo.svg" style="width:28px;height:25px;flex-shrink:0;opacity:0.92">
-      Timeline inc.
+      Timeline 
     </span>
     <div class="header-actions">
               
@@ -915,7 +915,7 @@ function applyTimelineWidth() {
   tl.style.width = `${width}px`;
   const tlH = isDailyView ? dayViewBottom() + 32 : (currentLayout ? currentLayout.totalH : 250);
   tl.style.height = `${tlH}px`;
-  tlOuter.style.overflowX = isDailyView ? 'auto' : 'hidden';
+  tlOuter.style.overflowX = isDailyView ? 'auto';
   tlOuter.style.overflowY = isDailyView ? 'auto' : 'hidden';
   hourRail.style.display = isDailyView ? 'block' : 'none';
   if (document.documentElement.getAttribute('data-theme') === 'light') hourRail.classList.add('light');
