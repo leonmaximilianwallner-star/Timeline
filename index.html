@@ -331,7 +331,7 @@
       <button class="theme-toggle" id="themeToggle" type="button">Lightmode</button>
     </div>
   </div>
-  <p class="subtitle" id="subtitleRange">Appstate</p>
+  <p class="subtitle" id="subtitleRange">Appstate #34</p> 
 </div>
 
 <section>
@@ -1206,8 +1206,8 @@ async function loadFromStorage() {
     // show last saved date in subtitle
     if (json.updated_at) { // e.g. "2026-05-15T14:32:00Z"
       const d = new Date(json.updated_at);
-      document.getElementById('subtitleRange').textContent = 
-        `Appstate · last change ${formatDateDE(d)} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+      document.getElementById('subtitleRange').textContent =
+        `Version · #BUILD_NUMBER · last change ${formatDateDE(d)} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
     }
 
   } catch(e) {}
