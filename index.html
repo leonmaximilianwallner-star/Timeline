@@ -1329,7 +1329,7 @@ tlOuter.addEventListener('touchmove', (e) => {
     if (newH !== DAY_VIEW.rowHeight) {
       DAY_VIEW.rowHeight = newH;
       rowHeightLevel = newH < 33 ? 0 : newH < 66 ? 1 : 2;
-      requestAnimationFrame(() => renderAll();
+      requestAnimationFrame(() => renderAll());
     }
   }
 }, { passive: false });
