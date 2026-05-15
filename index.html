@@ -249,14 +249,12 @@
     transform: translateX(-50%);
   }
   .tl-controls {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
+    position: sticky;
+    top: 28px;
     z-index: 50;
-    background: var(--bg);
-    border-bottom: 1px solid var(--border);
-    padding: 8px 16px;
+    background: transparent;
+    padding: 8px -8px;
+    justify-content: flex-end;
   }
   section:first-of-type {
     padding-top: 48px;
@@ -265,7 +263,7 @@
   .tl-inner { position: relative; height: 250px; min-width: 0px; }
   .hour-rail { position: absolute; left: 0; top: 0; width: 68px; height: 120px; border-right: 1px solid var(--border); background: rgba(0,0,0,0.18); display: none; pointer-events: none; z-index: 8; box-shadow: inset -1px 0 0 rgba(255,255,255,0.06); will-change: transform; }
   .hour-rail.light { background: rgba(255,255,255,0.62); }
-  .hour-label { position: absolute; left: 8px; transform: translateY(-50%); font-size: 10px; font-family: var(--mono-font); color: var(--text); opacity: 0.95; white-space: nowrap; }
+  .hour-label { position: absolute; left: 16px; transform: translateY(-50%); font-size: 10px; font-family: var(--mono-font); color: var(--text); opacity: 0.95; white-space: nowrap; }
   .today-note { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--danger-fg); opacity: 0.85; margin-top: 10px; }
   .today-dash { width: 20px; height: 2px; background: var(--danger-fg); border-radius: 1px; }
   .quick-edit { display: none !important; }
@@ -329,15 +327,7 @@
       Timeline inc.
     </span>
     <div class="header-actions">
-      <button class="icon-btn" id="fullscreenBtn" type="button" title="Vollbild">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
-        </svg>
-      </button>
-      <button class="save-btn" id="saveBtn" type="button">Save</button>
-      <button class="icon-btn" id="settingsBtn" type="button" title="Einstellungen">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      </button>
+              
       <button class="theme-toggle" id="themeToggle" type="button">Lightmode</button>
     </div>
   </div>
@@ -346,17 +336,26 @@
 
 <section>
   <p class="section-label">Zeitstrahl</p>
-  <div class="tl-controls">
-    <span>- - -</span>
+  <div class="tl-controls" style="overflow: visible">
+    <span></span>
     <div class="tl-actions">
+      <button class="save-btn" id="saveBtn" type="button">Save</button>
+      <button class="icon-btn" id="fullscreenBtn" type="button" title="Vollbild">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+        </svg>
+      </button>
       <button class="icon-btn" id="undoBtn" type="button" title="Rückgängig (Strg+Z)" disabled>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M3 13C5.5 8 10 6 15 7.5A9 9 0 0 1 21 17"/></svg>
       </button>
       <button class="icon-btn" id="redoBtn" type="button" title="Wiederholen (Strg+Y)" disabled>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M21 13C18.5 8 14 6 9 7.5A9 9 0 0 0 3 17"/></svg>
       </button>
+      <button class="icon-btn" id="settingsBtn" type="button" title="Einstellungen">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
       <button class="add-toggle" id="addToggle" type="button" title="Event/Phase hinzufügen (A)">+</button>
-      <button class="view-toggle" id="viewToggle" type="button">Zur Tagesansicht</button>
+      <button class="view-toggle" id="viewToggle" type="button">Dayly</button>
     </div>
   </div>
   <div class="tl-outer" id="tlOuter">
@@ -960,7 +959,7 @@ function renderGrid() {
     if (detailed) { const cx = pctCenterFromDate(d); mk(`position:absolute;left:${cx}%;top:5px;font-size:10px;color:var(--grid-label);transform:translateX(-50%);white-space:nowrap`, `${weekdays[d.getDay()]} ${d.getDate()}.${d.getMonth()+1}`); }
   }
   if (detailed) {
-    viewToggle.textContent = 'Zur Gesamtansicht';
+    viewToggle.textContent = 'Timeline';
     for (let d = new Date(S); d < E; d = new Date(d.getTime() + DAY_MS)) {
       const cx = pctCenterFromDate(d);
       const isToday = d.toDateString() === new Date().toDateString();
@@ -970,7 +969,7 @@ function renderGrid() {
     for (let h = DAY_VIEW.fromHour; h <= DAY_VIEW.toHour; h++) { const y = hourLineY(h); const alpha = h % 3 === 0 ? 0.22 : 0.12; mk(`position:absolute;left:0;right:0;top:${y}px;height:1px;background:var(--grid-major);opacity:${alpha}`); }
     if (!document.getElementById('dailyHoverLine')) { const hl = document.createElement('div'); hl.id = 'dailyHoverLine'; hl.className = 'daily-hover-line'; tl.appendChild(hl); }
   } else {
-    viewToggle.textContent = 'Zur Tagesansicht';
+    viewToggle.textContent = 'Daly';
     const MONTH_NAMES = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
     let lastM = -1;
     for (let d = new Date(S); d <= E; d = new Date(d.getTime() + DAY_MS)) {
