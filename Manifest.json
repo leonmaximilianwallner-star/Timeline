@@ -1,10 +1,12 @@
 // manifest.json
 {
-  "name": "Timeline",
+  "name": "Timeline PWA",
   "short_name": "Timeline",
-  "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }],
+  "start_url": "/",
   "display": "standalone",
-  "start_url": ".",
-  "theme_color": "#111118",
-  "background_color": "#111118"
-}
+  "icons": [
+    {
+      "src": "/path/to/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
