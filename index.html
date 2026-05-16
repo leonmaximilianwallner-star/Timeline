@@ -649,6 +649,8 @@ let rowHeightLevel = 1;
 let stickyUpdaters = [];
 let pinchStartDist = null;
 let pinchStartRowH = DAY_VIEW.rowHeight;
+let touchCreateState = null;
+let touchCreateTimer = null;
 
 const expandedPhaseIds = new Set();
 const expandedDailyIds = new Set();
@@ -1068,15 +1070,15 @@ function renderPhaseBar(ph, phaseTop) {
     const arrow = document.createElement('span'); arrow.className = 'phase-arrow'; arrow.style.pointerEvents = 'auto'; arrow.style.borderColor = barText;
     arrow.textContent = expandedPhaseIds.has(ph.id) ? '▾' : '▸';
     arrow.onclick = (evt) => { evt.stopPropagation(); if (expandedPhaseIds.has(ph.id)) expandedPhaseIds.delete(ph.id); else expandedPhaseIds.add(ph.id); renderAll(); };
-    arrow.addEventListener('pointerdown', (evt) => evt.stopPropagation());
+    arrow.addEventListener('mousedown', (evt) => evt.stopPropagation());
     stickyGroup.appendChild(arrow);
   }
   const labelSpan = document.createElement('span'); labelSpan.style.cssText = 'pointer-events:none;white-space:nowrap;'; labelSpan.textContent = ph.l;
   stickyGroup.appendChild(labelSpan); e.appendChild(stickyGroup);
   fitLabel(e);
-  e.addEventListener('pointermove', (evt) => { if (evt.pointerType !== 'mouse' || resizeDrag || addMode) return; const lx = evt.clientX - e.getBoundingClientRect().left; const EDGE = Math.min(10, e.offsetWidth * 0.2); e.style.cursor = lx <= EDGE ? 'w-resize' : lx >= e.offsetWidth - EDGE ? 'e-resize' : 'pointer'; });
-  e.addEventListener('pointerleave', () => { if (!resizeDrag) e.style.cursor = 'pointer'; });
-  e.addEventListener('pointerdown', (evt) => { if (evt.pointerType !== 'mouse' || addMode) return; const lx = evt.clientX - e.getBoundingClientRect().left; const EDGE = Math.min(10, e.offsetWidth * 0.2); if (lx <= EDGE) startResize(ph, 'left', e, evt); else if (lx >= e.offsetWidth - EDGE) startResize(ph, 'right', e, evt); });
+  e.addEventListener('mousemove', (evt) => { if (resizeDrag || addMode) return; const lx = evt.clientX - e.getBoundingClientRect().left; const EDGE = Math.min(10, e.offsetWidth * 0.2); e.style.cursor = lx <= EDGE ? 'w-resize' : lx >= e.offsetWidth - EDGE ? 'e-resize' : 'pointer'; });
+  e.addEventListener('mouseleave', () => { if (!resizeDrag) e.style.cursor = 'pointer'; });
+  e.addEventListener('mousedown', (evt) => { if (addMode) return; const lx = evt.clientX - e.getBoundingClientRect().left; const EDGE = Math.min(10, e.offsetWidth * 0.2); if (lx <= EDGE) startResize(ph, 'left', e, evt); else if (lx >= e.offsetWidth - EDGE) startResize(ph, 'right', e, evt); });
   e.onclick = () => { if (Date.now() - lastResizeEnd < 200) return; openQuickEditor({ id:ph.id, type:'range', track:'phase', title:ph.l, start:ph.f, end:toISODate(new Date(dateFromISO(ph.t).getTime()-DAY_MS)), categoryId:ph.categoryId, details:ph.details }); };
   const beamF = ph.f, beamT = ph.t;
   stickyUpdaters.push((scroll) => { const tlW = tl.offsetWidth; const beamLeft = (pctFromDate(beamF) / 100) * tlW; const beamWidth = (widthPct(beamF, beamT) / 100) * tlW; const groupW = stickyGroup.scrollWidth || 60; const raw = Math.max(0, scroll - beamLeft); stickyGroup.style.transform = `translateX(${Math.min(raw, Math.max(0, beamWidth - groupW - 12))}px)`; });
@@ -1159,10 +1161,10 @@ function renderBaseTimeline() {
       else { bgColor = `${diHex}D0`; borderColor = `${diHex}40`; boxShadow = '0 2px 6px rgba(0,0,0,0.38)'; }
       el.style.cssText = `left:${itemLeftPct}%;top:${startY}px;width:calc(${itemWidPct}% - 4px);margin-left:2px;height:${height - 2}px;background:${bgColor};color:${allCancelled ? 'rgba(200,200,210,0.45)' : allDone && hasTodos ? '#a8d96a' : '#ededec'};border:1px solid ${borderColor};border-radius:8px;padding:${isShort ? '0' : '0px'} ${hasTodos ? 8 : 0}px 2px 3px;justify-content:${isShort ? 'center' : 'flex-start'};box-shadow:${boxShadow};overflow:hidden;${allDone && hasTodos ? 'transform:scale(0.97);' : ''}`;
       const EDGE = 7;
-      el.addEventListener('pointermove', (evt) => { if (evt.pointerType !== 'mouse' || addMode) return; const ly = evt.clientY - el.getBoundingClientRect().top; el.style.cursor = (ly < EDGE || ly > el.offsetHeight - EDGE) ? 'ns-resize' : 'grab'; });
-      el.addEventListener('pointerleave', () => { if (!dailyItemResizeDrag && !dailyItemMoveDrag) el.style.cursor = 'grab'; });
-      el.addEventListener('pointerdown', (evt) => {
-        if (addMode || evt.pointerType !== 'mouse') return;
+      el.addEventListener('mousemove', (evt) => { if (addMode) return; const ly = evt.clientY - el.getBoundingClientRect().top; el.style.cursor = (ly < EDGE || ly > el.offsetHeight - EDGE) ? 'ns-resize' : 'grab'; });
+      el.addEventListener('mouseleave', () => { if (!dailyItemResizeDrag && !dailyItemMoveDrag) el.style.cursor = 'grab'; });
+      el.addEventListener('mousedown', (evt) => {
+        if (addMode) return;
         const r = el.getBoundingClientRect(); const ly = evt.clientY - r.top;
         if (evt.ctrlKey || evt.metaKey) {
           evt.preventDefault(); evt.stopPropagation();
@@ -1172,16 +1174,16 @@ function renderBaseTimeline() {
         }
         if (ly < EDGE || ly > el.offsetHeight - EDGE) { evt.preventDefault(); evt.stopPropagation(); dailyItemResizeDrag = { item, edge: ly < EDGE ? 'top' : 'bottom', startY: evt.clientY, origStartMin: item.startMin, origEndMin: item.endMin, el }; document.body.style.cursor = 'ns-resize'; document.body.style.userSelect = 'none'; return; }
         const sx = evt.clientX, sy = evt.clientY;
-        const onThreshold = (e) => { if (!e.isPrimary) return; if (Math.hypot(e.clientX - sx, e.clientY - sy) > 5) { window.removeEventListener('pointermove', onThreshold); window.removeEventListener('pointerup', cancelThreshold); evt.preventDefault(); const ghost = el.cloneNode(true); ghost.style.cssText += `;position:fixed;opacity:0.7;pointer-events:none;z-index:200;width:${r.width}px;height:${r.height}px;left:${r.left}px;top:${r.top}px;transition:none;cursor:grabbing;`; document.body.appendChild(ghost); dailyItemMoveDrag = { item, offsetY: ly, ghost }; document.body.style.cursor = 'grabbing'; document.body.style.userSelect = 'none'; } };
-        const cancelThreshold = () => { window.removeEventListener('pointermove', onThreshold); window.removeEventListener('pointerup', cancelThreshold); };
-        window.addEventListener('pointermove', onThreshold); window.addEventListener('pointerup', cancelThreshold);
+        const onThreshold = (e) => { if (Math.hypot(e.clientX - sx, e.clientY - sy) > 5) { window.removeEventListener('mousemove', onThreshold); window.removeEventListener('mouseup', cancelThreshold); evt.preventDefault(); const ghost = el.cloneNode(true); ghost.style.cssText += `;position:fixed;opacity:0.7;pointer-events:none;z-index:200;width:${r.width}px;height:${r.height}px;left:${r.left}px;top:${r.top}px;transition:none;cursor:grabbing;`; document.body.appendChild(ghost); dailyItemMoveDrag = { item, offsetY: ly, ghost }; document.body.style.cursor = 'grabbing'; document.body.style.userSelect = 'none'; } };
+        const cancelThreshold = () => { window.removeEventListener('mousemove', onThreshold); window.removeEventListener('mouseup', cancelThreshold); };
+        window.addEventListener('mousemove', onThreshold); window.addEventListener('mouseup', cancelThreshold);
       });
       if (allDone && hasTodos && justCompletedId === item.id) { el.classList.add('flash-done'); justCompletedId = null; }
       if (hasTodos) {
         const zone = document.createElement('div');
         zone.style.cssText = `position:absolute;top:0;bottom:0;right:0;width:26px;cursor:pointer;display:flex;align-items:center;justify-content:flex-end;padding-right:4px;z-index:3;opacity:1;font-size:15px;line-height:1;pointer-events:auto;`;
         zone.textContent = isExpanded ? '‹' : '›';
-        zone.addEventListener('pointerdown', (evt) => evt.stopPropagation());
+        zone.addEventListener('mousedown', (evt) => evt.stopPropagation());
         zone.onclick = (evt) => { evt.stopPropagation(); if (expandedDailyIds.has(item.id)) expandedDailyIds.delete(item.id); else { expandedDailyIds.add(item.id); justExpandedId = item.id; } renderAll(); };
         el.appendChild(zone);
       }
@@ -1300,7 +1302,7 @@ function updateStickyElements() { const scroll = tlOuter.scrollLeft; stickyUpdat
 
 function renderDaySizeStrip() {
   let strip = document.getElementById('daySizeStrip');
-  if (!strip) { strip = document.createElement('div'); strip.id = 'daySizeStrip'; strip.className = 'day-size-strip'; strip.style.pointerEvents = 'auto'; strip.addEventListener('pointerdown', (e) => { if (e.pointerType !== 'mouse') return; e.preventDefault(); e.stopPropagation(); daySizeDrag = { startY: e.clientY, startLevel: rowHeightLevel }; strip.classList.add('dragging'); document.body.style.cursor = 'ns-resize'; document.body.style.userSelect = 'none'; }); tl.appendChild(strip); } else if (strip.parentElement !== tl) { tl.appendChild(strip); }
+  if (!strip) { strip = document.createElement('div'); strip.id = 'daySizeStrip'; strip.className = 'day-size-strip'; strip.style.pointerEvents = 'auto'; strip.addEventListener('mousedown', (e) => { e.preventDefault(); e.stopPropagation(); daySizeDrag = { startY: e.clientY, startLevel: rowHeightLevel }; strip.classList.add('dragging'); document.body.style.cursor = 'ns-resize'; document.body.style.userSelect = 'none'; }); tl.appendChild(strip); } else if (strip.parentElement !== tl) { tl.appendChild(strip); }
   if (!isDailyView) { strip.style.display = 'none'; return; }
   strip.style.display = 'flex'; strip.style.position = 'absolute'; strip.style.top = `${DAY_VIEW.top + dayViewHeight() + 2}px`; strip.style.left = '0'; strip.style.width = '100%';
 }
@@ -1342,30 +1344,66 @@ tlOuter.addEventListener('scroll', () => {
   updateDayStickBar();
 });
 
-// ── UNIFIED POINTER EVENT SYSTEM ────────────────────────────────
-// Single handler set for mouse, touch, and stylus.
-// Pointer events are the modern standard — no parallel mouse/touch systems.
+// ── Touch support ──────────────────────────────────────────────
+function normTouch(e) {
+  const t = e.touches?.[0] || e.changedTouches?.[0];
+  return { clientX: t.clientX, clientY: t.clientY };
+}
 
+// ── Pointer events for tlOuter (pinch + add-mode drag) ──
 const activePointers = new Map();
 
-// ── DOWN ─────────────────────────────────────────────────────────
 tlOuter.addEventListener('pointerdown', (e) => {
+  console.log('pointerdown', e.pointerType, activePointers.size);
   activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-  // Pinch zoom — 2 fingers in daily view
   if (activePointers.size === 2 && isDailyView) {
     e.preventDefault();
     const pts = [...activePointers.values()];
-    pinchStartDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+    const dx = pts[0].x - pts[1].x;
+    const dy = pts[0].y - pts[1].y;
+    pinchStartDist = Math.hypot(dx, dy);
     pinchStartRowH = DAY_VIEW.rowHeight;
     return;
   }
 
-  if (!e.isPrimary) return;
+  // Long-press-to-create (touch only, when not already in add mode)
+  if (e.pointerType === 'touch' && !addMode && activePointers.size === 1) {
+    const tlRect = tl.getBoundingClientRect();
+    const localY = e.clientY - tlRect.top;
+    const localX = e.clientX - tlRect.left;
 
-  // Add-mode drag setup
-  if (addMode) {
-    e.preventDefault();
+    const ripple = document.createElement('div');
+    ripple.style.cssText = `position:absolute;width:44px;height:44px;margin:-22px;border-radius:50%;background:var(--text);opacity:0;transform:scale(0);pointer-events:none;z-index:100;left:${localX}px;top:${localY}px;transition:transform 0.5s ease,opacity 0.5s ease;`;
+    tl.appendChild(ripple);
+    requestAnimationFrame(() => { ripple.style.transform = 'scale(1)'; ripple.style.opacity = '0.25'; });
+
+    touchCreateState = { pointerId: e.pointerId, startX: e.clientX, startY: e.clientY, phase: 'holding', ripple };
+
+    touchCreateTimer = setTimeout(() => {
+      if (!touchCreateState || touchCreateState.phase !== 'holding') return;
+      touchCreateState.phase = 'dragging';
+      touchCreateState.ripple?.remove();
+      if (navigator.vibrate) navigator.vibrate(30);
+
+      const tlRect = tl.getBoundingClientRect();
+      const localY = touchCreateState.startY - tlRect.top;
+      if (isDailyView && localY >= DAY_VIEW.top) {
+        const date = dateFromTimelineClientX(touchCreateState.startX);
+        const m = minFromLocalY(localY);
+        dailyDrag = { date, startMin: m, currentMin: m, previewEl: null };
+        drawDailyPreview();
+      } else {
+        dragStartDate = dateFromTimelineClientX(touchCreateState.startX);
+        dragMoved = false;
+        clearDragPreview();
+      }
+    }, 500);
+    return;
+  }
+
+  if (activePointers.size === 1 && addMode) {
+    if (e.pointerType !== 'mouse') e.preventDefault();
     const tlRect = tl.getBoundingClientRect();
     const localY = e.clientY - tlRect.top;
     if (isDailyView && localY >= DAY_VIEW.top) {
@@ -1373,171 +1411,151 @@ tlOuter.addEventListener('pointerdown', (e) => {
       const m = minFromLocalY(localY);
       dailyDrag = { date, startMin: m, currentMin: m, previewEl: null };
       drawDailyPreview();
-    } else {
-      dragStartDate = dateFromTimelineClientX(e.clientX);
-      dragMoved = false;
-      clearDragPreview();
+      return;
     }
+    dragStartDate = dateFromTimelineClientX(e.clientX);
+    dragMoved = false;
+    clearDragPreview();
   }
-}, { passive: false });
+});
 
-// ── MOVE ─────────────────────────────────────────────────────────
-window.addEventListener('pointermove', (e) => {
-  // Update pinch pointer positions
-  if (activePointers.has(e.pointerId)) {
-    activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+tlOuter.addEventListener('pointermove', (e) => {
+  // Cancel long-press if finger moved too much (it's a scroll)
+  if (touchCreateState?.phase === 'holding' && e.pointerId === touchCreateState.pointerId) {
+    if (Math.hypot(e.clientX - touchCreateState.startX, e.clientY - touchCreateState.startY) > 8) {
+      clearTimeout(touchCreateTimer);
+      touchCreateState.ripple?.remove();
+      touchCreateState = null;
+    }
+    return;
   }
 
-  // Pinch zoom
+  if (!activePointers.has(e.pointerId)) return;
+  activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
   if (activePointers.size === 2 && isDailyView && pinchStartDist) {
     e.preventDefault();
     const pts = [...activePointers.values()];
-    const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-    const newH = Math.round(Math.max(ROW_H_MIN, Math.min(ROW_H_MAX, pinchStartRowH * (dist / pinchStartDist))));
+    const dx = pts[0].x - pts[1].x;
+    const dy = pts[0].y - pts[1].y;
+    const dist = Math.hypot(dx, dy);
+    const newH = Math.round(
+      Math.max(ROW_H_MIN, Math.min(ROW_H_MAX, pinchStartRowH * (dist / pinchStartDist)))
+    );
     if (newH !== DAY_VIEW.rowHeight) {
       DAY_VIEW.rowHeight = newH;
-      rowHeightLevel = newH < 33 ? 0 : newH < 55 ? 1 : 2;
+      rowHeightLevel = newH < 33 ? 0 : newH < 66 ? 1 : 2;
       requestAnimationFrame(() => renderAll());
     }
-    return;
   }
+});
 
-  if (!e.isPrimary) return;
-  const { clientX: x, clientY: y } = e;
-  const tlRect = tl.getBoundingClientRect();
+const endPointer = (e) => {
+  activePointers.delete(e.pointerId);
+  if (activePointers.size < 2) pinchStartDist = null;
+  if (touchCreateState && e.pointerId === touchCreateState.pointerId) {
+    clearTimeout(touchCreateTimer);
+    touchCreateState.ripple?.remove();
+    touchCreateState = null;
+  }
+};
+tlOuter.addEventListener('pointerup', endPointer);
+tlOuter.addEventListener('pointercancel', endPointer);
 
-  // Copy ghost
-  if (dailyItemCopyDrag) {
-    const { ghost, offsetY } = dailyItemCopyDrag;
-    ghost.style.top = `${y - offsetY}px`;
-    ghost.style.left = `${x - ghost.offsetWidth / 2}px`;
-    return;
-  }
-  // Move ghost
-  if (dailyItemMoveDrag) {
-    const { ghost, offsetY } = dailyItemMoveDrag;
-    const snappedMin = Math.max(DAY_VIEW.fromHour * 60, Math.min(DAY_VIEW.toHour * 60 - 15, snapMin(minFromLocalY(y - tlRect.top - offsetY))));
-    ghost.style.top  = `${tlRect.top + yFromMin(snappedMin)}px`;
-    ghost.style.left = `${tlRect.left + (pctFromDate(dateFromTimelineClientX(x)) / 100) * tl.offsetWidth - tlOuter.scrollLeft}px`;
-    return;
-  }
-  // Daily item edge resize
-  if (dailyItemResizeDrag) {
-    e.preventDefault();
-    const { edge, startY: sy, origStartMin, origEndMin, el } = dailyItemResizeDrag;
-    const deltaMin = snapMin(Math.round((y - sy) / DAY_VIEW.rowHeight * 60));
-    if (edge === 'top') {
-      const ns = Math.max(DAY_VIEW.fromHour * 60, Math.min(origStartMin + deltaMin, origEndMin - 15));
-      el.style.top    = `${yFromMin(ns)}px`;
-      el.style.height = `${Math.max(14, yFromMin(origEndMin) - yFromMin(ns) - 2)}px`;
-    } else {
-      const ne = Math.min(DAY_VIEW.toHour * 60, Math.max(origEndMin + deltaMin, origStartMin + 15));
-      el.style.height = `${Math.max(14, yFromMin(ne) - yFromMin(origStartMin) - 2)}px`;
-    }
-    return;
-  }
-  // Day-size strip drag
+// Drag move
+window.addEventListener('touchmove', (e) => {
+  const anyDrag = dailyDrag || dragStartDate || dailyItemResizeDrag ||
+                  dailyItemMoveDrag || daySizeDrag || resizeDrag;
+  if (!anyDrag && e.touches.length === 1) return;                
+  if (anyDrag) e.preventDefault();
+  const { clientX, clientY } = normTouch(e);
+
   if (daySizeDrag) {
-    const newLevel = Math.max(0, Math.min(2, daySizeDrag.startLevel + Math.round((y - daySizeDrag.startY) / 55)));
+    const delta = clientY - daySizeDrag.startY;
+    const newLevel = Math.max(0, Math.min(2, daySizeDrag.startLevel + Math.round(delta / 55)));
     if (newLevel !== rowHeightLevel) { rowHeightLevel = newLevel; renderAll(); }
     return;
   }
-  // Phase bar resize
   if (resizeDrag) {
     const { ph, side, startX, origF, origT, el } = resizeDrag;
-    const daysDelta = Math.round((x - startX) / (tl.offsetWidth / TOTAL_DAYS));
+    const daysDelta = Math.round((clientX - startX) / (tl.offsetWidth / TOTAL_DAYS));
     if (side === 'right') {
       const ms = Math.max(dateFromISO(origF).getTime() + DAY_MS, Math.min(E.getTime(), dateFromISO(origT).getTime() + daysDelta * DAY_MS));
       el.style.width = `${widthPct(origF, toISODate(new Date(ms)))}%`;
     } else {
       const ms = Math.min(dateFromISO(origT).getTime() - DAY_MS, Math.max(S.getTime(), dateFromISO(origF).getTime() + daysDelta * DAY_MS));
       const ns = toISODate(new Date(ms));
-      el.style.left  = `${pctFromDate(ns)}%`;
+      el.style.left = `${pctFromDate(ns)}%`;
       el.style.width = `${widthPct(ns, origT)}%`;
     }
     return;
   }
-  // Add-mode: daily event drag preview
+  if (dailyItemResizeDrag) {
+    const { edge, startY: sy, origStartMin, origEndMin, el } = dailyItemResizeDrag;
+    const deltaMin = snapMin(Math.round((clientY - sy) / DAY_VIEW.rowHeight * 60));
+    if (edge === 'top') {
+      const newStart = Math.max(DAY_VIEW.fromHour * 60, Math.min(origStartMin + deltaMin, origEndMin - 15));
+      el.style.top = `${yFromMin(newStart)}px`;
+      el.style.height = `${Math.max(14, yFromMin(origEndMin) - yFromMin(newStart) - 2)}px`;
+    } else {
+      const newEnd = Math.min(DAY_VIEW.toHour * 60, Math.max(origEndMin + deltaMin, origStartMin + 15));
+      el.style.height = `${Math.max(14, yFromMin(newEnd) - yFromMin(origStartMin) - 2)}px`;
+    }
+    return;
+  }
+  if (dailyItemMoveDrag) {
+    const { ghost, offsetY } = dailyItemMoveDrag;
+    const tlRect = tl.getBoundingClientRect();
+    const snappedMin = Math.max(DAY_VIEW.fromHour * 60, Math.min(DAY_VIEW.toHour * 60 - 15, snapMin(minFromLocalY(clientY - tlRect.top - offsetY))));
+    const targetDate = dateFromTimelineClientX(clientX);
+    ghost.style.top  = `${tlRect.top + yFromMin(snappedMin)}px`;
+    ghost.style.left = `${tlRect.left + (pctFromDate(targetDate) / 100) * tl.offsetWidth - tlOuter.scrollLeft}px`;
+    return;
+  }
   if (dailyDrag) {
-    e.preventDefault();
-    dailyDrag.currentMin = minFromLocalY(y - tlRect.top);
+    dailyDrag.currentMin = minFromLocalY(clientY - tl.getBoundingClientRect().top);
     drawDailyPreview();
     return;
   }
-  // Add-mode: timeline phase drag preview
   if (addMode && dragStartDate) {
     dragMoved = true;
-    drawDragPreview(dragStartDate, dateFromTimelineClientX(x));
-    return;
-  }
-  // Sticky bar & hover effects (mouse only — no hover on touch)
-  if (e.pointerType === 'mouse') {
-    if (isDailyView) hourRail.style.transform = `translateX(${tlOuter.scrollLeft}px)`;
-    updateStickyElements();
-    updateDayStickBar();
-    if (addMode && !dailyDrag && !daySizeDrag && !resizeDrag && !dragStartDate) {
-      const localY = y - tlRect.top;
-      const PY = currentLayout ? currentLayout.contentTop : 30;
-      const inTimeline = localY >= PY && (!isDailyView || localY < DAY_VIEW.top - 20);
-      setTimelineHover(inTimeline ? dateFromTimelineClientX(x) : null);
-      if (isDailyView && localY >= DAY_VIEW.top && localY <= dayViewBottom()) setDailyHover(minFromLocalY(localY));
-      else setDailyHover(null);
-    } else {
-      setTimelineHover(null);
-    }
+    drawDragPreview(dragStartDate, dateFromTimelineClientX(clientX));
   }
 }, { passive: false });
 
-// ── UP ───────────────────────────────────────────────────────────
-window.addEventListener('pointerup', (e) => {
-  activePointers.delete(e.pointerId);
-  if (activePointers.size < 2) pinchStartDist = null;
-  if (!e.isPrimary) return;
+// Drag end — commit
+window.addEventListener('touchend', (e) => {
+  const { clientX, clientY } = normTouch(e);
 
-  const { clientX: x, clientY: y } = e;
-  const tlRect = tl.getBoundingClientRect();
-
-  if (dailyItemCopyDrag) {
-    const { item, offsetY, ghost } = dailyItemCopyDrag;
-    ghost.remove(); dailyItemCopyDrag = null;
-    document.body.style.cursor = ''; document.body.style.userSelect = '';
-    const targetStart = Math.max(DAY_VIEW.fromHour * 60, Math.min(DAY_VIEW.toHour * 60 - 15, snapMin(minFromLocalY(y - tlRect.top - offsetY))));
-    const duration = item.endMin - item.startMin;
-    const copiedTodos = (item.todos || []).filter(t => t.state === 'postponed').map(t => ({ id: crypto.randomUUID(), text: t.text, state: 'postponed' }));
-    dailyItems.push({ id: crypto.randomUUID(), date: toISODate(dateFromTimelineClientX(x)), startMin: targetStart, endMin: Math.min(DAY_VIEW.toHour * 60, targetStart + duration), title: item.title, categoryId: item.categoryId, todos: copiedTodos, repeat: 'none' });
-    renderAll(); return;
-  }
   if (dailyItemMoveDrag) {
     const { item, offsetY, ghost } = dailyItemMoveDrag;
     ghost.remove(); dailyItemMoveDrag = null;
-    document.body.style.cursor = ''; document.body.style.userSelect = '';
-    const targetStart = Math.max(DAY_VIEW.fromHour * 60, Math.min(DAY_VIEW.toHour * 60 - 15, snapMin(minFromLocalY(y - tlRect.top - offsetY))));
+    document.body.style.userSelect = '';
+    const tlRect = tl.getBoundingClientRect();
+    const targetStart = Math.max(DAY_VIEW.fromHour * 60, Math.min(DAY_VIEW.toHour * 60 - 15, snapMin(minFromLocalY(clientY - tlRect.top - offsetY))));
     const duration = item.endMin - item.startMin;
-    item.date     = toISODate(dateFromTimelineClientX(x));
+    item.date     = toISODate(dateFromTimelineClientX(clientX));
     item.startMin = targetStart;
     item.endMin   = Math.min(DAY_VIEW.toHour * 60, targetStart + duration);
     renderAll(); return;
   }
   if (dailyItemResizeDrag) {
     const { item, edge, startY: sy, origStartMin, origEndMin } = dailyItemResizeDrag;
-    const deltaMin = snapMin(Math.round((y - sy) / DAY_VIEW.rowHeight * 60));
+    const deltaMin = snapMin(Math.round((clientY - sy) / DAY_VIEW.rowHeight * 60));
     if (edge === 'top') item.startMin = Math.max(DAY_VIEW.fromHour * 60, Math.min(origStartMin + deltaMin, origEndMin - 15));
     else                item.endMin   = Math.min(DAY_VIEW.toHour * 60,   Math.max(origEndMin   + deltaMin, origStartMin + 15));
-    document.body.style.cursor = ''; document.body.style.userSelect = '';
     lastResizeEnd = Date.now(); dailyItemResizeDrag = null; renderAll(); return;
   }
   if (daySizeDrag) {
     daySizeDrag = null;
-    document.body.style.cursor = ''; document.body.style.userSelect = '';
     document.getElementById('daySizeStrip')?.classList.remove('dragging');
     return;
   }
   if (resizeDrag) {
     const { ph, side, startX, origF, origT } = resizeDrag;
-    const daysDelta = Math.round((x - startX) / (tl.offsetWidth / TOTAL_DAYS));
+    const daysDelta = Math.round((clientX - startX) / (tl.offsetWidth / TOTAL_DAYS));
     if (side === 'right') ph.t = toISODate(new Date(Math.max(dateFromISO(origF).getTime() + DAY_MS, Math.min(E.getTime(), dateFromISO(origT).getTime() + daysDelta * DAY_MS))));
     else                  ph.f = toISODate(new Date(Math.min(dateFromISO(origT).getTime() - DAY_MS, Math.max(S.getTime(), dateFromISO(origF).getTime() + daysDelta * DAY_MS))));
-    document.body.style.cursor = ''; document.body.style.userSelect = '';
     lastResizeEnd = Date.now(); resizeDrag = null; renderAll(); return;
   }
   if (dailyDrag) {
@@ -1547,55 +1565,51 @@ window.addEventListener('pointerup', (e) => {
       ...hourRail.querySelectorAll('[data-drag]')].filter(Boolean);
     const date = toISODate(dailyDrag.date);
     dailyDrag = null;
-    openDraftModal({ mode: 'create', type: 'daily', track: 'daily', start: date, startMin, endMin, categoryId: '', todos: [] });
+    openDraftModal({ mode:'create', type:'daily', track:'daily', start:date, startMin, endMin, categoryId:'', todos:[] });
     return;
   }
   if (!addMode || !dragStartDate) return;
   if (!dragMoved) { dragStartDate = null; clearDragPreview(); return; }
-  const endDate = dateFromTimelineClientX(x);
-  const start   = dragStartDate <= endDate ? dragStartDate : endDate;
-  const end     = dragStartDate <= endDate ? endDate : dragStartDate;
-  const daySpan = Math.round((end - start) / DAY_MS);
+  const endDate  = dateFromTimelineClientX(clientX);
+  const start    = dragStartDate <= endDate ? dragStartDate : endDate;
+  const end      = dragStartDate <= endDate ? endDate : dragStartDate;
+  const daySpan  = Math.round((end - start) / DAY_MS);
   timelineStagedPreview = [dragPreview, dragPreview?._left, dragPreview?._right].filter(Boolean);
   dragPreview = null; dragStartDate = null; dragMoved = false;
-  openDraftModal({ mode: 'create', type: daySpan >= 1 ? 'range' : 'point', track: daySpan >= 1 ? 'phase' : 'note', start, end, categoryId: '' });
-});
-
-window.addEventListener('pointercancel', (e) => {
-  activePointers.delete(e.pointerId);
-  if (activePointers.size < 2) pinchStartDist = null;
-  // Clean up any active drag state
-  if (e.isPrimary) {
-    if (dailyDrag) clearDailyPreview();
-    if (dragStartDate) { clearDragPreview(); dragStartDate = null; dragMoved = false; }
-    document.body.style.cursor = ''; document.body.style.userSelect = '';
-  }
+  openDraftModal({ mode:'create', type: daySpan >= 1 ? 'range' : 'point', track: daySpan >= 1 ? 'phase' : 'note', start, end, categoryId:'' });
 });
 
 // Long-press on daily items to move (500ms hold → drag)
 function addItemTouchDrag(el, item) {
   let timer = null;
-  el.addEventListener('pointerdown', (e) => {
-    if (addMode || e.pointerType === 'mouse') return; // mouse handled by pointerdown on el
+  el.addEventListener('touchstart', (e) => {
+    if (addMode) return;
+    const t = e.touches[0];
     const r = el.getBoundingClientRect();
-    const ly = e.clientY - r.top;
     timer = setTimeout(() => {
       const ghost = el.cloneNode(true);
       ghost.style.cssText += `;position:fixed;opacity:0.7;pointer-events:none;z-index:200;width:${r.width}px;height:${r.height}px;left:${r.left}px;top:${r.top}px;`;
       document.body.appendChild(ghost);
-      dailyItemMoveDrag = { item, offsetY: ly, ghost };
+      dailyItemMoveDrag = { item, offsetY: t.clientY - r.top, ghost };
       document.body.style.userSelect = 'none';
     }, 500);
   }, { passive: true });
-  el.addEventListener('pointermove',   () => { clearTimeout(timer); timer = null; }, { passive: true });
-  el.addEventListener('pointerup',     () => { clearTimeout(timer); timer = null; }, { passive: true });
-  el.addEventListener('pointercancel', () => { clearTimeout(timer); timer = null; }, { passive: true });
+  el.addEventListener('touchmove',  () => { clearTimeout(timer); timer = null; }, { passive: true });
+  el.addEventListener('touchend',   () => { clearTimeout(timer); timer = null; }, { passive: true });
 }
-
-// Page-level vertical scroll: keeps dayStickBar pinned
+// Page-level vertical scroll: keeps dayStickBar pinned to the top of the visible tlOuter area
 window.addEventListener('scroll', syncStickBar, { passive: true });
 
-tlOuter.addEventListener('pointerleave', () => { setDailyHover(null); setTimelineHover(null); });
+tlOuter.addEventListener('mouseleave', () => { setDailyHover(null); setTimelineHover(null); });
+
+tlOuter.addEventListener('mousedown', (e) => {
+  if (!addMode) return;
+  e.preventDefault(); e.stopPropagation();
+  const tlRect = tl.getBoundingClientRect();
+  const localY = e.clientY - tlRect.top;
+  if (isDailyView && localY >= DAY_VIEW.top) { const date = dateFromTimelineClientX(e.clientX); const m = minFromLocalY(localY); dailyDrag = { date, startMin: m, currentMin: m, previewEl: null }; drawDailyPreview(); return; }
+  dragStartDate = dateFromTimelineClientX(e.clientX); dragMoved = false; clearDragPreview();
+});
 
 function drawDailyPreview() {
   if (!dailyDrag) return;
@@ -1618,6 +1632,34 @@ function clearDailyPreview() {
   hourRail.querySelectorAll('[data-drag]').forEach(el => el.remove());
   dailyStagedPreview.forEach(el => el?.remove()); dailyStagedPreview = [];
 }
+
+window.addEventListener('mousemove', (e) => {
+  if (dailyItemCopyDrag) { const { ghost, offsetY } = dailyItemCopyDrag; ghost.style.top = `${e.clientY - offsetY}px`; ghost.style.left = `${e.clientX - ghost.offsetWidth / 2}px`; return; }
+  if (dailyItemMoveDrag) { const { item, ghost, offsetY } = dailyItemMoveDrag; const tlRect = tl.getBoundingClientRect(); const itemTopInTl = e.clientY - tlRect.top - offsetY; const snappedMin = Math.max(DAY_VIEW.fromHour*60, Math.min(DAY_VIEW.toHour*60-15, snapMin(minFromLocalY(itemTopInTl)))); const snappedTopVp = tlRect.top + yFromMin(snappedMin); const targetDate = dateFromTimelineClientX(e.clientX); const colLeftVp = tlRect.left + (pctFromDate(targetDate)/100)*tl.offsetWidth - tlOuter.scrollLeft; ghost.style.top = `${snappedTopVp}px`; ghost.style.left = `${colLeftVp}px`; return; }
+  if (dailyItemResizeDrag) { const { item, edge, startY: sy, origStartMin, origEndMin, el } = dailyItemResizeDrag; const deltaMin = snapMin(Math.round((e.clientY - sy) / DAY_VIEW.rowHeight * 60)); if (edge === 'top') { const newStart = Math.max(DAY_VIEW.fromHour * 60, Math.min(origStartMin + deltaMin, origEndMin - 15)); const newTop = yFromMin(newStart); el.style.top = `${newTop}px`; el.style.height = `${Math.max(14, yFromMin(origEndMin) - newTop - 2)}px`; } else { const newEnd = Math.min(DAY_VIEW.toHour * 60, Math.max(origEndMin + deltaMin, origStartMin + 15)); el.style.height = `${Math.max(14, yFromMin(newEnd) - yFromMin(origStartMin) - 2)}px`; } return; }
+  if (daySizeDrag) { const THRESHOLD = 55; const delta = e.clientY - daySizeDrag.startY; const levelDelta = Math.round(delta / THRESHOLD); const newLevel = Math.max(0, Math.min(2, daySizeDrag.startLevel + levelDelta)); if (newLevel !== rowHeightLevel) { rowHeightLevel = newLevel; renderAll(); } return; }
+  if (resizeDrag) { const { ph, side, startX, origF, origT, el } = resizeDrag; const dx = e.clientX - startX; const pxPerDay = tl.offsetWidth / TOTAL_DAYS; const daysDelta = Math.round(dx / pxPerDay); if (side === 'right') { const newEndMs = Math.max(dateFromISO(origF).getTime() + DAY_MS, Math.min(E.getTime(), dateFromISO(origT).getTime() + daysDelta * DAY_MS)); el.style.width = `${widthPct(origF, toISODate(new Date(newEndMs)))}%`; } else { const newStartMs = Math.min(dateFromISO(origT).getTime() - DAY_MS, Math.max(S.getTime(), dateFromISO(origF).getTime() + daysDelta * DAY_MS)); const ns = toISODate(new Date(newStartMs)); el.style.left = `${pctFromDate(ns)}%`; el.style.width = `${widthPct(ns, origT)}%`; } return; }
+  if (addMode && !dailyDrag && !daySizeDrag && !resizeDrag && !dragStartDate) { const tlRect = tl.getBoundingClientRect(); const localY = e.clientY - tlRect.top; const PY = currentLayout ? currentLayout.contentTop : 30; const inTimeline = localY >= PY && (!isDailyView || localY < DAY_VIEW.top - 20); if (inTimeline) setTimelineHover(dateFromTimelineClientX(e.clientX)); else setTimelineHover(null); } else { setTimelineHover(null); }
+  if (addMode && isDailyView && !dailyDrag && !daySizeDrag && !resizeDrag && !dragStartDate) { const tlRect = tl.getBoundingClientRect(); const localY = e.clientY - tlRect.top; if (localY >= DAY_VIEW.top && localY <= dayViewBottom()) setDailyHover(minFromLocalY(localY)); else setDailyHover(null); }
+  if (dailyDrag) { const tlRect = tl.getBoundingClientRect(); dailyDrag.currentMin = minFromLocalY(e.clientY - tlRect.top); drawDailyPreview(); return; }
+  if (!addMode || !dragStartDate) return;
+  dragMoved = true; drawDragPreview(dragStartDate, dateFromTimelineClientX(e.clientX));
+});
+
+window.addEventListener('mouseup', (e) => {
+  if (dailyItemCopyDrag) { const { item, offsetY, ghost } = dailyItemCopyDrag; ghost.remove(); document.body.style.cursor = ''; document.body.style.userSelect = ''; dailyItemCopyDrag = null; const targetDate = dateFromTimelineClientX(e.clientX); const tlRect = tl.getBoundingClientRect(); const targetStart = Math.max(DAY_VIEW.fromHour * 60, Math.min(DAY_VIEW.toHour * 60 - 15, snapMin(minFromLocalY(e.clientY - tlRect.top - offsetY)))); const duration = item.endMin - item.startMin; const copiedTodos = (item.todos || []).filter(t => t.state === 'postponed').map(t => ({ id: crypto.randomUUID(), text: t.text, state: 'postponed' })); dailyItems.push({ id: crypto.randomUUID(), date: toISODate(targetDate), startMin: targetStart, endMin: Math.min(DAY_VIEW.toHour * 60, targetStart + duration), title: item.title, categoryId: item.categoryId, todos: copiedTodos, repeat: 'none' }); renderAll(); return; }
+  if (dailyItemMoveDrag) { const { item, offsetY, ghost } = dailyItemMoveDrag; ghost.remove(); document.body.style.cursor = ''; document.body.style.userSelect = ''; dailyItemMoveDrag = null; const targetDate = dateFromTimelineClientX(e.clientX); const tlRect = tl.getBoundingClientRect(); const itemTopInTl = e.clientY - tlRect.top - offsetY; const targetStart = Math.max(DAY_VIEW.fromHour * 60, Math.min(DAY_VIEW.toHour * 60 - 15, snapMin(minFromLocalY(itemTopInTl)))); const duration = item.endMin - item.startMin; item.date = toISODate(targetDate); item.startMin = targetStart; item.endMin = Math.min(DAY_VIEW.toHour * 60, targetStart + duration); renderAll(); return; }
+  if (dailyItemResizeDrag) { const { item, edge, startY: sy, origStartMin, origEndMin } = dailyItemResizeDrag; const deltaMin = snapMin(Math.round((e.clientY - sy) / DAY_VIEW.rowHeight * 60)); if (edge === 'top') item.startMin = Math.max(DAY_VIEW.fromHour * 60, Math.min(origStartMin + deltaMin, origEndMin - 15)); else item.endMin = Math.min(DAY_VIEW.toHour * 60, Math.max(origEndMin + deltaMin, origStartMin + 15)); document.body.style.cursor = ''; document.body.style.userSelect = ''; lastResizeEnd = Date.now(); dailyItemResizeDrag = null; renderAll(); return; }
+  if (daySizeDrag) { daySizeDrag = null; document.body.style.cursor = ''; document.body.style.userSelect = ''; const strip = document.getElementById('daySizeStrip'); if (strip) strip.classList.remove('dragging'); return; }
+  if (resizeDrag) { const { ph, side, startX, origF, origT } = resizeDrag; const dx = e.clientX - startX; const pxPerDay = tl.offsetWidth / TOTAL_DAYS; const daysDelta = Math.round(dx / pxPerDay); if (side === 'right') { ph.t = toISODate(new Date(Math.max(dateFromISO(origF).getTime() + DAY_MS, Math.min(E.getTime(), dateFromISO(origT).getTime() + daysDelta * DAY_MS)))); } else { ph.f = toISODate(new Date(Math.min(dateFromISO(origT).getTime() - DAY_MS, Math.max(S.getTime(), dateFromISO(origF).getTime() + daysDelta * DAY_MS)))); } document.body.style.cursor = ''; document.body.style.userSelect = ''; lastResizeEnd = Date.now(); resizeDrag = null; renderAll(); return; }
+  if (dailyDrag) { const date = toISODate(dailyDrag.date); const startMin = Math.min(dailyDrag.startMin, dailyDrag.currentMin); const endMin = Math.max(dailyDrag.startMin + 15, dailyDrag.currentMin); dailyStagedPreview = [dailyDrag.previewEl, dailyDrag.topLine, dailyDrag.bottomLine, ...hourRail.querySelectorAll('[data-drag]')].filter(Boolean); dailyDrag = null; openDraftModal({ mode: 'create', type: 'daily', track: 'daily', start: date, startMin, endMin, categoryId: '', todos: [] }); return; }
+  if (!addMode || !dragStartDate) return;
+  if (!dragMoved) { dragStartDate = null; clearDragPreview(); return; }
+  const endDate = dateFromTimelineClientX(e.clientX); const start = dragStartDate <= endDate ? dragStartDate : endDate; const end = dragStartDate <= endDate ? endDate : dragStartDate; const daySpan = Math.round((end - start) / DAY_MS);
+  timelineStagedPreview = [dragPreview, dragPreview?._left, dragPreview?._right].filter(Boolean);
+  dragPreview = null; dragStartDate = null; dragMoved = false;
+  openDraftModal({ mode: 'create', type: daySpan >= 1 ? 'range' : 'point', track: daySpan >= 1 ? 'phase' : 'note', start, end, categoryId: '' });
+});
 
 draftCancel.addEventListener('click', closeDraftModal);
 draftCategory.addEventListener('change', () => { if (pendingDraft?.type === 'daily' && pendingDraft?.mode === 'create') { const existing = draftTodos.filter(t => t.state !== 'postponed'); draftTodos = [...getPostponedTodosForCategory(draftCategory.value), ...existing]; renderTodoEditor(); } });
