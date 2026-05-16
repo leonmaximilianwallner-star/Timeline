@@ -1366,7 +1366,7 @@ tlOuter.addEventListener('pointerdown', (e) => {
   }
 
   if (activePointers.size === 1 && addMode) {
-    e.preventDefault();
+    if (e.pointerType !== 'mouse') e.preventDefault();
     const tlRect = tl.getBoundingClientRect();
     const localY = e.clientY - tlRect.top;
     if (isDailyView && localY >= DAY_VIEW.top) {
