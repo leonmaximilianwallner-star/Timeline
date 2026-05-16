@@ -34,7 +34,7 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="manifest" href="manifest.json">
@@ -350,7 +350,8 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
 <div class="header">
   <div class="header-top">
     <span class="title" style="display:inline-flex;align-items:center;gap:10px;">
-      <img src="Timeliner logo.svg" style="width:28px;height:25px;flex-shrink:0;opacity:0.92">
+      <img src="icon-192.png" style="width:28px;height:25px;flex-shrink:0;opacity:0.92">
+      <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" style="width:28px;height:25px;flex-shrink:0;opacity:0.9">
       Timeline 
     </span>
     <div class="header-actions">
@@ -358,7 +359,7 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
       <button class="theme-toggle" id="themeToggle" type="button">Lightmode</button>
     </div>
   </div>
-  <p class="subtitle" id="subtitleRange">Appstate #34</p> 
+  <p class="subtitle" id="subtitleRange">Appversion - changedate - undefined</p> 
 </div>
 
 <section>
@@ -537,6 +538,10 @@ function computeLayout() {
   layout.dailyTop = Math.max(100, y - L.SECT_GAP / 2 + 4);
   return layout;
 }
+const subtitleRange = document.getElementById('subtitleRange');
+const lm = new Date(document.lastModified);
+const months = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+subtitleRange.textContent = `${lm.getDate()}. ${months[lm.getMonth()]} ${lm.getHours()}:${String(lm.getMinutes()).padStart(2,'0')}`;
 
 const tl = document.getElementById('tl');
 const tlOuter = document.getElementById('tlOuter');
