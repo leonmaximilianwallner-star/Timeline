@@ -1,11 +1,15 @@
 {
-  "name": "Timeline PWA",
+  "name": "Timeline",
   "short_name": "Timeline",
-  "start_url": "/",
+  "start_url": ".",
   "display": "standalone",
+  "theme_color": "#111118",
+  "background_color": "#111118",
   "icons": [
     {
-      "src": "/path/to/icon-192.png",
+      "src": "icon-192.png",
       "sizes": "192x192",
       "type": "image/png"
     }
+  ]
+}
