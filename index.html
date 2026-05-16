@@ -1254,8 +1254,6 @@ async function loadFromStorage() {
     const json = await res.json();
     const content = json.files?.[GIST_FILE]?.content;
     if (content && content !== '{}') parsed = JSON.parse(content);
-    }
-
   } catch(e) {}
   if (!parsed) {
     try { const raw = localStorage.getItem(STORAGE_KEY); if (raw) parsed = JSON.parse(raw); } catch(e) {} 
