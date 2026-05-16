@@ -359,7 +359,7 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
       <button class="theme-toggle" id="themeToggle" type="button">Lightmode</button>
     </div>
   </div>
-  <p class="subtitle" id="subtitleRange">Appversion - changedate - undefined</p> 
+  <p class="subtitle" id="subtitleRange">Server currently unavaleable</p> 
 </div>
 
 <section>
@@ -1242,6 +1242,8 @@ function scheduleSyncGist() {
   clearTimeout(gistSyncTimer);
   gistSyncTimer = setTimeout(syncGist, 3000);
 }
+
+function saveToStorage() { saveLocal(); scheduleSyncGist(); }
 
 async function loadFromStorage() {
   let parsed = null;
