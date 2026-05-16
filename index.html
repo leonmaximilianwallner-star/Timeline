@@ -255,11 +255,11 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
   border-radius: var(--radius-md); 
   background: linear-gradient(180deg, var(--timeline-grad-start) 0%, var(--timeline-grad-end) 100%); 
   box-shadow: 0 4px 24px rgba(0,0,0,0.55), 0 1px 0 rgba(255,255,255,0.04) inset;
-  touch-action: pan-x pan-y;
+  touch-action: manipulation;
   }
 
   body {
-  touch-action: pan-x pan-y;
+  touch-action: manipulation;
   }
 
 @media (max-width: 600px) {
@@ -359,6 +359,7 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
       <button class="theme-toggle" id="themeToggle" type="button">Lightmode</button>
     </div>
   </div>
+  Appversion last updated; 
   <p class="subtitle" id="subtitleRange">Appversion - changedate - undefined</p> 
 </div>
 
@@ -641,11 +642,17 @@ function computeDayLanes(items) {
   return result;
 }
 
+
+const ROW_HEIGHTS = [22, 44, 66];
+const ROW_H_MIN = 22;
+const ROW_H_MAX = 66;
+let rowHeightLevel = 1;
+let stickyUpdaters = [];
+let pinchStartDist = null;
+let pinchStartRowH = DAY_VIEW.rowHeight;
+
 const expandedPhaseIds = new Set();
 const expandedDailyIds = new Set();
-let rowHeightLevel = 1;
-const ROW_HEIGHTS = [22, 44, 66];
-let stickyUpdaters = [];
 
 const COLOR_PALETTE = {
   blue:   { bg:'var(--cat-blue-bg)',   fg:'var(--cat-blue-fg)',   border:'var(--cat-blue-border)',   label:'Blau' },
