@@ -1,9 +1,33 @@
 <!-- STRUCTURE
-  CSS: line 9–924
-  HTML: line 925–1047
-  DATA: line 1302–1406
-  RENDER: renderGrid() 1812, renderPhaseBar() 1940, renderAll() 2580
-  EVENTS: mousedown 2625, mousemove 2727, mouseup 2835
+  Table of Contents — index.html (1629 lines)
+1–19 — Head / Meta
+Icons, viewport, font imports, manifest link.
+20–322 — CSS
+All visual styling. Variables, layout, timeline bars, daily calendar grid, modals, todo items, category pills, animations, toolbar.
+323–448 — HTML Body
+The actual DOM structure — toolbar, toggle buttons, the timeline container, modal markup, settings panel, open points panel. Pure structure, no logic.
+449–516 — Core Data & Layout Engine
+Constants (date range, hardcoded May–July), the placerLanes() and computeLayout() functions that calculate where everything sits on the timeline grid.
+517–596 — State & DOM References
+All getElementById calls, undo/redo stack, drag state variables, view mode flags.
+597–680 — Data Definitions
+The actual content arrays — categories, phases, projects, fixedExams, privateEvents, noteItems, openPoints. This is your hardcoded data.
+681–744 — Utility Functions
+Date math, coordinate conversion, snapping, formatting helpers. Pure functions, no side effects.
+745–910 — Render Helpers
+setAddMode, hover state, the sticky day bar, modal open/close, drag preview drawing, DOM element factories.
+911–1057 — Timeline Rendering
+applyTimelineWidth, renderHourRail, renderGrid, renderTodayLine, renderPhaseBar — draws the horizontal timeline view.
+1058–1231 — Full Render Pass
+renderBaseTimeline() — the big function that orchestrates drawing everything: project rows, phase bars, exams, notes, daily events, the day view calendar grid.
+1232–1264 — Settings & Open Points Render
+renderCategorySection, renderOpenPoints, the day-size strip.
+1265–1299 — renderAll()
+The top-level render function that calls everything, saves to localStorage, updates buttons.
+1300–1516 — Input / Interaction
+All pointer and touch events — drag to create phases, drag to move/resize events, pinch zoom, add mode, long press.
+1517–1629 — Modal Logic & Init
+Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load from localStorage, renderAll() call on startup.
 -->
 
 <!DOCTYPE html>
@@ -11,8 +35,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<link rel="icon" type="image/png" sizes="64x64" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAcCAYAAAB2+A+pAAAACXBIWXMAAAWJAAAFiQFtaJ36AAADbklEQVRIiWL8//9/AgMDAwhTC1yA4gMMDAwPsBrKwMAAAAAA//9i+P//f8N/2oEN////d/j//z/IHgT+/58BAAAA//9ioqJPsQF/BgaG/QwMDBMYGBgE4AoYGBgAAAAA//+itcUwkA8NeojlDAwMAAAAAP//YoEKUAOADDWAYn4sBuozMDA0MDAwFDAwMDAAAAAA///CCHsqYVC8XsCRdBz+///PAAAAAP//opXFMLwAi8UP/v//zwAAAAD//wJlJ1rHLygq7VFEGBgMAQAAAP//YllirAsK93pa2XqHV/hHwwG0ZMTAEAAAAAD//6J5qv7x/Onrv79/f0cRZGBgAAAAAP//ornFLIyMDF/ev/uEIsjAwAAAAAD//wJlJ9oCXj52fjFxMRRLGBgYAAAAAP//Itbig9BE8gFaDhMNYvv6oxkYGFJQNDAwXAAAAAD//yJk8UJQpo85exl3YY8fgAqTUDQlHxkYGDYAAAAA///CZ/HCmLOXKam1QCUUKMegl2ILGBgYGAAAAAD//8Jl8UY8lsKKRmxAASoXwMDAII9FAci3DQwMDAwAAAAA///CZTGoNsEGHEDBhKMsJgRAloL0f2BgYGAAAAAA///Cmp1izl7GVXFgCzqC4P+/f5+hlkISJgMDAwAAAP//IjUfk5TIQAXH7hnTv3ZZmb9dYqyLqI8ZGBgAAAAA//9iXGykA4rL+Wh6HHH4GhSHoKAGVXE4LXty9errS7t3811eu+qX+M/vYuxMjKjmMjAwAAAAAP//AlkMMuw+mv6DMWcvg4KGKJCjogxPcAIszLEyHKyePMxMklg0PwSpizl7+QMAAAD//wLXTkuMdUFhj+6Lxpizl8EpkBywxFgXFJKgRIqeJibGnL1cAAAAAP//glkMSv7rsVgAKrEKYs5eJqm0goElxrqgUDgEKjhRJBgYBAEAAAD//4LXx0uMdUFxB2qcYQOgIMLXXH0Qc/YyuGDAYnkHAwNDOYogA0MiAAAA//9CthgUTyDDcSYcAgAchDgsR21tMDA0AgAAAP//gmcnUIRD8xqofCYH4CteL6LwGBgYAAAAAP//QsnHIMuhRaUjNH5JAfjyOCjnIAADAwMAAAD//8JaZELzmsMSY12QBlDCA4UEKCpAfGxlMDgRYjMLagZqymZgYAAAAAD//wMAMRXmqhWq7s4AAAAASUVORK5CYII=" />
-<!-- Chrome Android homescreen Icon -->
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="manifest" href="manifest.json">
 <title>Timeline App</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
