@@ -34,7 +34,7 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="manifest" href="manifest.json">
@@ -359,7 +359,6 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
       <button class="theme-toggle" id="themeToggle" type="button">Lightmode</button>
     </div>
   </div>
-  Appversion last updated; 
   <p class="subtitle" id="subtitleRange">Appversion - changedate - undefined</p> 
 </div>
 
@@ -542,7 +541,7 @@ function computeLayout() {
 const subtitleRange = document.getElementById('subtitleRange');
 const lm = new Date(document.lastModified);
 const months = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
-subtitleRange.textContent = `${lm.getDate()}. ${months[lm.getMonth()]} ${lm.getHours()}:${String(lm.getMinutes()).padStart(2,'0')}`;
+subtitleRange.textContent = `Appversion last updated: ${lm.getDate()}. ${months[lm.getMonth()]} ${lm.getHours()}:${String(lm.getMinutes()).padStart(2,'0')}`;
 
 const tl = document.getElementById('tl');
 const tlOuter = document.getElementById('tlOuter');
@@ -1216,9 +1215,15 @@ setInterval(() => { if (isDailyView) renderAll(); }, 60000);
 
 function openQuickEditor(entry) { openDraftModal({ mode: 'edit', type: entry.type, track: entry.track, id: entry.id, title: entry.title, start: entry.start, end: entry.end || entry.start, categoryId: entry.categoryId || '', details: entry.details || '' }); }
 function removeById(id) { phases = phases.filter(x => x.id !== id); privateEvents = privateEvents.filter(x => x.id !== id); fixedExams = fixedExams.filter(x => x.id !== id); noteItems = noteItems.filter(x => x.id !== id); dailyItems = dailyItems.filter(x => x.id !== id); }
-async function saveToStorage() {
+
+function saveLocal() {
   const data = { phases, privateEvents, fixedExams, noteItems, categories, projects, dailyItems, openPoints, savedAt: new Date().toISOString() };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+let gistSyncTimer = null;
+async function syncGist() {
+  const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
   try {
     saveBtn.textContent = 'Syncing…';
     await fetch(`https://api.github.com/gists/${GIST_ID}`, {
@@ -1226,12 +1231,18 @@ async function saveToStorage() {
       headers: { 'Authorization': `token ${getToken()}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ files: { [GIST_FILE]: { content: JSON.stringify(data) } } })
     });
-    saveBtn.textContent = 'Saved';
+    saveBtn.textContent = 'Synced';
   } catch(e) {
-    saveBtn.textContent = 'Gespeichert (lokal)';
+    saveBtn.textContent = 'Local only';
   }
   setTimeout(() => { saveBtn.textContent = 'Save'; }, 1500);
 }
+
+function scheduleSyncGist() {
+  clearTimeout(gistSyncTimer);
+  gistSyncTimer = setTimeout(syncGist, 3000);
+}
+
 async function loadFromStorage() {
   let parsed = null;
   try {
@@ -1241,12 +1252,6 @@ async function loadFromStorage() {
     const json = await res.json();
     const content = json.files?.[GIST_FILE]?.content;
     if (content && content !== '{}') parsed = JSON.parse(content);
-
-    // show last saved date in subtitle
-    if (json.updated_at) { // e.g. "2026-05-15T14:32:00Z"
-      const d = new Date(json.updated_at);
-      document.getElementById('subtitleRange').textContent =
-        ` · last change ${formatDateEN(d)} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
     }
 
   } catch(e) {}
@@ -1270,7 +1275,9 @@ function renderCategorySection() {
   picker.innerHTML = '';
   PALETTE_KEYS.forEach(key => { const pal = COLOR_PALETTE[key]; const sw = document.createElement('span'); sw.className = 'cat-swatch' + (key === selectedCatColor ? ' selected' : ''); sw.title = pal.label; sw.style.background = pal.fg; sw.style.borderColor = key === selectedCatColor ? 'var(--text)' : 'transparent'; sw.addEventListener('click', () => { selectedCatColor = key; renderCategorySection(); }); picker.appendChild(sw); });
   catList.innerHTML = '';
-  categories.forEach(cat => { const pal = COLOR_PALETTE[cat.colorKey] || COLOR_PALETTE.gray; const chip = document.createElement('span'); chip.className = 'cat-chip'; chip.style.background = pal.bg; chip.style.color = pal.fg; chip.style.borderColor = pal.border; const dot = document.createElement('span'); dot.style.cssText = `display:inline-block;width:8px;height:8px;border-radius:50%;background:${pal.fg};flex-shrink:0`; const name = document.createElement('span'); name.className = 'cat-chip-name'; name.textContent = cat.name; const del = document.createElement('span'); del.className = 'cat-chip-del'; del.textContent = '×'; del.title = 'Löschen'; del.addEventListener('click', () => { categories = categories.filter(c => c.id !== cat.id); renderCategorySection(); renderAll(); }); chip.append(dot, name, del); catList.appendChild(chip); });
+  categories.forEach(cat => { const pal = COLOR_PALETTE[cat.colorKey] || COLOR_PALETTE.gray; const chip = document.createElement('span'); chip.className = 'cat-chip'; chip.style.background = pal.bg; chip.style.color = pal.fg; chip.style.borderColor = pal.border; const dot = document.createElement('span'); dot.style.cssText = `display:inline-block;width:8px;height:8px;border-radius:50%;background:${pal.fg};flex-shrink:0`; const name = document.createElement('span'); name.className = 'cat-chip-name'; name.textContent = cat.name; const del = document.createElement('span'); del.className = 'cat-chip-del'; del.textContent = '×'; del.title = 'Löschen'; del.addEventListener('click', () => { categories = categories.filter(c => c.id !== cat.id); 
+  renderCategorySection(); 
+  renderAll(); }); chip.append(dot, name, del); catList.appendChild(chip); });
   addBtn.onclick = () => { const name = nameInput.value.trim(); if (!name) return; categories.push({ id: crypto.randomUUID(), name, colorKey: selectedCatColor }); nameInput.value = ''; renderCategorySection(); renderAll(); };
   nameInput.onkeydown = (e) => { if (e.key === 'Enter') addBtn.click(); };
 }
@@ -1312,6 +1319,8 @@ function renderAll() {
   updateStickyElements();
   renderDaySizeStrip();
   updateDayStickBar();
+  saveLocal();
+  scheduleSyncGist();
 }
 
 draftDetails.addEventListener('input', updateEditorEmptyState);
@@ -1324,7 +1333,7 @@ document.querySelectorAll('.editor-toolbar button[data-cmd]').forEach(btn => {
 if (fontSizeSelect) { fontSizeSelect.addEventListener('change', (evt) => { document.execCommand('fontSize', false, evt.target.value); draftDetails.focus(); }); fontSizeSelect.addEventListener('mousedown', (evt) => evt.stopPropagation()); }
 
 viewToggle.addEventListener('click', () => { isDailyView = !isDailyView; renderAll(); });
-saveBtn.addEventListener('click', saveToStorage);
+saveBtn.addEventListener('click', syncGist);
 addToggle.addEventListener('click', () => setAddMode(!addMode));
 
 tlOuter.addEventListener('scroll', () => {
