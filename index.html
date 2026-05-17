@@ -208,9 +208,9 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
   .daily-hover-line { position: absolute; left: 0; right: 0; height: 2px; pointer-events: none; z-index: 8; background: var(--text); opacity: 0.42; display: none; }
   .timeline-hover-line { position: absolute; top: 0; bottom: 0; width: 2px; pointer-events: none; z-index: 1; background: var(--text); opacity: 0.42; display: none; }
   .timeline-hover-label { position: absolute; font-size: 10px; font-family: var(--ui-font); color: var(--text); opacity: 0.7; pointer-events: none; z-index: 9; display: none; transform: translateX(-50%); white-space: nowrap; background: var(--surface); padding: 1px 5px; border-radius: 3px; }
-  /* sticky day-of-week bar — position:absolute so it's out of flow; JS translateY pins it to viewport top */
-  #dayStickBar { position: absolute; top: 0; left: 0; z-index: 10; display: none; overflow: hidden; height: 22px; background: var(--surface); border-bottom: 1px solid var(--border); }
-  #dayStickInner { position: absolute; top: 0; left: 0; height: 100%; will-change: transform; }
+  /* sticky inline day bar — pure CSS sticky positioning, GPU compositor handles everything */
+  #inlineDayBar { position: sticky; top: 0; height: 14px; z-index: 10; pointer-events: none; }
+  #inlineDayBarHost { position: absolute; left: 0; right: 0; top: 0; pointer-events: none; }
   .day-size-strip { position: absolute; left: 0; right: 0; height: 20px; display: flex; align-items: center; justify-content: center; cursor: ns-resize; z-index: 30; }
   .day-size-strip::before { content: ''; width: 48px; height: 4px; border-radius: 2px; background: var(--text2); opacity: 0; transition: opacity .15s; }
   .day-size-strip:hover::before { opacity: 0.45; }
@@ -288,7 +288,7 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
   }
 }
   .tl-inner { position: relative; height: 250px; min-width: 0px; }
-  .hour-rail { position: absolute; left: 0; top: 0; width: 68px; height: 120px; border-right: 1px solid var(--border); background: rgba(0,0,0,0.18); display: none; pointer-events: none; z-index: 8; box-shadow: inset -1px 0 0 rgba(255,255,255,0.06); will-change: transform; }
+  .hour-rail { position: sticky; left: 0; width: 68px; height: 120px; border-right: 1px solid var(--border); background: rgba(0,0,0,0.18); display: none; pointer-events: none; z-index: 8; box-shadow: inset -1px 0 0 rgba(255,255,255,0.06); }
   .hour-rail.light { background: rgba(255,255,255,0.62); }
   .hour-label { position: absolute; left: 16px; transform: translateY(-50%); font-size: 10px; font-family: var(--mono-font); color: var(--text); opacity: 0.95; white-space: nowrap; }
   .today-note { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--danger-fg); opacity: 0.85; margin-top: 10px; }
@@ -387,7 +387,6 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
     </div>
   </div>
   <div class="tl-outer" id="tlOuter">
-    <div id="dayStickBar"><div id="dayStickInner"></div></div>
     <div id="tl" class="tl-inner"></div>
     <div id="hourRail" class="hour-rail"></div>
   </div>
@@ -646,11 +645,8 @@ const ROW_HEIGHTS = [22, 44, 66];
 const ROW_H_MIN = 22;
 const ROW_H_MAX = 66;
 let rowHeightLevel = 1;
-let stickyUpdaters = [];
 let pinchStartDist = null;
 let pinchStartRowH = DAY_VIEW.rowHeight;
-let touchCreateState = null;
-let touchCreateTimer = null;
 
 const expandedPhaseIds = new Set();
 const expandedDailyIds = new Set();
@@ -806,42 +802,8 @@ function setTimelineHover(date) {
   }
 }
 
-// dayStickBar: position:absolute in tlOuter, out of flow.
-// Vertical sticking: syncStickBar() offsets bar.top by how far tlOuter has scrolled past viewport top.
-// Horizontal: bar spans full tl width and scrolls naturally with content — labels auto-align.
-// Mirrors the pattern of hourRail which uses translateX(scrollLeft) to stay at the left edge.
-function syncStickBar() {
-  const bar = document.getElementById('dayStickBar');
-  if (!bar || !isDailyView) return;
-  const gone = -tlOuter.getBoundingClientRect().top;
-  bar.style.top = Math.max(0, gone) + 'px';
-}
-
-function updateDayStickBar() {
-  const bar   = document.getElementById('dayStickBar');
-  const inner = document.getElementById('dayStickInner');
-  if (!bar || !inner) return;
-  if (!isDailyView) { bar.style.display = 'none'; return; }
-  const weekdays = ['So','Mo','Di','Mi','Do','Fr','Sa'];
-  const fullW = tl.offsetWidth || 700;
-  bar.style.display = 'block';
-  bar.style.width   = fullW + 'px';
-  inner.style.width = fullW + 'px';
-  inner.style.transform = '';
-  if (!inner.dataset.built) {
-    inner.dataset.built = '1';
-    inner.innerHTML = '';
-    for (let d = new Date(S); d < E; d = new Date(d.getTime() + DAY_MS)) {
-      const cx = pctCenterFromDate(d);
-      const isToday = d.toDateString() === new Date().toDateString();
-      const lbl = document.createElement('span');
-      lbl.style.cssText = `position:absolute;left:${cx}%;transform:translateX(-50%);font-size:10px;font-family:var(--ui-font);color:${isToday ? 'var(--danger-fg)' : 'var(--text2)'};top:3px;white-space:nowrap;letter-spacing:.04em;`;
-      lbl.textContent = weekdays[d.getDay()];
-      inner.appendChild(lbl);
-    }
-  }
-  syncStickBar();
-}
+// Inline day bar: rendered inside tl, uses pure CSS position:sticky for vertical stickiness.
+// Browser's compositor thread handles everything — zero JS on scroll.
 
 function styleFromColorKey(colorKey, fallbackBg, fallbackFg) { const pal = COLOR_PALETTE[colorKey]; if (pal) return { bg: pal.bg, fg: pal.fg, border: pal.border }; return { bg: fallbackBg || 'var(--cat-gray-bg)', fg: fallbackFg || 'var(--cat-gray-fg)', border: 'var(--cat-gray-border)' }; }
 
@@ -956,15 +918,13 @@ function applyTimelineWidth() {
   const tlH = isDailyView ? dayViewBottom() + 32 : (currentLayout ? currentLayout.totalH : 250);
   tl.style.height = `${tlH}px`;
   tlOuter.style.overflowX = isDailyView ? 'auto' :
-  tlOuter.style.overflowY = isDailyView ? 'auto' : 'hidden';
+  tlOuter.style.overflowY = 'clip';  // clip (not auto) doesn't create a scroll container — sticky escapes to window
   hourRail.style.display = isDailyView ? 'block' : 'none';
   if (document.documentElement.getAttribute('data-theme') === 'light') hourRail.classList.add('light');
   else hourRail.classList.remove('light');
-  // hourRail: position:absolute in tlOuter, stays at left via translateX(scrollLeft)
-  // dayStickBar: position:absolute in tlOuter, stays at top via syncStickBar() on window scroll
-  hourRail.style.top       = `${DAY_VIEW.top}px`;
+  // hourRail: position:sticky inside tl — left:0 sticks to tlOuter viewport, transform sets vertical offset
+  hourRail.style.transform = `translateY(${DAY_VIEW.top}px)`;
   hourRail.style.height    = `${dayViewHeight()}px`;
-  hourRail.style.transform = `translateX(${isDailyView ? tlOuter.scrollLeft : 0}px)`;
   if (!isDailyView) tlOuter.scrollLeft = 0;
 }
 
@@ -1000,11 +960,27 @@ function renderGrid() {
   }
   if (detailed) {
     viewToggle.textContent = 'Line';
+    // Sticky inline day bar: pure CSS position:sticky.
+    // Host is absolutely-positioned (taking 0 flow space, doesn't affect hourRail) and tall enough for the sticky range.
+    const host = document.createElement('div');
+    host.id = 'inlineDayBarHost';
+    host.style.height = `${DAY_VIEW.top + dayViewHeight()}px`;
+    // Sentinel: pushes the sticky bar's natural position down to DAY_VIEW.top - 16
+    const sentinel = document.createElement('div');
+    sentinel.style.cssText = `height:${DAY_VIEW.top - 16}px;pointer-events:none;`;
+    host.appendChild(sentinel);
+    const bar = document.createElement('div');
+    bar.id = 'inlineDayBar';
     for (let d = new Date(S); d < E; d = new Date(d.getTime() + DAY_MS)) {
       const cx = pctCenterFromDate(d);
       const isToday = d.toDateString() === new Date().toDateString();
-      mk(`position:absolute;left:${cx}%;top:${DAY_VIEW.top - 16}px;font-size:10px;color:${isToday ? 'var(--danger-fg)' : 'var(--text2)'};transform:translateX(-50%);white-space:nowrap;font-family:var(--ui-font);letter-spacing:.04em`, weekdays[d.getDay()]);
+      const lbl = document.createElement('span');
+      lbl.style.cssText = `position:absolute;left:${cx}%;top:0;font-size:10px;color:${isToday ? 'var(--danger-fg)' : 'var(--text2)'};transform:translateX(-50%);white-space:nowrap;font-family:var(--ui-font);letter-spacing:.04em`;
+      lbl.textContent = weekdays[d.getDay()];
+      bar.appendChild(lbl);
     }
+    host.appendChild(bar);
+    tl.appendChild(host);
     mk(`position:absolute;left:0;right:0;top:${DAY_VIEW.top}px;height:${dayViewHeight()}px;border-top:1px solid var(--border);border-bottom:1px solid var(--border)`);
     for (let h = DAY_VIEW.fromHour; h <= DAY_VIEW.toHour; h++) { const y = hourLineY(h); const alpha = h % 3 === 0 ? 0.22 : 0.12; mk(`position:absolute;left:0;right:0;top:${y}px;height:1px;background:var(--grid-major);opacity:${alpha}`); }
     if (!document.getElementById('dailyHoverLine')) { const hl = document.createElement('div'); hl.id = 'dailyHoverLine'; hl.className = 'daily-hover-line'; tl.appendChild(hl); }
@@ -1065,7 +1041,7 @@ function renderPhaseBar(ph, phaseTop) {
   const hasDesc = !!(ph.details && ph.details.trim());
   const e = mk(`position:absolute;top:${phaseTop}px;left:${pctFromDate(ph.f)}%;width:${widthPct(ph.f, ph.t)}%;height:${L.ITEM_H}px;border-radius:9999px;display:flex;align-items:center;padding:0 10px;${itemFont()};letter-spacing:0.03em;overflow:hidden;white-space:nowrap;background:${barBg};color:${barText};border:1px solid ${barHex}40;box-shadow:0 2px 8px rgba(0,0,0,0.45);z-index:2`);
   const stickyGroup = document.createElement('span');
-  stickyGroup.style.cssText = 'display:inline-flex;align-items:center;pointer-events:none;will-change:transform;flex-shrink:0;';
+  stickyGroup.style.cssText = 'display:inline-flex;align-items:center;pointer-events:none;flex-shrink:0;position:sticky;left:10px;';
   if (hasDesc) {
     const arrow = document.createElement('span'); arrow.className = 'phase-arrow'; arrow.style.pointerEvents = 'auto'; arrow.style.borderColor = barText;
     arrow.textContent = expandedPhaseIds.has(ph.id) ? '▾' : '▸';
@@ -1080,15 +1056,15 @@ function renderPhaseBar(ph, phaseTop) {
   e.addEventListener('mouseleave', () => { if (!resizeDrag) e.style.cursor = 'pointer'; });
   e.addEventListener('mousedown', (evt) => { if (addMode) return; const lx = evt.clientX - e.getBoundingClientRect().left; const EDGE = Math.min(10, e.offsetWidth * 0.2); if (lx <= EDGE) startResize(ph, 'left', e, evt); else if (lx >= e.offsetWidth - EDGE) startResize(ph, 'right', e, evt); });
   e.onclick = () => { if (Date.now() - lastResizeEnd < 200) return; openQuickEditor({ id:ph.id, type:'range', track:'phase', title:ph.l, start:ph.f, end:toISODate(new Date(dateFromISO(ph.t).getTime()-DAY_MS)), categoryId:ph.categoryId, details:ph.details }); };
-  const beamF = ph.f, beamT = ph.t;
-  stickyUpdaters.push((scroll) => { const tlW = tl.offsetWidth; const beamLeft = (pctFromDate(beamF) / 100) * tlW; const beamWidth = (widthPct(beamF, beamT) / 100) * tlW; const groupW = stickyGroup.scrollWidth || 60; const raw = Math.max(0, scroll - beamLeft); stickyGroup.style.transform = `translateX(${Math.min(raw, Math.max(0, beamWidth - groupW - 12))}px)`; });
   if (hasDesc && expandedPhaseIds.has(ph.id)) {
     const tlW = tl.offsetWidth; const bL = (pctFromDate(ph.f) / 100) * tlW; const bR = bL + (widthPct(ph.f, ph.t) / 100) * tlW; const DW = Math.min(320, Math.max(160, bR - bL));
+    // wrapper sits at the phase bar's full horizontal extent; box inside is sticky-left within it
+    const wrap = document.createElement('div');
+    wrap.style.cssText = `position:absolute;top:${phaseTop + L.ITEM_H + 6}px;left:${pctFromDate(ph.f)}%;width:${widthPct(ph.f, ph.t)}%;pointer-events:none;`;
     const box = document.createElement('div'); box.className = 'phase-details'; box.innerHTML = ph.details;
-    box.style.top = `${phaseTop + L.ITEM_H + 6}px`; box.style.width = `${DW}px`;
-    box.style.background = `color-mix(in srgb, ${barHex} 30%, #0d0d10 70%)`; box.style.color = '#dddcdc'; box.style.borderColor = `${barHex}60`;
-    tl.appendChild(box);
-    stickyUpdaters.push((scroll) => { const w = tl.offsetWidth; const bl = (pctFromDate(ph.f) / 100) * w; const br = bl + (widthPct(ph.f, ph.t) / 100) * w; box.style.left = `${Math.max(bl, Math.min(scroll + 8, Math.max(bl, br - DW)))}px`; });
+    box.style.cssText += `;position:sticky;left:8px;width:${DW}px;background:color-mix(in srgb, ${barHex} 30%, #0d0d10 70%);color:#dddcdc;border-color:${barHex}60;pointer-events:auto;`;
+    wrap.appendChild(box);
+    tl.appendChild(wrap);
   }
 }
 
@@ -1298,8 +1274,6 @@ function renderOpenPoints() {
   const addCard = document.createElement('div'); addCard.className = 'op-add-card'; addCard.textContent = '+ Neue Gruppe'; addCard.onclick = () => { openPoints.push({ id: crypto.randomUUID(), title: 'Neue Gruppe', colorKey: PALETTE_KEYS[openPoints.length % PALETTE_KEYS.length], items: [{ id: crypto.randomUUID(), text: 'Erster Punkt', done: false }] }); renderOpenPoints(); saveToStorage(); }; td.appendChild(addCard);
 }
 
-function updateStickyElements() { const scroll = tlOuter.scrollLeft; stickyUpdaters.forEach(fn => fn(scroll)); }
-
 function renderDaySizeStrip() {
   let strip = document.getElementById('daySizeStrip');
   if (!strip) { strip = document.createElement('div'); strip.id = 'daySizeStrip'; strip.className = 'day-size-strip'; strip.style.pointerEvents = 'auto'; strip.addEventListener('mousedown', (e) => { e.preventDefault(); e.stopPropagation(); daySizeDrag = { startY: e.clientY, startLevel: rowHeightLevel }; strip.classList.add('dragging'); document.body.style.cursor = 'ns-resize'; document.body.style.userSelect = 'none'; }); tl.appendChild(strip); } else if (strip.parentElement !== tl) { tl.appendChild(strip); }
@@ -1309,18 +1283,16 @@ function renderDaySizeStrip() {
 
 function renderAll() {
   DAY_VIEW.rowHeight = ROW_HEIGHTS[rowHeightLevel];
-  stickyUpdaters = [];
   currentLayout = computeLayout();
   DAY_VIEW.top = currentLayout.dailyTop;
   tl.innerHTML = '';
+  tl.appendChild(hourRail); // sticky: must live inside the wide scroll content for left:0 to track viewport
   applyTimelineWidth();
   renderGrid();
   renderBaseTimeline();
   renderTodayLine();
   renderHourRail();
-  updateStickyElements();
   renderDaySizeStrip();
-  updateDayStickBar();
   saveLocal();
   scheduleSyncGist();
 }
@@ -1338,11 +1310,7 @@ viewToggle.addEventListener('click', () => { isDailyView = !isDailyView; renderA
 saveBtn.addEventListener('click', syncGist);
 addToggle.addEventListener('click', () => setAddMode(!addMode));
 
-tlOuter.addEventListener('scroll', () => {
-  if (isDailyView) hourRail.style.transform = `translateX(${tlOuter.scrollLeft}px)`;
-  updateStickyElements();
-  updateDayStickBar();
-});
+// No scroll listener needed — hour rail, day bar, and phase text all use pure CSS sticky now.
 
 // ── Touch support ──────────────────────────────────────────────
 function normTouch(e) {
@@ -1367,41 +1335,6 @@ tlOuter.addEventListener('pointerdown', (e) => {
     return;
   }
 
-  // Long-press-to-create (touch only, when not already in add mode)
-  if (e.pointerType === 'touch' && !addMode && activePointers.size === 1) {
-    const tlRect = tl.getBoundingClientRect();
-    const localY = e.clientY - tlRect.top;
-    const localX = e.clientX - tlRect.left;
-
-    const ripple = document.createElement('div');
-    ripple.style.cssText = `position:absolute;width:44px;height:44px;margin:-22px;border-radius:50%;background:var(--text);opacity:0;transform:scale(0);pointer-events:none;z-index:100;left:${localX}px;top:${localY}px;transition:transform 0.5s ease,opacity 0.5s ease;`;
-    tl.appendChild(ripple);
-    requestAnimationFrame(() => { ripple.style.transform = 'scale(1)'; ripple.style.opacity = '0.25'; });
-
-    touchCreateState = { pointerId: e.pointerId, startX: e.clientX, startY: e.clientY, phase: 'holding', ripple };
-
-    touchCreateTimer = setTimeout(() => {
-      if (!touchCreateState || touchCreateState.phase !== 'holding') return;
-      touchCreateState.phase = 'dragging';
-      touchCreateState.ripple?.remove();
-      if (navigator.vibrate) navigator.vibrate(30);
-
-      const tlRect = tl.getBoundingClientRect();
-      const localY = touchCreateState.startY - tlRect.top;
-      if (isDailyView && localY >= DAY_VIEW.top) {
-        const date = dateFromTimelineClientX(touchCreateState.startX);
-        const m = minFromLocalY(localY);
-        dailyDrag = { date, startMin: m, currentMin: m, previewEl: null };
-        drawDailyPreview();
-      } else {
-        dragStartDate = dateFromTimelineClientX(touchCreateState.startX);
-        dragMoved = false;
-        clearDragPreview();
-      }
-    }, 500);
-    return;
-  }
-
   if (activePointers.size === 1 && addMode) {
     if (e.pointerType !== 'mouse') e.preventDefault();
     const tlRect = tl.getBoundingClientRect();
@@ -1420,16 +1353,6 @@ tlOuter.addEventListener('pointerdown', (e) => {
 });
 
 tlOuter.addEventListener('pointermove', (e) => {
-  // Cancel long-press if finger moved too much (it's a scroll)
-  if (touchCreateState?.phase === 'holding' && e.pointerId === touchCreateState.pointerId) {
-    if (Math.hypot(e.clientX - touchCreateState.startX, e.clientY - touchCreateState.startY) > 8) {
-      clearTimeout(touchCreateTimer);
-      touchCreateState.ripple?.remove();
-      touchCreateState = null;
-    }
-    return;
-  }
-
   if (!activePointers.has(e.pointerId)) return;
   activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
@@ -1453,11 +1376,6 @@ tlOuter.addEventListener('pointermove', (e) => {
 const endPointer = (e) => {
   activePointers.delete(e.pointerId);
   if (activePointers.size < 2) pinchStartDist = null;
-  if (touchCreateState && e.pointerId === touchCreateState.pointerId) {
-    clearTimeout(touchCreateTimer);
-    touchCreateState.ripple?.remove();
-    touchCreateState = null;
-  }
 };
 tlOuter.addEventListener('pointerup', endPointer);
 tlOuter.addEventListener('pointercancel', endPointer);
@@ -1597,8 +1515,6 @@ function addItemTouchDrag(el, item) {
   el.addEventListener('touchmove',  () => { clearTimeout(timer); timer = null; }, { passive: true });
   el.addEventListener('touchend',   () => { clearTimeout(timer); timer = null; }, { passive: true });
 }
-// Page-level vertical scroll: keeps dayStickBar pinned to the top of the visible tlOuter area
-window.addEventListener('scroll', syncStickBar, { passive: true });
 
 tlOuter.addEventListener('mouseleave', () => { setDailyHover(null); setTimelineHover(null); });
 
