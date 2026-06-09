@@ -103,7 +103,7 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
     --cat-amber-bg:#fff3e0; --cat-amber-fg:#c27000; --cat-amber-border:#f0c060;
     --cat-green-bg:#edf6e0; --cat-green-fg:#4a7a20; --cat-green-border:#a8d870;
     --cat-teal-bg:#e6f3f4;  --cat-teal-fg:#2a6870; --cat-teal-border:#88c0c8;
-    --cat-gray-bg:#f0eee8;  --cat-gray-fg:#58566060; --cat-gray-border:#c8c4ba;
+    --cat-gray-bg:#f0eee8;  --cat-gray-fg:#585660; --cat-gray-border:#c8c4ba;
     --cat-purple-bg:#f2eaf8; --cat-purple-fg:#5a2070; --cat-purple-border:#c090e0;
     --cat-orange-bg:#fceaf2; --cat-orange-fg:#a04068; --cat-orange-border:#e090b8;
   }
@@ -208,9 +208,10 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
   .daily-hover-line { position: absolute; left: 0; right: 0; height: 2px; pointer-events: none; z-index: 8; background: var(--text); opacity: 0.42; display: none; }
   .timeline-hover-line { position: absolute; top: 0; bottom: 0; width: 2px; pointer-events: none; z-index: 1; background: var(--text); opacity: 0.42; display: none; }
   .timeline-hover-label { position: absolute; font-size: 10px; font-family: var(--ui-font); color: var(--text); opacity: 0.7; pointer-events: none; z-index: 9; display: none; transform: translateX(-50%); white-space: nowrap; background: var(--surface); padding: 1px 5px; border-radius: 3px; }
-  /* sticky inline day bar — pure CSS sticky positioning, GPU compositor handles everything */
-  #inlineDayBar { position: sticky; top: 0; height: 14px; z-index: 10; pointer-events: none; }
-  #inlineDayBarHost { position: absolute; left: 0; right: 0; top: 0; pointer-events: none; }
+  /* Day-of-week bar: sibling of tlOuter so no overflow ancestor can trap it.
+     Vertical pinning = pure CSS sticky. Horizontal = inner translateX(-scrollLeft). */
+  #dayStickBar { position: sticky; top: 0; z-index: 60; display: none; overflow: hidden; height: 22px; background: var(--surface); border-bottom: 1px solid var(--border); }
+  #dayStickInner { position: relative; height: 100%; will-change: transform; }
   .day-size-strip { position: absolute; left: 0; right: 0; height: 20px; display: flex; align-items: center; justify-content: center; cursor: ns-resize; z-index: 30; }
   .day-size-strip::before { content: ''; width: 48px; height: 4px; border-radius: 2px; background: var(--text2); opacity: 0; transition: opacity .15s; }
   .day-size-strip:hover::before { opacity: 0.45; }
@@ -280,7 +281,7 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
     top: 28px;
     z-index: 50;
     background: transparent;
-    padding: 8px -8px;
+    padding: 8px 0;
     justify-content: flex-end;
   }
   section:first-of-type {
@@ -288,7 +289,7 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
   }
 }
   .tl-inner { position: relative; height: 250px; min-width: 0px; }
-  .hour-rail { position: sticky; left: 0; width: 68px; height: 120px; border-right: 1px solid var(--border); background: rgba(0,0,0,0.18); display: none; pointer-events: none; z-index: 8; box-shadow: inset -1px 0 0 rgba(255,255,255,0.06); }
+  .hour-rail { position: absolute; left: 0; top: 0; width: 68px; height: 120px; border-right: 1px solid var(--border); background: rgba(0,0,0,0.18); display: none; pointer-events: none; z-index: 8; box-shadow: inset -1px 0 0 rgba(255,255,255,0.06); will-change: transform; }
   .hour-rail.light { background: rgba(255,255,255,0.62); }
   .hour-label { position: absolute; left: 16px; transform: translateY(-50%); font-size: 10px; font-family: var(--mono-font); color: var(--text); opacity: 0.95; white-space: nowrap; }
   .today-note { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--danger-fg); opacity: 0.85; margin-top: 10px; }
@@ -350,8 +351,7 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
 <div class="header">
   <div class="header-top">
     <span class="title" style="display:inline-flex;align-items:center;gap:10px;">
-      <img src="icon-192.png" style="width:28px;height:25px;flex-shrink:0;opacity:0.92">
-      <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" style="width:28px;height:25px;flex-shrink:0;opacity:0.9">
+      <img src="icon-192.png" alt="" style="width:28px;height:25px;flex-shrink:0;opacity:0.92">
       Timeline 
     </span>
     <div class="header-actions">
@@ -386,6 +386,7 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
       <button class="view-toggle" id="viewToggle" type="button">Dayly</button>
     </div>
   </div>
+  <div id="dayStickBar"><div id="dayStickInner"></div></div>
   <div class="tl-outer" id="tlOuter">
     <div id="tl" class="tl-inner"></div>
     <div id="hourRail" class="hour-rail"></div>
@@ -559,7 +560,8 @@ const saveBtn       = document.getElementById('saveBtn');
 let undoStack = [], redoStack = [];
 const MAX_UNDO = 50;
 function snapshotState() { return JSON.stringify({ phases, privateEvents, fixedExams, noteItems, categories, projects, dailyItems, openPoints }); }
-function pushUndo() { undoStack.push(snapshotState()); if (undoStack.length > MAX_UNDO) undoStack.shift(); redoStack = []; updateUndoButtons(); }
+function pushUndoSnap(snap) { undoStack.push(snap); if (undoStack.length > MAX_UNDO) undoStack.shift(); redoStack = []; updateUndoButtons(); }
+function pushUndo() { pushUndoSnap(snapshotState()); }
 function restoreSnapshot(snap) {
   const d = JSON.parse(snap);
   if (d.phases)        phases        = d.phases;
@@ -577,8 +579,8 @@ settingsBtn.addEventListener('click', () => settingsModal.classList.add('open'))
 settingsClose.addEventListener('click', () => settingsModal.classList.remove('open'));
 settingsModal.addEventListener('click', (e) => { if (e.target === settingsModal) settingsModal.classList.remove('open'); });
 
-undoBtn.addEventListener('click', () => { if (!undoStack.length) return; redoStack.push(snapshotState()); restoreSnapshot(undoStack.pop()); updateUndoButtons(); renderAll(); renderOpenPoints(); renderCategorySection(); });
-redoBtn.addEventListener('click', () => { if (!redoStack.length) return; undoStack.push(snapshotState()); restoreSnapshot(redoStack.pop()); updateUndoButtons(); renderAll(); renderOpenPoints(); renderCategorySection(); });
+undoBtn.addEventListener('click', () => { if (!undoStack.length) return; redoStack.push(snapshotState()); restoreSnapshot(undoStack.pop()); updateUndoButtons(); persist(); renderAll(); renderOpenPoints(); renderCategorySection(); });
+redoBtn.addEventListener('click', () => { if (!redoStack.length) return; undoStack.push(snapshotState()); restoreSnapshot(redoStack.pop()); updateUndoButtons(); persist(); renderAll(); renderOpenPoints(); renderCategorySection(); });
 
 const draftModal    = document.getElementById('draftModal');
 const draftHeading  = document.getElementById('draftHeading');
@@ -645,6 +647,7 @@ const ROW_HEIGHTS = [22, 44, 66];
 const ROW_H_MIN = 22;
 const ROW_H_MAX = 66;
 let rowHeightLevel = 1;
+let stickyUpdaters = [];
 let pinchStartDist = null;
 let pinchStartRowH = DAY_VIEW.rowHeight;
 
@@ -755,16 +758,30 @@ let editingTimelineId = null;
 const GIST_ID   = '344af17ed16ff58839527126a76d1eb2';
 const GIST_FILE = 'data.json';
 
-function getToken() {
+function getToken(interactive = false) {
   let token = localStorage.getItem('gist_token');
-  if (!token) {
-    token = prompt('GitHub token eingeben:');
-    if (token) localStorage.setItem('gist_token', token.trim());
+  if (!token && interactive) {
+    token = prompt('GitHub token eingeben (leer lassen = nur lokal speichern):');
+    if (token) { token = token.trim(); localStorage.setItem('gist_token', token); }
   }
-  return token;
+  return token || null;
 }
 const STORAGE_KEY = 'bachelor_sprint_planner_v1';
 const typeStyle = { warn: { bg: 'var(--warn-bg)', fg: 'var(--warn-fg)', border: '#4a2800', label: 'Prüfung' }, info: { bg: 'var(--info-bg)', fg: 'var(--info-fg)', border: '#1a3048', label: 'Seminar' }, muted: { bg: 'var(--muted-bg)', fg: 'var(--muted-fg)', border: '#2a2826', label: 'Privat' } };
+
+// Details are user-authored HTML that round-trips through the Gist —
+// treat as untrusted on the way into the DOM.
+function sanitizeHtml(html) {
+  if (!html) return '';
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  doc.querySelectorAll('script,style,iframe,object,embed,link,meta,form').forEach(n => n.remove());
+  doc.querySelectorAll('*').forEach(n => {
+    [...n.attributes].forEach(a => {
+      if (/^on/i.test(a.name) || ((a.name === 'href' || a.name === 'src') && /^\s*javascript:/i.test(a.value))) n.removeAttribute(a.name);
+    });
+  });
+  return doc.body.innerHTML;
+}
 
 function pad(num) { return String(num).padStart(2, '0'); }
 function formatDateDE(dateObj) { const months = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez']; return `${dateObj.getDate()}. ${months[dateObj.getMonth()]} ${dateObj.getFullYear()}`; }
@@ -802,8 +819,30 @@ function setTimelineHover(date) {
   }
 }
 
-// Inline day bar: rendered inside tl, uses pure CSS position:sticky for vertical stickiness.
-// Browser's compositor thread handles everything — zero JS on scroll.
+// dayStickBar: sticky sibling of tlOuter. CSS handles vertical pinning;
+// the only JS job is mirroring horizontal scroll via translateX.
+function updateDayStickBar() {
+  const bar   = document.getElementById('dayStickBar');
+  const inner = document.getElementById('dayStickInner');
+  if (!bar || !inner) return;
+  if (!isDailyView) { bar.style.display = 'none'; return; }
+  const weekdays = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+  bar.style.display = 'block';
+  inner.style.width = (tl.offsetWidth || 700) + 'px';
+  inner.style.transform = `translateX(${-tlOuter.scrollLeft}px)`;
+  if (!inner.dataset.built) {
+    inner.dataset.built = '1';
+    inner.innerHTML = '';
+    for (let d = new Date(S); d < E; d = new Date(d.getTime() + DAY_MS)) {
+      const cx = pctCenterFromDate(d);
+      const isToday = d.toDateString() === new Date().toDateString();
+      const lbl = document.createElement('span');
+      lbl.style.cssText = `position:absolute;left:${cx}%;transform:translateX(-50%);font-size:10px;font-family:var(--ui-font);color:${isToday ? 'var(--danger-fg)' : 'var(--text2)'};top:3px;white-space:nowrap;letter-spacing:.04em;`;
+      lbl.textContent = weekdays[d.getDay()];
+      inner.appendChild(lbl);
+    }
+  }
+}
 
 function styleFromColorKey(colorKey, fallbackBg, fallbackFg) { const pal = COLOR_PALETTE[colorKey]; if (pal) return { bg: pal.bg, fg: pal.fg, border: pal.border }; return { bg: fallbackBg || 'var(--cat-gray-bg)', fg: fallbackFg || 'var(--cat-gray-fg)', border: 'var(--cat-gray-border)' }; }
 
@@ -830,7 +869,7 @@ function openDraftModal({ mode = 'create', type, track, id = null, title = '', s
     draftRepeat.style.display = 'none';
     draftEnd.value = typeof end === 'string' ? end : toISODate(end);
     descWrapper.style.display = ''; todoWrapper.style.display = 'none';
-    draftDetails.innerHTML = details || ''; updateEditorEmptyState();
+    draftDetails.innerHTML = sanitizeHtml(details || ''); updateEditorEmptyState();
   }
   if (fontSizeSelect) fontSizeSelect.value = '3';
   draftDelete.style.display = mode === 'edit' ? 'inline-block' : 'none';
@@ -861,7 +900,14 @@ function renderTodoEditor() {
 }
 
 function updateEditorEmptyState() { draftDetails.classList.toggle('is-empty', !draftDetails.textContent.trim()); }
-function closeDraftModal() { pendingDraft = null; draftModal.classList.remove('open'); clearDailyPreview(); clearTimelineStagedPreview(); }
+function closeDraftModal() { 
+  pendingDraft = null; 
+  draftModal.classList.remove('open'); 
+  clearDailyPreview(); 
+  clearTimelineStagedPreview(); 
+  dailyStagedPreview?.forEach(el => el?.remove());
+  dailyStagedPreview = [];
+}
 
 let timelineStagedPreview = [];
 function clearDragPreview() {
@@ -917,14 +963,17 @@ function applyTimelineWidth() {
   tl.style.width = `${width}px`;
   const tlH = isDailyView ? dayViewBottom() + 32 : (currentLayout ? currentLayout.totalH : 250);
   tl.style.height = `${tlH}px`;
-  tlOuter.style.overflowX = isDailyView ? 'auto' :
-  tlOuter.style.overflowY = 'clip';  // clip (not auto) doesn't create a scroll container — sticky escapes to window
+  tlOuter.style.overflowX = isDailyView ? 'auto' : 'hidden';
+  tlOuter.style.overflowY = 'hidden';
+  tl.style.setProperty('--phase-sticky-left', isDailyView ? `${DAY_VIEW.railWidth + 8}px` : '8px');
   hourRail.style.display = isDailyView ? 'block' : 'none';
   if (document.documentElement.getAttribute('data-theme') === 'light') hourRail.classList.add('light');
   else hourRail.classList.remove('light');
-  // hourRail: position:sticky inside tl — left:0 sticks to tlOuter viewport, transform sets vertical offset
-  hourRail.style.transform = `translateY(${DAY_VIEW.top}px)`;
+  // hourRail: position:absolute in tlOuter, stays at left via translateX(scrollLeft)
+  // dayStickBar: position:absolute in tlOuter, stays at top via syncStickBar() on window scroll
+  hourRail.style.top       = `${DAY_VIEW.top}px`;
   hourRail.style.height    = `${dayViewHeight()}px`;
+  hourRail.style.transform = `translateX(${isDailyView ? tlOuter.scrollLeft : 0}px)`;
   if (!isDailyView) tlOuter.scrollLeft = 0;
 }
 
@@ -960,27 +1009,11 @@ function renderGrid() {
   }
   if (detailed) {
     viewToggle.textContent = 'Line';
-    // Sticky inline day bar: pure CSS position:sticky.
-    // Host is absolutely-positioned (taking 0 flow space, doesn't affect hourRail) and tall enough for the sticky range.
-    const host = document.createElement('div');
-    host.id = 'inlineDayBarHost';
-    host.style.height = `${DAY_VIEW.top + dayViewHeight()}px`;
-    // Sentinel: pushes the sticky bar's natural position down to DAY_VIEW.top - 16
-    const sentinel = document.createElement('div');
-    sentinel.style.cssText = `height:${DAY_VIEW.top - 16}px;pointer-events:none;`;
-    host.appendChild(sentinel);
-    const bar = document.createElement('div');
-    bar.id = 'inlineDayBar';
     for (let d = new Date(S); d < E; d = new Date(d.getTime() + DAY_MS)) {
       const cx = pctCenterFromDate(d);
       const isToday = d.toDateString() === new Date().toDateString();
-      const lbl = document.createElement('span');
-      lbl.style.cssText = `position:absolute;left:${cx}%;top:0;font-size:10px;color:${isToday ? 'var(--danger-fg)' : 'var(--text2)'};transform:translateX(-50%);white-space:nowrap;font-family:var(--ui-font);letter-spacing:.04em`;
-      lbl.textContent = weekdays[d.getDay()];
-      bar.appendChild(lbl);
+      mk(`position:absolute;left:${cx}%;top:${DAY_VIEW.top - 16}px;font-size:10px;color:${isToday ? 'var(--danger-fg)' : 'var(--text2)'};transform:translateX(-50%);white-space:nowrap;font-family:var(--ui-font);letter-spacing:.04em`, weekdays[d.getDay()]);
     }
-    host.appendChild(bar);
-    tl.appendChild(host);
     mk(`position:absolute;left:0;right:0;top:${DAY_VIEW.top}px;height:${dayViewHeight()}px;border-top:1px solid var(--border);border-bottom:1px solid var(--border)`);
     for (let h = DAY_VIEW.fromHour; h <= DAY_VIEW.toHour; h++) { const y = hourLineY(h); const alpha = h % 3 === 0 ? 0.22 : 0.12; mk(`position:absolute;left:0;right:0;top:${y}px;height:1px;background:var(--grid-major);opacity:${alpha}`); }
     if (!document.getElementById('dailyHoverLine')) { const hl = document.createElement('div'); hl.id = 'dailyHoverLine'; hl.className = 'daily-hover-line'; tl.appendChild(hl); }
@@ -1018,7 +1051,7 @@ function renderTodayLine() {
   todayText.textContent = `Heute, ${formatDateDE(today)}`;
 }
 
-function startResize(ph, side, el, evt) { evt.preventDefault(); evt.stopPropagation(); resizeDrag = { ph, side, startX: evt.clientX, origF: ph.f, origT: ph.t, el }; document.body.style.userSelect = 'none'; document.body.style.cursor = side === 'left' ? 'w-resize' : 'e-resize'; }
+function startResize(ph, side, el, evt) { evt.preventDefault(); evt.stopPropagation(); resizeDrag = { ph, side, startX: evt.clientX, origF: ph.f, origT: ph.t, el, undoSnap: snapshotState() }; document.body.style.userSelect = 'none'; document.body.style.cursor = side === 'left' ? 'w-resize' : 'e-resize'; }
 
 function getDailyItemInstances(item) {
   const orig = dateFromISO(item.date); const repeat = item.repeat || 'none'; const dates = [];
@@ -1027,7 +1060,7 @@ function getDailyItemInstances(item) {
     else if (d >= orig) {
       if (repeat === 'daily') dates.push(new Date(d));
       else if (repeat === 'weekly'   && d.getDay()  === orig.getDay())  dates.push(new Date(d));
-      else if (repeat === 'monthly'  && d.getDate() === orig.getDate()) dates.push(new Date(d));
+      else if (repeat === 'monthly') { const dim = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate(); if (d.getDate() === Math.min(orig.getDate(), dim)) dates.push(new Date(d)); }
       else if (repeat === 'weekdays' && d.getDay() >= 1 && d.getDay() <= 5) dates.push(new Date(d));
     }
   }
@@ -1039,32 +1072,30 @@ function renderPhaseBar(ph, phaseTop) {
   const barBg   = barHex + 'D8';
   const barText = '#ededec';
   const hasDesc = !!(ph.details && ph.details.trim());
-  const e = mk(`position:absolute;top:${phaseTop}px;left:${pctFromDate(ph.f)}%;width:${widthPct(ph.f, ph.t)}%;height:${L.ITEM_H}px;border-radius:9999px;display:flex;align-items:center;padding:0 10px;${itemFont()};letter-spacing:0.03em;overflow:hidden;white-space:nowrap;background:${barBg};color:${barText};border:1px solid ${barHex}40;box-shadow:0 2px 8px rgba(0,0,0,0.45);z-index:2`);
+  const e = mk(`position:absolute;top:${phaseTop}px;left:${pctFromDate(ph.f)}%;width:${widthPct(ph.f, ph.t)}%;height:${L.ITEM_H}px;border-radius:9999px;display:flex;align-items:center;padding:0 10px;${itemFont()};letter-spacing:0.03em;overflow:clip;white-space:nowrap;background:${barBg};color:${barText};border:1px solid ${barHex}40;box-shadow:0 2px 8px rgba(0,0,0,0.45);z-index:2`);
   const stickyGroup = document.createElement('span');
-  stickyGroup.style.cssText = 'display:inline-flex;align-items:center;pointer-events:none;flex-shrink:0;position:sticky;left:10px;';
+  stickyGroup.style.cssText = 'display:inline-flex;align-items:center;pointer-events:none;flex-shrink:0;position:sticky;left:var(--phase-sticky-left, 8px);';
   if (hasDesc) {
     const arrow = document.createElement('span'); arrow.className = 'phase-arrow'; arrow.style.pointerEvents = 'auto'; arrow.style.borderColor = barText;
     arrow.textContent = expandedPhaseIds.has(ph.id) ? '▾' : '▸';
     arrow.onclick = (evt) => { evt.stopPropagation(); if (expandedPhaseIds.has(ph.id)) expandedPhaseIds.delete(ph.id); else expandedPhaseIds.add(ph.id); renderAll(); };
-    arrow.addEventListener('mousedown', (evt) => evt.stopPropagation());
+    arrow.addEventListener('pointerdown', (evt) => evt.stopPropagation());
     stickyGroup.appendChild(arrow);
   }
   const labelSpan = document.createElement('span'); labelSpan.style.cssText = 'pointer-events:none;white-space:nowrap;'; labelSpan.textContent = ph.l;
   stickyGroup.appendChild(labelSpan); e.appendChild(stickyGroup);
   fitLabel(e);
-  e.addEventListener('mousemove', (evt) => { if (resizeDrag || addMode) return; const lx = evt.clientX - e.getBoundingClientRect().left; const EDGE = Math.min(10, e.offsetWidth * 0.2); e.style.cursor = lx <= EDGE ? 'w-resize' : lx >= e.offsetWidth - EDGE ? 'e-resize' : 'pointer'; });
-  e.addEventListener('mouseleave', () => { if (!resizeDrag) e.style.cursor = 'pointer'; });
-  e.addEventListener('mousedown', (evt) => { if (addMode) return; const lx = evt.clientX - e.getBoundingClientRect().left; const EDGE = Math.min(10, e.offsetWidth * 0.2); if (lx <= EDGE) startResize(ph, 'left', e, evt); else if (lx >= e.offsetWidth - EDGE) startResize(ph, 'right', e, evt); });
+  e.addEventListener('pointermove', (evt) => { if (evt.pointerType !== 'mouse' || resizeDrag || addMode) return; const lx = evt.clientX - e.getBoundingClientRect().left; const EDGE = Math.min(10, e.offsetWidth * 0.2); e.style.cursor = lx <= EDGE ? 'w-resize' : lx >= e.offsetWidth - EDGE ? 'e-resize' : 'pointer'; });
+  e.addEventListener('pointerleave', () => { if (!resizeDrag) e.style.cursor = 'pointer'; });
+  e.addEventListener('pointerdown', (evt) => { if (addMode) return; const lx = evt.clientX - e.getBoundingClientRect().left; const EDGE = Math.min(10, e.offsetWidth * 0.2); if (lx <= EDGE) startResize(ph, 'left', e, evt); else if (lx >= e.offsetWidth - EDGE) startResize(ph, 'right', e, evt); });
   e.onclick = () => { if (Date.now() - lastResizeEnd < 200) return; openQuickEditor({ id:ph.id, type:'range', track:'phase', title:ph.l, start:ph.f, end:toISODate(new Date(dateFromISO(ph.t).getTime()-DAY_MS)), categoryId:ph.categoryId, details:ph.details }); };
   if (hasDesc && expandedPhaseIds.has(ph.id)) {
     const tlW = tl.offsetWidth; const bL = (pctFromDate(ph.f) / 100) * tlW; const bR = bL + (widthPct(ph.f, ph.t) / 100) * tlW; const DW = Math.min(320, Math.max(160, bR - bL));
-    // wrapper sits at the phase bar's full horizontal extent; box inside is sticky-left within it
-    const wrap = document.createElement('div');
-    wrap.style.cssText = `position:absolute;top:${phaseTop + L.ITEM_H + 6}px;left:${pctFromDate(ph.f)}%;width:${widthPct(ph.f, ph.t)}%;pointer-events:none;`;
-    const box = document.createElement('div'); box.className = 'phase-details'; box.innerHTML = ph.details;
-    box.style.cssText += `;position:sticky;left:8px;width:${DW}px;background:color-mix(in srgb, ${barHex} 30%, #0d0d10 70%);color:#dddcdc;border-color:${barHex}60;pointer-events:auto;`;
-    wrap.appendChild(box);
-    tl.appendChild(wrap);
+    const box = document.createElement('div'); box.className = 'phase-details'; box.innerHTML = sanitizeHtml(ph.details);
+    box.style.top = `${phaseTop + L.ITEM_H + 6}px`; box.style.width = `${DW}px`;
+    box.style.background = `color-mix(in srgb, ${barHex} 30%, #0d0d10 70%)`; box.style.color = '#dddcdc'; box.style.borderColor = `${barHex}60`;
+    tl.appendChild(box);
+    stickyUpdaters.push((scroll) => { const w = tl.offsetWidth; const bl = (pctFromDate(ph.f) / 100) * w; const br = bl + (widthPct(ph.f, ph.t) / 100) * w; box.style.left = `${Math.max(bl, Math.min(scroll + 8, Math.max(bl, br - DW)))}px`; });
   }
 }
 
@@ -1137,29 +1168,29 @@ function renderBaseTimeline() {
       else { bgColor = `${diHex}D0`; borderColor = `${diHex}40`; boxShadow = '0 2px 6px rgba(0,0,0,0.38)'; }
       el.style.cssText = `left:${itemLeftPct}%;top:${startY}px;width:calc(${itemWidPct}% - 4px);margin-left:2px;height:${height - 2}px;background:${bgColor};color:${allCancelled ? 'rgba(200,200,210,0.45)' : allDone && hasTodos ? '#a8d96a' : '#ededec'};border:1px solid ${borderColor};border-radius:8px;padding:${isShort ? '0' : '0px'} ${hasTodos ? 8 : 0}px 2px 3px;justify-content:${isShort ? 'center' : 'flex-start'};box-shadow:${boxShadow};overflow:hidden;${allDone && hasTodos ? 'transform:scale(0.97);' : ''}`;
       const EDGE = 7;
-      el.addEventListener('mousemove', (evt) => { if (addMode) return; const ly = evt.clientY - el.getBoundingClientRect().top; el.style.cursor = (ly < EDGE || ly > el.offsetHeight - EDGE) ? 'ns-resize' : 'grab'; });
-      el.addEventListener('mouseleave', () => { if (!dailyItemResizeDrag && !dailyItemMoveDrag) el.style.cursor = 'grab'; });
-      el.addEventListener('mousedown', (evt) => {
-        if (addMode) return;
+      el.addEventListener('pointermove', (evt) => { if (evt.pointerType !== 'mouse' || addMode) return; const ly = evt.clientY - el.getBoundingClientRect().top; el.style.cursor = (ly < EDGE || ly > el.offsetHeight - EDGE) ? 'ns-resize' : 'grab'; });
+      el.addEventListener('pointerleave', () => { if (!dailyItemResizeDrag && !dailyItemMoveDrag) el.style.cursor = 'grab'; });
+      el.addEventListener('pointerdown', (evt) => {
+        if (addMode || evt.pointerType !== 'mouse') return;   // touch: long-press handles move
         const r = el.getBoundingClientRect(); const ly = evt.clientY - r.top;
         if (evt.ctrlKey || evt.metaKey) {
           evt.preventDefault(); evt.stopPropagation();
           const ghost = el.cloneNode(true);
           ghost.style.cssText += `;position:fixed;opacity:0.65;pointer-events:none;z-index:200;width:${r.width}px;height:${r.height}px;left:${r.left}px;top:${r.top}px;transition:none;`;
-          document.body.appendChild(ghost); dailyItemCopyDrag = { item, offsetY: ly, ghost }; document.body.style.cursor = 'copy'; document.body.style.userSelect = 'none'; return;
+          document.body.appendChild(ghost); dailyItemCopyDrag = { item, offsetY: ly, ghost, undoSnap: snapshotState() }; document.body.style.cursor = 'copy'; document.body.style.userSelect = 'none'; return;
         }
-        if (ly < EDGE || ly > el.offsetHeight - EDGE) { evt.preventDefault(); evt.stopPropagation(); dailyItemResizeDrag = { item, edge: ly < EDGE ? 'top' : 'bottom', startY: evt.clientY, origStartMin: item.startMin, origEndMin: item.endMin, el }; document.body.style.cursor = 'ns-resize'; document.body.style.userSelect = 'none'; return; }
+        if (ly < EDGE || ly > el.offsetHeight - EDGE) { evt.preventDefault(); evt.stopPropagation(); dailyItemResizeDrag = { item, edge: ly < EDGE ? 'top' : 'bottom', startY: evt.clientY, origStartMin: item.startMin, origEndMin: item.endMin, el, undoSnap: snapshotState() }; document.body.style.cursor = 'ns-resize'; document.body.style.userSelect = 'none'; return; }
         const sx = evt.clientX, sy = evt.clientY;
-        const onThreshold = (e) => { if (Math.hypot(e.clientX - sx, e.clientY - sy) > 5) { window.removeEventListener('mousemove', onThreshold); window.removeEventListener('mouseup', cancelThreshold); evt.preventDefault(); const ghost = el.cloneNode(true); ghost.style.cssText += `;position:fixed;opacity:0.7;pointer-events:none;z-index:200;width:${r.width}px;height:${r.height}px;left:${r.left}px;top:${r.top}px;transition:none;cursor:grabbing;`; document.body.appendChild(ghost); dailyItemMoveDrag = { item, offsetY: ly, ghost }; document.body.style.cursor = 'grabbing'; document.body.style.userSelect = 'none'; } };
-        const cancelThreshold = () => { window.removeEventListener('mousemove', onThreshold); window.removeEventListener('mouseup', cancelThreshold); };
-        window.addEventListener('mousemove', onThreshold); window.addEventListener('mouseup', cancelThreshold);
+        const onThreshold = (e) => { if (Math.hypot(e.clientX - sx, e.clientY - sy) > 5) { window.removeEventListener('pointermove', onThreshold); window.removeEventListener('pointerup', cancelThreshold); const ghost = el.cloneNode(true); ghost.style.cssText += `;position:fixed;opacity:0.7;pointer-events:none;z-index:200;width:${r.width}px;height:${r.height}px;left:${r.left}px;top:${r.top}px;transition:none;cursor:grabbing;`; document.body.appendChild(ghost); dailyItemMoveDrag = { item, offsetY: ly, ghost, undoSnap: snapshotState() }; document.body.style.cursor = 'grabbing'; document.body.style.userSelect = 'none'; } };
+        const cancelThreshold = () => { window.removeEventListener('pointermove', onThreshold); window.removeEventListener('pointerup', cancelThreshold); };
+        window.addEventListener('pointermove', onThreshold); window.addEventListener('pointerup', cancelThreshold);
       });
       if (allDone && hasTodos && justCompletedId === item.id) { el.classList.add('flash-done'); justCompletedId = null; }
       if (hasTodos) {
         const zone = document.createElement('div');
         zone.style.cssText = `position:absolute;top:0;bottom:0;right:0;width:26px;cursor:pointer;display:flex;align-items:center;justify-content:flex-end;padding-right:4px;z-index:3;opacity:1;font-size:15px;line-height:1;pointer-events:auto;`;
         zone.textContent = isExpanded ? '‹' : '›';
-        zone.addEventListener('mousedown', (evt) => evt.stopPropagation());
+        zone.addEventListener('pointerdown', (evt) => evt.stopPropagation());
         zone.onclick = (evt) => { evt.stopPropagation(); if (expandedDailyIds.has(item.id)) expandedDailyIds.delete(item.id); else { expandedDailyIds.add(item.id); justExpandedId = item.id; } renderAll(); };
         el.appendChild(zone);
       }
@@ -1171,7 +1202,7 @@ function renderBaseTimeline() {
       if (isExpanded && hasTodos) {
         const panel = document.createElement('div'); panel.className = 'daily-todo-panel' + (justExpandedId === item.id ? ' animate-in' : ''); if (justExpandedId === item.id) justExpandedId = null;
         panel.style.background = `color-mix(in srgb, ${diHex} 22%, #0e0e14 78%)`; panel.style.color = '#dddcdc'; panel.style.borderColor = `${diHex}50`;
-        item.todos.forEach(td => { const row = document.createElement('div'); row.className = 'dtodo-row'; row.dataset.state = td.state || 'open'; const check = document.createElement('span'); check.className = 'dtodo-check'; check.onclick = (evt) => { evt.stopPropagation(); const s=td.state; td.state=s==='open'?'done':s==='done'?'cancelled':'open'; if (item.todos.every(t=>t.state==='done')) justCompletedId=item.id; renderAll(); }; check.addEventListener('contextmenu', (evt) => { evt.preventDefault(); evt.stopPropagation(); td.state=td.state==='postponed'?'open':'postponed'; renderAll(); }); const name = document.createElement('span'); name.className = 'dtodo-name'; name.textContent = td.text; row.append(check, name); panel.appendChild(row); });
+        item.todos.forEach(td => { const row = document.createElement('div'); row.className = 'dtodo-row'; row.dataset.state = td.state || 'open'; const check = document.createElement('span'); check.className = 'dtodo-check'; check.onclick = (evt) => { evt.stopPropagation(); const snap = snapshotState(); const s=td.state; td.state=s==='open'?'done':s==='done'?'cancelled':'open'; if (item.todos.every(t=>t.state==='done')) justCompletedId=item.id; pushUndoSnap(snap); persist(); renderAll(); }; check.addEventListener('contextmenu', (evt) => { evt.preventDefault(); evt.stopPropagation(); const snap = snapshotState(); td.state=td.state==='postponed'?'open':'postponed'; pushUndoSnap(snap); persist(); renderAll(); }); const name = document.createElement('span'); name.className = 'dtodo-name'; name.textContent = td.text; row.append(check, name); panel.appendChild(row); });
         tl.appendChild(panel);
         const tlW = tl.offsetWidth; const dayRightPx = (itemLeftPct + itemWidPct) / 100 * tlW;
         panel.style.top = `${startY}px`; panel.style.left = `${Math.min(dayRightPx + 6, tlW - (panel.offsetWidth||220) - 8)}px`;
@@ -1189,7 +1220,7 @@ function renderBaseTimeline() {
   }
 }
 
-setInterval(() => { if (isDailyView) renderAll(); }, 60000);
+setInterval(() => { if (isDailyView && !draftModal.classList.contains('open') && !anyDragActive()) renderAll(); }, 60000);
 
 function openQuickEditor(entry) { openDraftModal({ mode: 'edit', type: entry.type, track: entry.track, id: entry.id, title: entry.title, start: entry.start, end: entry.end || entry.start, categoryId: entry.categoryId || '', details: entry.details || '' }); }
 function removeById(id) { phases = phases.filter(x => x.id !== id); privateEvents = privateEvents.filter(x => x.id !== id); fixedExams = fixedExams.filter(x => x.id !== id); noteItems = noteItems.filter(x => x.id !== id); dailyItems = dailyItems.filter(x => x.id !== id); }
@@ -1200,42 +1231,79 @@ function saveLocal() {
 }
 
 let gistSyncTimer = null;
-async function syncGist() {
-  const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
+let dataDirty = false;       // set only when the user actually changed data
+let lastSyncedAt = null;     // savedAt of the gist content we last loaded or pushed
+
+function setSaveStatus(text, revert = true) {
+  saveBtn.textContent = text;
+  if (revert) setTimeout(() => { saveBtn.textContent = 'Save'; }, 2000);
+}
+
+async function fetchRemoteData(token) {
+  const headers = token ? { 'Authorization': `token ${token}` } : {};
+  const res = await fetch(`https://api.github.com/gists/${GIST_ID}`, { headers });
+  if (!res.ok) throw new Error(`gist GET ${res.status}`);
+  const json = await res.json();
+  const content = json.files?.[GIST_FILE]?.content;
+  if (!content || content === '{}') return null;
+  return JSON.parse(content);
+}
+
+// force=true (Save button) overrides the conflict guard deliberately.
+async function syncGist(force = false) {
+  if (!dataDirty && !force) return;                       // nothing changed → never touch the cloud
+  const token = getToken(force);                           // only prompt on explicit Save
+  if (!token) { if (force) setSaveStatus('Local only'); return; }
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return;
   try {
     saveBtn.textContent = 'Syncing…';
-    await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+    // Conflict guard: did another device write since we last loaded/pushed?
+    try {
+      const remote = await fetchRemoteData(token);
+      if (!force && remote?.savedAt && lastSyncedAt && remote.savedAt > lastSyncedAt) {
+        setSaveStatus('Konflikt ⚠', false);
+        saveBtn.title = 'Die Cloud hat neuere Daten von einem anderen Gerät. Save drücken überschreibt sie bewusst — oder Seite neu laden, um sie zu übernehmen.';
+        return;
+      }
+    } catch(e) { /* gist unreadable → fall through to PATCH attempt */ }
+    const data = JSON.parse(raw);
+    const res = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
       method: 'PATCH',
-      headers: { 'Authorization': `token ${getToken()}`, 'Content-Type': 'application/json' },
+      headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ files: { [GIST_FILE]: { content: JSON.stringify(data) } } })
     });
-    saveBtn.textContent = 'Synced';
+    if (!res.ok) throw new Error(`gist PATCH ${res.status}`);
+    lastSyncedAt = data.savedAt || null;
+    dataDirty = false;
+    saveBtn.title = '';
+    setSaveStatus('Synced ✓');
   } catch(e) {
-    saveBtn.textContent = 'Local only';
+    setSaveStatus('Local only');
   }
-  setTimeout(() => { saveBtn.textContent = 'Save'; }, 1500);
 }
 
 function scheduleSyncGist() {
   clearTimeout(gistSyncTimer);
-  gistSyncTimer = setTimeout(syncGist, 3000);
+  gistSyncTimer = setTimeout(() => syncGist(false), 3000);
 }
 
-function saveToStorage() { saveLocal(); scheduleSyncGist(); }
+// The single mutation gate: every data change funnels through here.
+function persist() { dataDirty = true; saveLocal(); scheduleSyncGist(); }
+const saveToStorage = persist; // legacy name
 
 async function loadFromStorage() {
-  let parsed = null;
-  try {
-    const res = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
-      headers: { 'Authorization': `token ${getToken()}` }
-    });
-    const json = await res.json();
-    const content = json.files?.[GIST_FILE]?.content;
-    if (content && content !== '{}') parsed = JSON.parse(content);
-  } catch(e) {}
-  if (!parsed) {
-    try { const raw = localStorage.getItem(STORAGE_KEY); if (raw) parsed = JSON.parse(raw); } catch(e) {} 
+  let local = null, remote = null;
+  try { const raw = localStorage.getItem(STORAGE_KEY); if (raw) local = JSON.parse(raw); } catch(e) {}
+  const token = getToken(false);
+  if (token) {
+    try { remote = await fetchRemoteData(token); if (remote) lastSyncedAt = remote.savedAt || null; } catch(e) {}
   }
+  // Newest wins. A failed gist fetch can never cause defaults to overwrite the cloud,
+  // because nothing syncs until the user actually edits (dataDirty).
+  let parsed;
+  if (local && remote) parsed = (remote.savedAt || '') >= (local.savedAt || '') ? remote : local;
+  else parsed = remote || local;
   if (!parsed) return;
   if (Array.isArray(parsed.phases))        phases        = parsed.phases;
   if (Array.isArray(parsed.privateEvents)) privateEvents = parsed.privateEvents;
@@ -1253,10 +1321,8 @@ function renderCategorySection() {
   picker.innerHTML = '';
   PALETTE_KEYS.forEach(key => { const pal = COLOR_PALETTE[key]; const sw = document.createElement('span'); sw.className = 'cat-swatch' + (key === selectedCatColor ? ' selected' : ''); sw.title = pal.label; sw.style.background = pal.fg; sw.style.borderColor = key === selectedCatColor ? 'var(--text)' : 'transparent'; sw.addEventListener('click', () => { selectedCatColor = key; renderCategorySection(); }); picker.appendChild(sw); });
   catList.innerHTML = '';
-  categories.forEach(cat => { const pal = COLOR_PALETTE[cat.colorKey] || COLOR_PALETTE.gray; const chip = document.createElement('span'); chip.className = 'cat-chip'; chip.style.background = pal.bg; chip.style.color = pal.fg; chip.style.borderColor = pal.border; const dot = document.createElement('span'); dot.style.cssText = `display:inline-block;width:8px;height:8px;border-radius:50%;background:${pal.fg};flex-shrink:0`; const name = document.createElement('span'); name.className = 'cat-chip-name'; name.textContent = cat.name; const del = document.createElement('span'); del.className = 'cat-chip-del'; del.textContent = '×'; del.title = 'Löschen'; del.addEventListener('click', () => { categories = categories.filter(c => c.id !== cat.id); 
-  renderCategorySection(); 
-  renderAll(); }); chip.append(dot, name, del); catList.appendChild(chip); });
-  addBtn.onclick = () => { const name = nameInput.value.trim(); if (!name) return; categories.push({ id: crypto.randomUUID(), name, colorKey: selectedCatColor }); nameInput.value = ''; renderCategorySection(); renderAll(); };
+  categories.forEach(cat => { const pal = COLOR_PALETTE[cat.colorKey] || COLOR_PALETTE.gray; const chip = document.createElement('span'); chip.className = 'cat-chip'; chip.style.background = pal.bg; chip.style.color = pal.fg; chip.style.borderColor = pal.border; const dot = document.createElement('span'); dot.style.cssText = `display:inline-block;width:8px;height:8px;border-radius:50%;background:${pal.fg};flex-shrink:0`; const name = document.createElement('span'); name.className = 'cat-chip-name'; name.textContent = cat.name; const del = document.createElement('span'); del.className = 'cat-chip-del'; del.textContent = '×'; del.title = 'Löschen'; del.addEventListener('click', () => { if (!confirm(`Kategorie "${cat.name}" löschen? Einträge behalten ihre Farbe nicht.`)) return; pushUndo(); categories = categories.filter(c => c.id !== cat.id); persist(); renderCategorySection(); renderAll(); }); chip.append(dot, name, del); catList.appendChild(chip); });
+  addBtn.onclick = () => { const name = nameInput.value.trim(); if (!name) return; pushUndo(); categories.push({ id: crypto.randomUUID(), name, colorKey: selectedCatColor }); nameInput.value = ''; persist(); renderCategorySection(); renderAll(); };
   nameInput.onkeydown = (e) => { if (e.key === 'Enter') addBtn.click(); };
 }
 
@@ -1265,36 +1331,38 @@ function renderOpenPoints() {
   openPoints.forEach((card, ci) => {
     const pal = COLOR_PALETTE[card.colorKey] || COLOR_PALETTE.gray; const cardEl = document.createElement('div'); cardEl.className = 'todo-card'; cardEl.style.borderLeftColor = pal.fg; cardEl.style.borderColor = `${pal.border} ${pal.border} ${pal.border} ${pal.fg}`; cardEl.style.padding = '12px 14px';
     const titleRow = document.createElement('div'); titleRow.style.cssText = 'display:flex;align-items:flex-start;gap:6px;margin-bottom:9px;';
-    const titleEl = document.createElement('span'); titleEl.style.cssText = `flex:1;outline:none;font-size:12px;font-weight:600;color:${pal.fg};letter-spacing:.03em;text-transform:uppercase;font-family:var(--heading-font);`; titleEl.contentEditable = 'true'; titleEl.textContent = card.title; titleEl.onblur = () => { card.title = titleEl.textContent.trim() || card.title; saveToStorage(); }; titleEl.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); titleEl.blur(); } };
-    const delCard = document.createElement('span'); delCard.style.cssText = 'cursor:pointer;opacity:0.35;font-size:14px;color:var(--text3);flex-shrink:0;margin-top:-1px;'; delCard.textContent = '×'; delCard.title = 'Gruppe löschen'; delCard.onclick = () => { openPoints.splice(ci, 1); renderOpenPoints(); saveToStorage(); };
+    const titleEl = document.createElement('span'); titleEl.style.cssText = `flex:1;outline:none;font-size:12px;font-weight:600;color:${pal.fg};letter-spacing:.03em;text-transform:uppercase;font-family:var(--heading-font);`; titleEl.contentEditable = 'true'; titleEl.textContent = card.title; titleEl.onblur = () => { const v = titleEl.textContent.trim(); if (v && v !== card.title) { pushUndo(); card.title = v; persist(); } }; titleEl.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); titleEl.blur(); } };
+    const delCard = document.createElement('span'); delCard.style.cssText = 'cursor:pointer;opacity:0.35;font-size:14px;color:var(--text3);flex-shrink:0;margin-top:-1px;'; delCard.textContent = '×'; delCard.title = 'Gruppe löschen'; delCard.onclick = () => { pushUndo(); openPoints.splice(ci, 1); renderOpenPoints(); persist(); };
     titleRow.append(titleEl, delCard); cardEl.appendChild(titleRow);
-    card.items.forEach((item, ii) => { const row = document.createElement('div'); row.className = 'op-item-row'; const circle = document.createElement('span'); circle.className = 'op-circle'; circle.style.borderColor = item.done ? pal.fg : 'var(--text3)'; circle.style.background = item.done ? pal.fg : 'transparent'; circle.style.color = item.done ? '#000' : 'transparent'; circle.textContent = item.done ? '✓' : ''; circle.onclick = () => { item.done = !item.done; renderOpenPoints(); saveToStorage(); }; const text = document.createElement('span'); text.className = 'op-item-text'; text.contentEditable = 'true'; text.textContent = item.text; if (item.done) { text.style.textDecoration = 'line-through'; text.style.opacity = '0.4'; } text.onblur = () => { item.text = text.textContent.trim() || item.text; saveToStorage(); }; text.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); text.blur(); } }; const del = document.createElement('span'); del.className = 'op-del-item'; del.textContent = '×'; del.onclick = () => { card.items.splice(ii, 1); renderOpenPoints(); saveToStorage(); }; row.append(circle, text, del); cardEl.appendChild(row); });
-    const addItem = document.createElement('div'); addItem.className = 'op-add-item'; addItem.innerHTML = '<span style="font-size:15px;line-height:1">+</span> Punkt hinzufügen'; addItem.onclick = () => { card.items.push({ id: crypto.randomUUID(), text: 'Neuer Punkt', done: false }); renderOpenPoints(); saveToStorage(); const rows = td.querySelectorAll('.op-item-text'); rows[rows.length - 1]?.focus(); }; cardEl.appendChild(addItem); td.appendChild(cardEl);
+    card.items.forEach((item, ii) => { const row = document.createElement('div'); row.className = 'op-item-row'; const circle = document.createElement('span'); circle.className = 'op-circle'; circle.style.borderColor = item.done ? pal.fg : 'var(--text3)'; circle.style.background = item.done ? pal.fg : 'transparent'; circle.style.color = item.done ? '#000' : 'transparent'; circle.textContent = item.done ? '✓' : ''; circle.onclick = () => { pushUndo(); item.done = !item.done; renderOpenPoints(); persist(); }; const text = document.createElement('span'); text.className = 'op-item-text'; text.contentEditable = 'true'; text.textContent = item.text; if (item.done) { text.style.textDecoration = 'line-through'; text.style.opacity = '0.4'; } text.onblur = () => { const v = text.textContent.trim(); if (v && v !== item.text) { pushUndo(); item.text = v; persist(); } }; text.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); text.blur(); } }; const del = document.createElement('span'); del.className = 'op-del-item'; del.textContent = '×'; del.onclick = () => { pushUndo(); card.items.splice(ii, 1); renderOpenPoints(); persist(); }; row.append(circle, text, del); cardEl.appendChild(row); });
+    const addItem = document.createElement('div'); addItem.className = 'op-add-item'; addItem.innerHTML = '<span style="font-size:15px;line-height:1">+</span> Punkt hinzufügen'; addItem.onclick = () => { pushUndo(); card.items.push({ id: crypto.randomUUID(), text: 'Neuer Punkt', done: false }); renderOpenPoints(); persist(); const rows = td.querySelectorAll('.op-item-text'); rows[rows.length - 1]?.focus(); }; cardEl.appendChild(addItem); td.appendChild(cardEl);
   });
-  const addCard = document.createElement('div'); addCard.className = 'op-add-card'; addCard.textContent = '+ Neue Gruppe'; addCard.onclick = () => { openPoints.push({ id: crypto.randomUUID(), title: 'Neue Gruppe', colorKey: PALETTE_KEYS[openPoints.length % PALETTE_KEYS.length], items: [{ id: crypto.randomUUID(), text: 'Erster Punkt', done: false }] }); renderOpenPoints(); saveToStorage(); }; td.appendChild(addCard);
+  const addCard = document.createElement('div'); addCard.className = 'op-add-card'; addCard.textContent = '+ Neue Gruppe'; addCard.onclick = () => { pushUndo(); openPoints.push({ id: crypto.randomUUID(), title: 'Neue Gruppe', colorKey: PALETTE_KEYS[openPoints.length % PALETTE_KEYS.length], items: [{ id: crypto.randomUUID(), text: 'Erster Punkt', done: false }] }); renderOpenPoints(); persist(); }; td.appendChild(addCard);
 }
+
+function updateStickyElements() { const scroll = tlOuter.scrollLeft; stickyUpdaters.forEach(fn => fn(scroll)); }
 
 function renderDaySizeStrip() {
   let strip = document.getElementById('daySizeStrip');
-  if (!strip) { strip = document.createElement('div'); strip.id = 'daySizeStrip'; strip.className = 'day-size-strip'; strip.style.pointerEvents = 'auto'; strip.addEventListener('mousedown', (e) => { e.preventDefault(); e.stopPropagation(); daySizeDrag = { startY: e.clientY, startLevel: rowHeightLevel }; strip.classList.add('dragging'); document.body.style.cursor = 'ns-resize'; document.body.style.userSelect = 'none'; }); tl.appendChild(strip); } else if (strip.parentElement !== tl) { tl.appendChild(strip); }
+  if (!strip) { strip = document.createElement('div'); strip.id = 'daySizeStrip'; strip.className = 'day-size-strip'; strip.style.pointerEvents = 'auto'; strip.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); daySizeDrag = { startY: e.clientY, startLevel: rowHeightLevel }; strip.classList.add('dragging'); document.body.style.cursor = 'ns-resize'; document.body.style.userSelect = 'none'; }); tl.appendChild(strip); } else if (strip.parentElement !== tl) { tl.appendChild(strip); }
   if (!isDailyView) { strip.style.display = 'none'; return; }
   strip.style.display = 'flex'; strip.style.position = 'absolute'; strip.style.top = `${DAY_VIEW.top + dayViewHeight() + 2}px`; strip.style.left = '0'; strip.style.width = '100%';
 }
 
 function renderAll() {
   DAY_VIEW.rowHeight = ROW_HEIGHTS[rowHeightLevel];
+  stickyUpdaters = [];
   currentLayout = computeLayout();
   DAY_VIEW.top = currentLayout.dailyTop;
   tl.innerHTML = '';
-  tl.appendChild(hourRail); // sticky: must live inside the wide scroll content for left:0 to track viewport
   applyTimelineWidth();
   renderGrid();
   renderBaseTimeline();
   renderTodayLine();
   renderHourRail();
+  updateStickyElements();
   renderDaySizeStrip();
-  saveLocal();
-  scheduleSyncGist();
+  updateDayStickBar();
 }
 
 draftDetails.addEventListener('input', updateEditorEmptyState);
@@ -1307,225 +1375,100 @@ document.querySelectorAll('.editor-toolbar button[data-cmd]').forEach(btn => {
 if (fontSizeSelect) { fontSizeSelect.addEventListener('change', (evt) => { document.execCommand('fontSize', false, evt.target.value); draftDetails.focus(); }); fontSizeSelect.addEventListener('mousedown', (evt) => evt.stopPropagation()); }
 
 viewToggle.addEventListener('click', () => { isDailyView = !isDailyView; renderAll(); });
-saveBtn.addEventListener('click', syncGist);
+saveBtn.addEventListener('click', () => syncGist(true));
 addToggle.addEventListener('click', () => setAddMode(!addMode));
 
-// No scroll listener needed — hour rail, day bar, and phase text all use pure CSS sticky now.
+tlOuter.addEventListener('scroll', () => {
+  if (isDailyView) {
+    hourRail.style.transform = `translateX(${tlOuter.scrollLeft}px)`;
+    const inner = document.getElementById('dayStickInner');
+    if (inner) inner.style.transform = `translateX(${-tlOuter.scrollLeft}px)`;
+  }
+  updateStickyElements();
+});
 
-// ── Touch support ──────────────────────────────────────────────
-function normTouch(e) {
-  const t = e.touches?.[0] || e.changedTouches?.[0];
-  return { clientX: t.clientX, clientY: t.clientY };
+// ═══ Unified pointer input ═══════════════════════════════════════
+// One pipeline for mouse, touch and pen (Pointer Events).
+// The single passive:false touchmove listener below only suppresses
+// native scrolling while a drag is live — it carries no logic.
+const activePointers = new Map();
+let longPress = null; // { timer, x, y }
+
+function anyDragActive() {
+  return !!(dailyDrag || dragStartDate || resizeDrag || dailyItemResizeDrag ||
+            dailyItemMoveDrag || dailyItemCopyDrag || daySizeDrag);
+}
+function cancelLongPress() { if (longPress) { clearTimeout(longPress.timer); longPress = null; } }
+
+window.addEventListener('touchmove', (e) => { if (anyDragActive()) e.preventDefault(); }, { passive: false });
+
+function startDailyCreateDrag(clientX, clientY) {
+  const m = minFromLocalY(clientY - tl.getBoundingClientRect().top);
+  dailyDrag = { date: dateFromTimelineClientX(clientX), startMin: m, currentMin: m, previewEl: null };
+  drawDailyPreview();
 }
 
-// ── Pointer events for tlOuter (pinch + add-mode drag) ──
-const activePointers = new Map();
-
 tlOuter.addEventListener('pointerdown', (e) => {
-  console.log('pointerdown', e.pointerType, activePointers.size);
   activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
+  // Two-finger pinch → row-height zoom (daily view)
   if (activePointers.size === 2 && isDailyView) {
+    cancelLongPress();
     e.preventDefault();
     const pts = [...activePointers.values()];
-    const dx = pts[0].x - pts[1].x;
-    const dy = pts[0].y - pts[1].y;
-    pinchStartDist = Math.hypot(dx, dy);
+    pinchStartDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
     pinchStartRowH = DAY_VIEW.rowHeight;
     return;
   }
+  if (activePointers.size !== 1) return;
 
-  if (activePointers.size === 1 && addMode) {
+  const tlRect = tl.getBoundingClientRect();
+  const localY = e.clientY - tlRect.top;
+  const inDayGrid = isDailyView && localY >= DAY_VIEW.top && localY <= dayViewBottom();
+  const onBackground = !e.target.closest('.daily-item');
+
+  if (addMode) {
     if (e.pointerType !== 'mouse') e.preventDefault();
-    const tlRect = tl.getBoundingClientRect();
-    const localY = e.clientY - tlRect.top;
-    if (isDailyView && localY >= DAY_VIEW.top) {
-      const date = dateFromTimelineClientX(e.clientX);
-      const m = minFromLocalY(localY);
-      dailyDrag = { date, startMin: m, currentMin: m, previewEl: null };
-      drawDailyPreview();
-      return;
-    }
+    setTimelineHover(null); setDailyHover(null);   // hover line must vanish before drag lines appear
+    if (inDayGrid) { startDailyCreateDrag(e.clientX, e.clientY); return; }
     dragStartDate = dateFromTimelineClientX(e.clientX);
     dragMoved = false;
     clearDragPreview();
+    return;
+  }
+
+  // Long-press on empty day-grid space (touch/pen) → create directly, no add mode needed
+  if (e.pointerType !== 'mouse' && inDayGrid && onBackground) {
+    cancelLongPress();
+    const px = e.clientX, py = e.clientY;
+    longPress = { x: px, y: py, timer: setTimeout(() => {
+      longPress = null;
+      if (navigator.vibrate) navigator.vibrate(12);
+      startDailyCreateDrag(px, py);
+    }, 500) };
   }
 });
 
-tlOuter.addEventListener('pointermove', (e) => {
-  if (!activePointers.has(e.pointerId)) return;
-  activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-
-  if (activePointers.size === 2 && isDailyView && pinchStartDist) {
-    e.preventDefault();
-    const pts = [...activePointers.values()];
-    const dx = pts[0].x - pts[1].x;
-    const dy = pts[0].y - pts[1].y;
-    const dist = Math.hypot(dx, dy);
-    const newH = Math.round(
-      Math.max(ROW_H_MIN, Math.min(ROW_H_MAX, pinchStartRowH * (dist / pinchStartDist)))
-    );
-    if (newH !== DAY_VIEW.rowHeight) {
-      DAY_VIEW.rowHeight = newH;
-      rowHeightLevel = newH < 33 ? 0 : newH < 66 ? 1 : 2;
-      requestAnimationFrame(() => renderAll());
-    }
-  }
-});
-
-const endPointer = (e) => {
-  activePointers.delete(e.pointerId);
-  if (activePointers.size < 2) pinchStartDist = null;
-};
-tlOuter.addEventListener('pointerup', endPointer);
-tlOuter.addEventListener('pointercancel', endPointer);
-
-// Drag move
-window.addEventListener('touchmove', (e) => {
-  const anyDrag = dailyDrag || dragStartDate || dailyItemResizeDrag ||
-                  dailyItemMoveDrag || daySizeDrag || resizeDrag;
-  if (!anyDrag && e.touches.length === 1) return;                
-  if (anyDrag) e.preventDefault();
-  const { clientX, clientY } = normTouch(e);
-
-  if (daySizeDrag) {
-    const delta = clientY - daySizeDrag.startY;
-    const newLevel = Math.max(0, Math.min(2, daySizeDrag.startLevel + Math.round(delta / 55)));
-    if (newLevel !== rowHeightLevel) { rowHeightLevel = newLevel; renderAll(); }
-    return;
-  }
-  if (resizeDrag) {
-    const { ph, side, startX, origF, origT, el } = resizeDrag;
-    const daysDelta = Math.round((clientX - startX) / (tl.offsetWidth / TOTAL_DAYS));
-    if (side === 'right') {
-      const ms = Math.max(dateFromISO(origF).getTime() + DAY_MS, Math.min(E.getTime(), dateFromISO(origT).getTime() + daysDelta * DAY_MS));
-      el.style.width = `${widthPct(origF, toISODate(new Date(ms)))}%`;
-    } else {
-      const ms = Math.min(dateFromISO(origT).getTime() - DAY_MS, Math.max(S.getTime(), dateFromISO(origF).getTime() + daysDelta * DAY_MS));
-      const ns = toISODate(new Date(ms));
-      el.style.left = `${pctFromDate(ns)}%`;
-      el.style.width = `${widthPct(ns, origT)}%`;
-    }
-    return;
-  }
-  if (dailyItemResizeDrag) {
-    const { edge, startY: sy, origStartMin, origEndMin, el } = dailyItemResizeDrag;
-    const deltaMin = snapMin(Math.round((clientY - sy) / DAY_VIEW.rowHeight * 60));
-    if (edge === 'top') {
-      const newStart = Math.max(DAY_VIEW.fromHour * 60, Math.min(origStartMin + deltaMin, origEndMin - 15));
-      el.style.top = `${yFromMin(newStart)}px`;
-      el.style.height = `${Math.max(14, yFromMin(origEndMin) - yFromMin(newStart) - 2)}px`;
-    } else {
-      const newEnd = Math.min(DAY_VIEW.toHour * 60, Math.max(origEndMin + deltaMin, origStartMin + 15));
-      el.style.height = `${Math.max(14, yFromMin(newEnd) - yFromMin(origStartMin) - 2)}px`;
-    }
-    return;
-  }
-  if (dailyItemMoveDrag) {
-    const { ghost, offsetY } = dailyItemMoveDrag;
-    const tlRect = tl.getBoundingClientRect();
-    const snappedMin = Math.max(DAY_VIEW.fromHour * 60, Math.min(DAY_VIEW.toHour * 60 - 15, snapMin(minFromLocalY(clientY - tlRect.top - offsetY))));
-    const targetDate = dateFromTimelineClientX(clientX);
-    ghost.style.top  = `${tlRect.top + yFromMin(snappedMin)}px`;
-    ghost.style.left = `${tlRect.left + (pctFromDate(targetDate) / 100) * tl.offsetWidth - tlOuter.scrollLeft}px`;
-    return;
-  }
-  if (dailyDrag) {
-    dailyDrag.currentMin = minFromLocalY(clientY - tl.getBoundingClientRect().top);
-    drawDailyPreview();
-    return;
-  }
-  if (addMode && dragStartDate) {
-    dragMoved = true;
-    drawDragPreview(dragStartDate, dateFromTimelineClientX(clientX));
-  }
-}, { passive: false });
-
-// Drag end — commit
-window.addEventListener('touchend', (e) => {
-  const { clientX, clientY } = normTouch(e);
-
-  if (dailyItemMoveDrag) {
-    const { item, offsetY, ghost } = dailyItemMoveDrag;
-    ghost.remove(); dailyItemMoveDrag = null;
-    document.body.style.userSelect = '';
-    const tlRect = tl.getBoundingClientRect();
-    const targetStart = Math.max(DAY_VIEW.fromHour * 60, Math.min(DAY_VIEW.toHour * 60 - 15, snapMin(minFromLocalY(clientY - tlRect.top - offsetY))));
-    const duration = item.endMin - item.startMin;
-    item.date     = toISODate(dateFromTimelineClientX(clientX));
-    item.startMin = targetStart;
-    item.endMin   = Math.min(DAY_VIEW.toHour * 60, targetStart + duration);
-    renderAll(); return;
-  }
-  if (dailyItemResizeDrag) {
-    const { item, edge, startY: sy, origStartMin, origEndMin } = dailyItemResizeDrag;
-    const deltaMin = snapMin(Math.round((clientY - sy) / DAY_VIEW.rowHeight * 60));
-    if (edge === 'top') item.startMin = Math.max(DAY_VIEW.fromHour * 60, Math.min(origStartMin + deltaMin, origEndMin - 15));
-    else                item.endMin   = Math.min(DAY_VIEW.toHour * 60,   Math.max(origEndMin   + deltaMin, origStartMin + 15));
-    lastResizeEnd = Date.now(); dailyItemResizeDrag = null; renderAll(); return;
-  }
-  if (daySizeDrag) {
-    daySizeDrag = null;
-    document.getElementById('daySizeStrip')?.classList.remove('dragging');
-    return;
-  }
-  if (resizeDrag) {
-    const { ph, side, startX, origF, origT } = resizeDrag;
-    const daysDelta = Math.round((clientX - startX) / (tl.offsetWidth / TOTAL_DAYS));
-    if (side === 'right') ph.t = toISODate(new Date(Math.max(dateFromISO(origF).getTime() + DAY_MS, Math.min(E.getTime(), dateFromISO(origT).getTime() + daysDelta * DAY_MS))));
-    else                  ph.f = toISODate(new Date(Math.min(dateFromISO(origT).getTime() - DAY_MS, Math.max(S.getTime(), dateFromISO(origF).getTime() + daysDelta * DAY_MS))));
-    lastResizeEnd = Date.now(); resizeDrag = null; renderAll(); return;
-  }
-  if (dailyDrag) {
-    const startMin = Math.min(dailyDrag.startMin, dailyDrag.currentMin);
-    const endMin   = Math.max(dailyDrag.startMin + 15, dailyDrag.currentMin);
-    dailyStagedPreview = [dailyDrag.previewEl, dailyDrag.topLine, dailyDrag.bottomLine,
-      ...hourRail.querySelectorAll('[data-drag]')].filter(Boolean);
-    const date = toISODate(dailyDrag.date);
-    dailyDrag = null;
-    openDraftModal({ mode:'create', type:'daily', track:'daily', start:date, startMin, endMin, categoryId:'', todos:[] });
-    return;
-  }
-  if (!addMode || !dragStartDate) return;
-  if (!dragMoved) { dragStartDate = null; clearDragPreview(); return; }
-  const endDate  = dateFromTimelineClientX(clientX);
-  const start    = dragStartDate <= endDate ? dragStartDate : endDate;
-  const end      = dragStartDate <= endDate ? endDate : dragStartDate;
-  const daySpan  = Math.round((end - start) / DAY_MS);
-  timelineStagedPreview = [dragPreview, dragPreview?._left, dragPreview?._right].filter(Boolean);
-  dragPreview = null; dragStartDate = null; dragMoved = false;
-  openDraftModal({ mode:'create', type: daySpan >= 1 ? 'range' : 'point', track: daySpan >= 1 ? 'phase' : 'note', start, end, categoryId:'' });
-});
-
-// Long-press on daily items to move (500ms hold → drag)
+// Long-press on a daily item (touch/pen) → pick it up and move it
 function addItemTouchDrag(el, item) {
-  let timer = null;
-  el.addEventListener('touchstart', (e) => {
-    if (addMode) return;
-    const t = e.touches[0];
+  el.addEventListener('pointerdown', (e) => {
+    if (addMode || e.pointerType === 'mouse') return;
+    cancelLongPress();
     const r = el.getBoundingClientRect();
-    timer = setTimeout(() => {
+    const px = e.clientX, py = e.clientY;
+    longPress = { x: px, y: py, timer: setTimeout(() => {
+      longPress = null;
+      if (navigator.vibrate) navigator.vibrate(12);
       const ghost = el.cloneNode(true);
-      ghost.style.cssText += `;position:fixed;opacity:0.7;pointer-events:none;z-index:200;width:${r.width}px;height:${r.height}px;left:${r.left}px;top:${r.top}px;`;
+      ghost.style.cssText += `;position:fixed;opacity:0.7;pointer-events:none;z-index:200;width:${r.width}px;height:${r.height}px;left:${r.left}px;top:${r.top}px;transition:none;`;
       document.body.appendChild(ghost);
-      dailyItemMoveDrag = { item, offsetY: t.clientY - r.top, ghost };
+      dailyItemMoveDrag = { item, offsetY: py - r.top, ghost, undoSnap: snapshotState() };
       document.body.style.userSelect = 'none';
-    }, 500);
-  }, { passive: true });
-  el.addEventListener('touchmove',  () => { clearTimeout(timer); timer = null; }, { passive: true });
-  el.addEventListener('touchend',   () => { clearTimeout(timer); timer = null; }, { passive: true });
+    }, 500) };
+  });
 }
-
-tlOuter.addEventListener('mouseleave', () => { setDailyHover(null); setTimelineHover(null); });
-
-tlOuter.addEventListener('mousedown', (e) => {
-  if (!addMode) return;
-  e.preventDefault(); e.stopPropagation();
-  const tlRect = tl.getBoundingClientRect();
-  const localY = e.clientY - tlRect.top;
-  if (isDailyView && localY >= DAY_VIEW.top) { const date = dateFromTimelineClientX(e.clientX); const m = minFromLocalY(localY); dailyDrag = { date, startMin: m, currentMin: m, previewEl: null }; drawDailyPreview(); return; }
-  dragStartDate = dateFromTimelineClientX(e.clientX); dragMoved = false; clearDragPreview();
-});
+// Page-level vertical scroll: keeps dayStickBar pinned to the top of the visible tlOuter area
+tlOuter.addEventListener('pointerleave', () => { setDailyHover(null); setTimelineHover(null); });
 
 function drawDailyPreview() {
   if (!dailyDrag) return;
@@ -1549,41 +1492,191 @@ function clearDailyPreview() {
   dailyStagedPreview.forEach(el => el?.remove()); dailyStagedPreview = [];
 }
 
-window.addEventListener('mousemove', (e) => {
-  if (dailyItemCopyDrag) { const { ghost, offsetY } = dailyItemCopyDrag; ghost.style.top = `${e.clientY - offsetY}px`; ghost.style.left = `${e.clientX - ghost.offsetWidth / 2}px`; return; }
-  if (dailyItemMoveDrag) { const { item, ghost, offsetY } = dailyItemMoveDrag; const tlRect = tl.getBoundingClientRect(); const itemTopInTl = e.clientY - tlRect.top - offsetY; const snappedMin = Math.max(DAY_VIEW.fromHour*60, Math.min(DAY_VIEW.toHour*60-15, snapMin(minFromLocalY(itemTopInTl)))); const snappedTopVp = tlRect.top + yFromMin(snappedMin); const targetDate = dateFromTimelineClientX(e.clientX); const colLeftVp = tlRect.left + (pctFromDate(targetDate)/100)*tl.offsetWidth - tlOuter.scrollLeft; ghost.style.top = `${snappedTopVp}px`; ghost.style.left = `${colLeftVp}px`; return; }
-  if (dailyItemResizeDrag) { const { item, edge, startY: sy, origStartMin, origEndMin, el } = dailyItemResizeDrag; const deltaMin = snapMin(Math.round((e.clientY - sy) / DAY_VIEW.rowHeight * 60)); if (edge === 'top') { const newStart = Math.max(DAY_VIEW.fromHour * 60, Math.min(origStartMin + deltaMin, origEndMin - 15)); const newTop = yFromMin(newStart); el.style.top = `${newTop}px`; el.style.height = `${Math.max(14, yFromMin(origEndMin) - newTop - 2)}px`; } else { const newEnd = Math.min(DAY_VIEW.toHour * 60, Math.max(origEndMin + deltaMin, origStartMin + 15)); el.style.height = `${Math.max(14, yFromMin(newEnd) - yFromMin(origStartMin) - 2)}px`; } return; }
-  if (daySizeDrag) { const THRESHOLD = 55; const delta = e.clientY - daySizeDrag.startY; const levelDelta = Math.round(delta / THRESHOLD); const newLevel = Math.max(0, Math.min(2, daySizeDrag.startLevel + levelDelta)); if (newLevel !== rowHeightLevel) { rowHeightLevel = newLevel; renderAll(); } return; }
-  if (resizeDrag) { const { ph, side, startX, origF, origT, el } = resizeDrag; const dx = e.clientX - startX; const pxPerDay = tl.offsetWidth / TOTAL_DAYS; const daysDelta = Math.round(dx / pxPerDay); if (side === 'right') { const newEndMs = Math.max(dateFromISO(origF).getTime() + DAY_MS, Math.min(E.getTime(), dateFromISO(origT).getTime() + daysDelta * DAY_MS)); el.style.width = `${widthPct(origF, toISODate(new Date(newEndMs)))}%`; } else { const newStartMs = Math.min(dateFromISO(origT).getTime() - DAY_MS, Math.max(S.getTime(), dateFromISO(origF).getTime() + daysDelta * DAY_MS)); const ns = toISODate(new Date(newStartMs)); el.style.left = `${pctFromDate(ns)}%`; el.style.width = `${widthPct(ns, origT)}%`; } return; }
-  if (addMode && !dailyDrag && !daySizeDrag && !resizeDrag && !dragStartDate) { const tlRect = tl.getBoundingClientRect(); const localY = e.clientY - tlRect.top; const PY = currentLayout ? currentLayout.contentTop : 30; const inTimeline = localY >= PY && (!isDailyView || localY < DAY_VIEW.top - 20); if (inTimeline) setTimelineHover(dateFromTimelineClientX(e.clientX)); else setTimelineHover(null); } else { setTimelineHover(null); }
-  if (addMode && isDailyView && !dailyDrag && !daySizeDrag && !resizeDrag && !dragStartDate) { const tlRect = tl.getBoundingClientRect(); const localY = e.clientY - tlRect.top; if (localY >= DAY_VIEW.top && localY <= dayViewBottom()) setDailyHover(minFromLocalY(localY)); else setDailyHover(null); }
-  if (dailyDrag) { const tlRect = tl.getBoundingClientRect(); dailyDrag.currentMin = minFromLocalY(e.clientY - tlRect.top); drawDailyPreview(); return; }
-  if (!addMode || !dragStartDate) return;
-  dragMoved = true; drawDragPreview(dragStartDate, dateFromTimelineClientX(e.clientX));
+window.addEventListener('pointermove', (e) => {
+  if (activePointers.has(e.pointerId)) activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (longPress && Math.hypot(e.clientX - longPress.x, e.clientY - longPress.y) > 8) cancelLongPress();
+
+  // pinch zoom
+  if (activePointers.size === 2 && isDailyView && pinchStartDist) {
+    e.preventDefault();
+    const pts = [...activePointers.values()];
+    const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+    const newH = Math.round(Math.max(ROW_H_MIN, Math.min(ROW_H_MAX, pinchStartRowH * (dist / pinchStartDist))));
+    if (newH !== DAY_VIEW.rowHeight) {
+      DAY_VIEW.rowHeight = newH;
+      rowHeightLevel = newH < 33 ? 0 : newH < 66 ? 1 : 2;
+      requestAnimationFrame(() => renderAll());
+    }
+    return;
+  }
+
+  if (dailyItemCopyDrag) {
+    const { ghost, offsetY } = dailyItemCopyDrag;
+    ghost.style.top = `${e.clientY - offsetY}px`;
+    ghost.style.left = `${e.clientX - ghost.offsetWidth / 2}px`;
+    return;
+  }
+  if (dailyItemMoveDrag) {
+    const { ghost, offsetY } = dailyItemMoveDrag;
+    const tlRect = tl.getBoundingClientRect();
+    const itemTopInTl = e.clientY - tlRect.top - offsetY;
+    const snappedMin = Math.max(DAY_VIEW.fromHour * 60, Math.min(DAY_VIEW.toHour * 60 - 15, snapMin(minFromLocalY(itemTopInTl))));
+    const targetDate = dateFromTimelineClientX(e.clientX);
+    ghost.style.top  = `${tlRect.top + yFromMin(snappedMin)}px`;
+    ghost.style.left = `${tlRect.left + (pctFromDate(targetDate) / 100) * tl.offsetWidth - tlOuter.scrollLeft}px`;
+    return;
+  }
+  if (dailyItemResizeDrag) {
+    const { edge, startY: sy, origStartMin, origEndMin, el } = dailyItemResizeDrag;
+    const deltaMin = snapMin(Math.round((e.clientY - sy) / DAY_VIEW.rowHeight * 60));
+    if (edge === 'top') {
+      const newStart = Math.max(DAY_VIEW.fromHour * 60, Math.min(origStartMin + deltaMin, origEndMin - 15));
+      const newTop = yFromMin(newStart);
+      el.style.top = `${newTop}px`;
+      el.style.height = `${Math.max(14, yFromMin(origEndMin) - newTop - 2)}px`;
+    } else {
+      const newEnd = Math.min(DAY_VIEW.toHour * 60, Math.max(origEndMin + deltaMin, origStartMin + 15));
+      el.style.height = `${Math.max(14, yFromMin(newEnd) - yFromMin(origStartMin) - 2)}px`;
+    }
+    return;
+  }
+  if (daySizeDrag) {
+    const THRESHOLD = 55;
+    const newLevel = Math.max(0, Math.min(2, daySizeDrag.startLevel + Math.round((e.clientY - daySizeDrag.startY) / THRESHOLD)));
+    if (newLevel !== rowHeightLevel) { rowHeightLevel = newLevel; renderAll(); }
+    return;
+  }
+  if (resizeDrag) {
+    const { side, startX, origF, origT, el } = resizeDrag;
+    const daysDelta = Math.round((e.clientX - startX) / (tl.offsetWidth / TOTAL_DAYS));
+    if (side === 'right') {
+      const newEndMs = Math.max(dateFromISO(origF).getTime() + DAY_MS, Math.min(E.getTime(), dateFromISO(origT).getTime() + daysDelta * DAY_MS));
+      el.style.width = `${widthPct(origF, toISODate(new Date(newEndMs)))}%`;
+    } else {
+      const newStartMs = Math.min(dateFromISO(origT).getTime() - DAY_MS, Math.max(S.getTime(), dateFromISO(origF).getTime() + daysDelta * DAY_MS));
+      const ns = toISODate(new Date(newStartMs));
+      el.style.left = `${pctFromDate(ns)}%`;
+      el.style.width = `${widthPct(ns, origT)}%`;
+    }
+    return;
+  }
+
+  if (dailyDrag) {
+    dailyDrag.currentMin = minFromLocalY(e.clientY - tl.getBoundingClientRect().top);
+    drawDailyPreview();
+    return;
+  }
+  if (addMode && dragStartDate) {
+    dragMoved = true;
+    drawDragPreview(dragStartDate, dateFromTimelineClientX(e.clientX));
+    return;
+  }
+
+  // Hover lines — mouse only, never during a drag
+  if (e.pointerType === 'mouse') {
+    if (addMode) {
+      const tlRect = tl.getBoundingClientRect();
+      const localY = e.clientY - tlRect.top;
+      const PY = currentLayout ? currentLayout.contentTop : 30;
+      const inTimeline = localY >= PY && (!isDailyView || localY < DAY_VIEW.top - 20);
+      setTimelineHover(inTimeline ? dateFromTimelineClientX(e.clientX) : null);
+      if (isDailyView && localY >= DAY_VIEW.top && localY <= dayViewBottom()) setDailyHover(minFromLocalY(localY));
+      else setDailyHover(null);
+    } else if (timelineHoverDate !== null || dailyHoverMin !== null) {
+      setTimelineHover(null); setDailyHover(null);
+    }
+  }
 });
 
-window.addEventListener('mouseup', (e) => {
-  if (dailyItemCopyDrag) { const { item, offsetY, ghost } = dailyItemCopyDrag; ghost.remove(); document.body.style.cursor = ''; document.body.style.userSelect = ''; dailyItemCopyDrag = null; const targetDate = dateFromTimelineClientX(e.clientX); const tlRect = tl.getBoundingClientRect(); const targetStart = Math.max(DAY_VIEW.fromHour * 60, Math.min(DAY_VIEW.toHour * 60 - 15, snapMin(minFromLocalY(e.clientY - tlRect.top - offsetY)))); const duration = item.endMin - item.startMin; const copiedTodos = (item.todos || []).filter(t => t.state === 'postponed').map(t => ({ id: crypto.randomUUID(), text: t.text, state: 'postponed' })); dailyItems.push({ id: crypto.randomUUID(), date: toISODate(targetDate), startMin: targetStart, endMin: Math.min(DAY_VIEW.toHour * 60, targetStart + duration), title: item.title, categoryId: item.categoryId, todos: copiedTodos, repeat: 'none' }); renderAll(); return; }
-  if (dailyItemMoveDrag) { const { item, offsetY, ghost } = dailyItemMoveDrag; ghost.remove(); document.body.style.cursor = ''; document.body.style.userSelect = ''; dailyItemMoveDrag = null; const targetDate = dateFromTimelineClientX(e.clientX); const tlRect = tl.getBoundingClientRect(); const itemTopInTl = e.clientY - tlRect.top - offsetY; const targetStart = Math.max(DAY_VIEW.fromHour * 60, Math.min(DAY_VIEW.toHour * 60 - 15, snapMin(minFromLocalY(itemTopInTl)))); const duration = item.endMin - item.startMin; item.date = toISODate(targetDate); item.startMin = targetStart; item.endMin = Math.min(DAY_VIEW.toHour * 60, targetStart + duration); renderAll(); return; }
-  if (dailyItemResizeDrag) { const { item, edge, startY: sy, origStartMin, origEndMin } = dailyItemResizeDrag; const deltaMin = snapMin(Math.round((e.clientY - sy) / DAY_VIEW.rowHeight * 60)); if (edge === 'top') item.startMin = Math.max(DAY_VIEW.fromHour * 60, Math.min(origStartMin + deltaMin, origEndMin - 15)); else item.endMin = Math.min(DAY_VIEW.toHour * 60, Math.max(origEndMin + deltaMin, origStartMin + 15)); document.body.style.cursor = ''; document.body.style.userSelect = ''; lastResizeEnd = Date.now(); dailyItemResizeDrag = null; renderAll(); return; }
-  if (daySizeDrag) { daySizeDrag = null; document.body.style.cursor = ''; document.body.style.userSelect = ''; const strip = document.getElementById('daySizeStrip'); if (strip) strip.classList.remove('dragging'); return; }
-  if (resizeDrag) { const { ph, side, startX, origF, origT } = resizeDrag; const dx = e.clientX - startX; const pxPerDay = tl.offsetWidth / TOTAL_DAYS; const daysDelta = Math.round(dx / pxPerDay); if (side === 'right') { ph.t = toISODate(new Date(Math.max(dateFromISO(origF).getTime() + DAY_MS, Math.min(E.getTime(), dateFromISO(origT).getTime() + daysDelta * DAY_MS)))); } else { ph.f = toISODate(new Date(Math.min(dateFromISO(origT).getTime() - DAY_MS, Math.max(S.getTime(), dateFromISO(origF).getTime() + daysDelta * DAY_MS)))); } document.body.style.cursor = ''; document.body.style.userSelect = ''; lastResizeEnd = Date.now(); resizeDrag = null; renderAll(); return; }
-  if (dailyDrag) { const date = toISODate(dailyDrag.date); const startMin = Math.min(dailyDrag.startMin, dailyDrag.currentMin); const endMin = Math.max(dailyDrag.startMin + 15, dailyDrag.currentMin); dailyStagedPreview = [dailyDrag.previewEl, dailyDrag.topLine, dailyDrag.bottomLine, ...hourRail.querySelectorAll('[data-drag]')].filter(Boolean); dailyDrag = null; openDraftModal({ mode: 'create', type: 'daily', track: 'daily', start: date, startMin, endMin, categoryId: '', todos: [] }); return; }
+window.addEventListener('pointerup', (e) => {
+  activePointers.delete(e.pointerId);
+  if (activePointers.size < 2) pinchStartDist = null;
+  cancelLongPress();
+
+  if (dailyItemCopyDrag) {
+    const { item, offsetY, ghost, undoSnap } = dailyItemCopyDrag;
+    ghost.remove(); document.body.style.cursor = ''; document.body.style.userSelect = '';
+    dailyItemCopyDrag = null;
+    const tlRect = tl.getBoundingClientRect();
+    const targetStart = Math.max(DAY_VIEW.fromHour * 60, Math.min(DAY_VIEW.toHour * 60 - 15, snapMin(minFromLocalY(e.clientY - tlRect.top - offsetY))));
+    const duration = item.endMin - item.startMin;
+    const copiedTodos = (item.todos || []).filter(t => t.state === 'postponed').map(t => ({ id: crypto.randomUUID(), text: t.text, state: 'postponed' }));
+    pushUndoSnap(undoSnap);
+    dailyItems.push({ id: crypto.randomUUID(), date: toISODate(dateFromTimelineClientX(e.clientX)), startMin: targetStart, endMin: Math.min(DAY_VIEW.toHour * 60, targetStart + duration), title: item.title, categoryId: item.categoryId, todos: copiedTodos, repeat: 'none' });
+    persist(); renderAll(); return;
+  }
+  if (dailyItemMoveDrag) {
+    const { item, offsetY, ghost, undoSnap } = dailyItemMoveDrag;
+    ghost.remove(); document.body.style.cursor = ''; document.body.style.userSelect = '';
+    dailyItemMoveDrag = null;
+    const tlRect = tl.getBoundingClientRect();
+    const targetStart = Math.max(DAY_VIEW.fromHour * 60, Math.min(DAY_VIEW.toHour * 60 - 15, snapMin(minFromLocalY(e.clientY - tlRect.top - offsetY))));
+    const duration = item.endMin - item.startMin;
+    pushUndoSnap(undoSnap);
+    item.date = toISODate(dateFromTimelineClientX(e.clientX));
+    item.startMin = targetStart;
+    item.endMin = Math.min(DAY_VIEW.toHour * 60, targetStart + duration);
+    persist(); renderAll(); return;
+  }
+  if (dailyItemResizeDrag) {
+    const { item, edge, startY: sy, origStartMin, origEndMin, undoSnap } = dailyItemResizeDrag;
+    const deltaMin = snapMin(Math.round((e.clientY - sy) / DAY_VIEW.rowHeight * 60));
+    pushUndoSnap(undoSnap);
+    if (edge === 'top') item.startMin = Math.max(DAY_VIEW.fromHour * 60, Math.min(origStartMin + deltaMin, origEndMin - 15));
+    else                item.endMin   = Math.min(DAY_VIEW.toHour * 60,   Math.max(origEndMin + deltaMin, origStartMin + 15));
+    document.body.style.cursor = ''; document.body.style.userSelect = '';
+    lastResizeEnd = Date.now(); dailyItemResizeDrag = null;
+    persist(); renderAll(); return;
+  }
+  if (daySizeDrag) {
+    daySizeDrag = null;
+    document.body.style.cursor = ''; document.body.style.userSelect = '';
+    document.getElementById('daySizeStrip')?.classList.remove('dragging');
+    return;
+  }
+  if (resizeDrag) {
+    const { ph, side, startX, origF, origT, undoSnap } = resizeDrag;
+    const daysDelta = Math.round((e.clientX - startX) / (tl.offsetWidth / TOTAL_DAYS));
+    const newF = side === 'left'  ? toISODate(new Date(Math.min(dateFromISO(origT).getTime() - DAY_MS, Math.max(S.getTime(), dateFromISO(origF).getTime() + daysDelta * DAY_MS)))) : origF;
+    const newT = side === 'right' ? toISODate(new Date(Math.max(dateFromISO(origF).getTime() + DAY_MS, Math.min(E.getTime(), dateFromISO(origT).getTime() + daysDelta * DAY_MS)))) : origT;
+    if (newF !== origF || newT !== origT) { pushUndoSnap(undoSnap); ph.f = newF; ph.t = newT; persist(); }
+    document.body.style.cursor = ''; document.body.style.userSelect = '';
+    lastResizeEnd = Date.now(); resizeDrag = null;
+    renderAll(); return;
+  }
+  if (dailyDrag) {
+    const date = toISODate(dailyDrag.date);
+    const startMin = Math.min(dailyDrag.startMin, dailyDrag.currentMin);
+    const endMin   = Math.max(dailyDrag.startMin + 15, dailyDrag.currentMin);
+    dailyStagedPreview = [dailyDrag.previewEl, dailyDrag.topLine, dailyDrag.bottomLine, ...hourRail.querySelectorAll('[data-drag]')].filter(Boolean);
+    dailyDrag = null;
+    openDraftModal({ mode: 'create', type: 'daily', track: 'daily', start: date, startMin, endMin, categoryId: '', todos: [] });
+    return;
+  }
   if (!addMode || !dragStartDate) return;
   if (!dragMoved) { dragStartDate = null; clearDragPreview(); return; }
-  const endDate = dateFromTimelineClientX(e.clientX); const start = dragStartDate <= endDate ? dragStartDate : endDate; const end = dragStartDate <= endDate ? endDate : dragStartDate; const daySpan = Math.round((end - start) / DAY_MS);
+  const endDate = dateFromTimelineClientX(e.clientX);
+  const start = dragStartDate <= endDate ? dragStartDate : endDate;
+  const end   = dragStartDate <= endDate ? endDate : dragStartDate;
+  const daySpan = Math.round((end - start) / DAY_MS);
   timelineStagedPreview = [dragPreview, dragPreview?._left, dragPreview?._right].filter(Boolean);
   dragPreview = null; dragStartDate = null; dragMoved = false;
   openDraftModal({ mode: 'create', type: daySpan >= 1 ? 'range' : 'point', track: daySpan >= 1 ? 'phase' : 'note', start, end, categoryId: '' });
 });
 
-draftCancel.addEventListener('click', closeDraftModal);
+window.addEventListener('pointercancel', (e) => {
+  activePointers.delete(e.pointerId);
+  if (activePointers.size < 2) pinchStartDist = null;
+  cancelLongPress();
+});
+
+draftCancel.addEventListener('click', closeDraftModal);draftCancel.addEventListener('click', closeDraftModal);
 draftCategory.addEventListener('change', () => { if (pendingDraft?.type === 'daily' && pendingDraft?.mode === 'create') { const existing = draftTodos.filter(t => t.state !== 'postponed'); draftTodos = [...getPostponedTodosForCategory(draftCategory.value), ...existing]; renderTodoEditor(); } });
 document.getElementById('draftModal').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') { if (e.target.contentEditable === 'true') return; if (e.target.id === 'newTodoText') return; e.preventDefault(); draftSave.click(); }
   if (e.key === 'Backspace' && pendingDraft?.mode === 'edit') { const tag = e.target.tagName.toLowerCase(); if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.contentEditable === 'true') return; e.preventDefault(); draftDelete.click(); }
 });
-draftDelete.addEventListener('click', () => { if (!pendingDraft || pendingDraft.mode !== 'edit' || !pendingDraft.id) return; pushUndo(); removeById(pendingDraft.id); closeDraftModal(); renderAll(); });
+draftDelete.addEventListener('click', () => { if (!pendingDraft || pendingDraft.mode !== 'edit' || !pendingDraft.id) return; pushUndo(); removeById(pendingDraft.id); closeDraftModal(); persist(); renderAll(); });
 draftSave.addEventListener('click', () => {
   if (!pendingDraft) return;
   const title = draftTitle.value.trim(); const start = draftStart.value; const categoryId = draftCategory.value;
@@ -1597,13 +1690,15 @@ draftSave.addEventListener('click', () => {
     const repeat = draftRepeat.value || 'none'; const todos = draftTodos.filter(t => t.text && t.text.trim()).map(t => ({ id: t.id || crypto.randomUUID(), text: t.text.trim(), state: t.state || 'open' }));
     dailyItems.push({ id, date: start, startMin, endMin, title, categoryId, todos, repeat });
   } else {
-    const end = draftEnd.value || draftStart.value; const rawHtml = draftDetails.innerHTML.trim(); const details = draftDetails.textContent.trim() ? rawHtml : '';
+    const end = draftEnd.value || draftStart.value; const rawHtml = sanitizeHtml(draftDetails.innerHTML.trim()); const details = draftDetails.textContent.trim() ? rawHtml : '';
     if (pendingDraft.type === 'range' && track === 'phase') phases.push({ id, l:title, f:start, t:toISODate(new Date(dateFromISO(end).getTime()+DAY_MS)), categoryId, details });
     else if (pendingDraft.type === 'range' && track === 'event') privateEvents.push({ id, l:title, f:start, t:toISODate(new Date(dateFromISO(end).getTime()+DAY_MS)), categoryId, details });
     else if (pendingDraft.type === 'point' && track === 'exam') fixedExams.push({ id, l:title, d:start, e:'3', p:'top', categoryId, details });
     else noteItems.push({ id, title, date:start, type:'info', categoryId, details });
   }
-  closeDraftModal(); renderAll();
+  const wasCreate = pendingDraft.mode === 'create';
+  closeDraftModal(); persist(); renderAll();
+  if (wasCreate && addMode) setAddMode(false);   // one creation per add-mode activation
 });
 
 addTodoBtn.addEventListener('click', () => { const txt = newTodoText.value.trim(); if (!txt) return; draftTodos.push({ id: crypto.randomUUID(), text: txt, state: 'open' }); newTodoText.value = ''; renderTodoEditor(); });
@@ -1624,11 +1719,11 @@ document.addEventListener('fullscreenchange', () => {
     : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>`;
   renderAll();
 });
-window.addEventListener('resize', renderAll);
+window.addEventListener('resize', () => { if (!draftModal.classList.contains('open') && !anyDragActive()) renderAll(); });
 document.addEventListener('keydown', (e) => {
   if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'z') { e.preventDefault(); undoBtn.click(); return; }
   if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) { e.preventDefault(); redoBtn.click(); return; }
-  if (e.key === 'Escape') { if (draftModal.classList.contains('open')) { closeDraftModal(); } else if (addMode) { setAddMode(false); clearDragPreview(); clearDailyPreview(); dragStartDate = null; dragMoved = false; } return; }
+  if (e.key === 'Escape') { if (draftModal.classList.contains('open')) { closeDraftModal(); } else if (addMode || anyDragActive()) { setAddMode(false); clearDragPreview(); clearDailyPreview(); dragStartDate = null; dragMoved = false; } return; }
   if ((e.key === 'a' || e.key === 'A') && !draftModal.classList.contains('open')) { const tag = e.target.tagName.toLowerCase(); if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.contentEditable === 'true') return; setAddMode(!addMode); }
 });
 themeToggle.addEventListener('click', () => { const root = document.documentElement; const light = root.getAttribute('data-theme') === 'light'; if (light) { root.removeAttribute('data-theme'); themeToggle.textContent = 'Lightmode'; } else { root.setAttribute('data-theme', 'light'); themeToggle.textContent = 'Darkmode'; } renderAll(); });
