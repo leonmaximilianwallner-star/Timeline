@@ -134,10 +134,12 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
     margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border);
   }
 
-  .tl-controls { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 12px; color: var(--text2); }
+  .tl-controls { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 12px; color: var(--text2); position: sticky; top: 0; z-index: 70; background: var(--bg); padding: 6px 0; }
   .tl-actions { display: flex; align-items: center; gap: 8px; }
   .view-toggle { font-family: var(--ui-font); font-size: 12px; color: var(--text); background: var(--surface2); border: 1px solid var(--border2); border-radius: 999px; padding: 6px 10px; cursor: pointer; }
-  .add-toggle { width: 30px; height: 30px; border-radius: 999px; border: 1px solid var(--border2); background: var(--surface2); color: var(--text); font-family: var(--heading-font); font-size: 18px; line-height: 1; cursor: pointer; }
+  /* Add button: floating action button, bottom-right (PDF / Google pattern) */
+  .add-toggle { position: fixed; right: 20px; bottom: 24px; width: 54px; height: 54px; border-radius: 50%; border: 1px solid var(--border2); background: var(--surface2); color: var(--text); font-family: var(--heading-font); font-size: 26px; line-height: 1; cursor: pointer; z-index: 90; box-shadow: 0 6px 20px rgba(0,0,0,0.5); transition: background .12s, color .12s, transform .12s; }
+  .add-toggle:hover { transform: scale(1.05); }
   .add-toggle.active { background: var(--ok-bg); color: var(--ok-fg); border-color: #2e5730; }
   .add-preview { position: absolute; border: 1.5px dashed var(--text2); background: rgba(255,255,255,0.04); border-radius: 4px; pointer-events: none; z-index: 6; }
   .draft-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: none; align-items: center; justify-content: center; z-index: 40; }
@@ -145,12 +147,21 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
   @keyframes modal-fade { from { background: rgba(0,0,0,0); } to { background: rgba(0,0,0,0.45); } }
   .draft-card { width: min(560px, 92vw); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px; outline: none; transform: scale(0.93) translateY(8px); opacity: 0; animation: card-in 0.22s cubic-bezier(0.34,1.3,0.64,1) forwards; }
   @keyframes card-in { to { transform: scale(1) translateY(0); opacity: 1; } }
-  .draft-title { font-family: var(--heading-font); font-size: 14px; margin-bottom: 10px; }
-  .draft-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 8px; margin-bottom: 8px; }
-  .draft-grid input, .draft-grid select, .draft-grid textarea, .draft-actions button { font-family: var(--ui-font); font-size: 12px; border: 1px solid var(--border2); border-radius: var(--radius-sm); background: var(--note-bg); color: var(--text); padding: 8px; }
-  .draft-grid textarea { grid-column: 1 / -1; min-height: 84px; resize: vertical; }
+  .draft-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .draft-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px; }
+  /* PDF / Google pattern: no box chrome on inputs — plain text that becomes editable on focus */
+  .draft-grid input, .draft-grid select { font-family: var(--ui-font); font-size: 13px; border: none; border-bottom: 1px solid transparent; border-radius: 0; background: transparent; color: var(--text); padding: 6px 2px; }
+  .draft-grid input:hover, .draft-grid select:hover { border-bottom-color: var(--border); }
+  .draft-grid input:focus, .draft-grid select:focus { outline: none; border-bottom-color: var(--border2); }
+  .draft-grid input::placeholder { color: var(--text3); }
+  .draft-grid select { cursor: pointer; }
+  .draft-grid select option { background: var(--surface); color: var(--text); }
+  #draftTitle { grid-column: 1 / -1; font-size: 18px; font-weight: 500; padding: 2px 2px 8px; }
+  #draftStart, #draftEnd, #draftStartTime, #draftEndTime { font-family: var(--mono-font); }
+  input[type="date"]::-webkit-calendar-picker-indicator, input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(0.6); cursor: pointer; }
+  :root[data-theme="light"] input[type="date"]::-webkit-calendar-picker-indicator, :root[data-theme="light"] input[type="time"]::-webkit-calendar-picker-indicator { filter: none; }
   .phase-arrow { margin-right: 5px; width: 16px; height: 16px; border: 1px solid rgba(255,255,255,0.18); border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; opacity: 0.85; cursor: pointer; flex-shrink: 0; }
-  .phase-details { position: absolute; border: 1px solid; border-radius: var(--radius-md); font-family: var(--ui-font); font-size: 12px; padding: 14px 16px; z-index: 30; line-height: 1.6; text-align: left; box-shadow: 0 12px 32px rgba(0,0,0,0.5); animation: pop-down 0.2s cubic-bezier(0.34,1.28,0.64,1) both; }
+  .phase-details { position: sticky; left: var(--phase-sticky-left, 8px); display: inline-block; pointer-events: auto; border: 1px solid; border-radius: var(--radius-md); font-family: var(--ui-font); font-size: 12px; padding: 14px 16px; line-height: 1.6; text-align: left; box-shadow: 0 12px 32px rgba(0,0,0,0.5); animation: pop-down 0.2s cubic-bezier(0.34,1.28,0.64,1) both; }
   @keyframes pop-down { from { opacity:0; transform: translateY(-8px) scale(0.95); } to { opacity:1; transform: translateY(0) scale(1); } }
   .phase-details::before { content: ''; position: absolute; top: -6px; left: 20px; width: 10px; height: 10px; background: inherit; border-left: 1px solid; border-top: 1px solid; border-color: inherit; transform: rotate(45deg); }
   .phase-details strong, .phase-details b { font-weight: 600; }
@@ -175,8 +186,6 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
   .cat-swatch:hover { transform: scale(1.15); }
   .cat-swatch.selected { border-color: var(--text); transform: scale(1.1); }
   .modal-cat-grid { display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto; }
-  .time-range { display: flex; }
-  .time-range input[type="time"] { font-family: var(--ui-font); font-size: 12px; background: var(--note-bg); border: 1px solid var(--border2); border-radius: var(--radius-sm); color: var(--text); padding: 6px 8px; }
   .todo-wrapper { background: var(--note-bg); border: 1px solid var(--border2); border-radius: var(--radius-sm); padding: 10px; }
   .todo-list { display: flex; flex-direction: column; gap: 5px; margin-bottom: 8px; min-height: 30px; }
   .todo-list:empty::before { content: 'Noch keine Todos.'; color: var(--text3); font-size: 12px; font-style: italic; display: block; padding: 4px 0; }
@@ -210,7 +219,7 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
   .timeline-hover-label { position: absolute; font-size: 10px; font-family: var(--ui-font); color: var(--text); opacity: 0.7; pointer-events: none; z-index: 9; display: none; transform: translateX(-50%); white-space: nowrap; background: var(--surface); padding: 1px 5px; border-radius: 3px; }
   /* Day-of-week bar: sibling of tlOuter so no overflow ancestor can trap it.
      Vertical pinning = pure CSS sticky. Horizontal = inner translateX(-scrollLeft). */
-  #dayStickBar { position: sticky; top: 0; z-index: 60; display: none; overflow: hidden; height: 22px; background: var(--surface); border-bottom: 1px solid var(--border); }
+  #dayStickBar { position: sticky; top: 44px; z-index: 60; display: none; overflow: hidden; height: 36px; background: var(--surface); border-bottom: 1px solid var(--border); }
   #dayStickInner { position: relative; height: 100%; will-change: transform; }
   .day-size-strip { position: absolute; left: 0; right: 0; height: 20px; display: flex; align-items: center; justify-content: center; cursor: ns-resize; z-index: 30; }
   .day-size-strip::before { content: ''; width: 48px; height: 4px; border-radius: 2px; background: var(--text2); opacity: 0; transition: opacity .15s; }
@@ -250,7 +259,6 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
   .editor-content font[size="5"] { font-size: 14px; font-weight: 500; }
   .editor-content font[size="6"] { font-size: 16px; font-weight: 600; }
   .editor-wrapper { grid-column: 1 / -1; }
-  .draft-actions { display: flex; justify-content: flex-end; gap: 8px; }
   .tl-outer { position: relative; overflow-x: hidden; overflow-y: hidden; 
   -webkit-overflow-scrolling: touch; border: 1px solid var(--border); 
   border-radius: var(--radius-md); 
@@ -277,18 +285,25 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
     transform: translateX(-50%);
   }
   .tl-controls {
-    position: sticky;
-    top: 28px;
-    z-index: 50;
-    background: transparent;
+    top: 0;
+    background: var(--bg);
     padding: 8px 0;
     justify-content: flex-end;
   }
+  #dayStickBar { top: 46px; }
   .header { margin-bottom: 10px; }
   section { margin-bottom: 24px; }
 }
   .tl-inner { position: relative; height: 250px; min-width: 0px; }
-  .hour-rail { position: absolute; left: 0; top: 0; width: 68px; height: 120px; border-right: 1px solid var(--border); background: rgba(0,0,0,0.18); display: none; pointer-events: none; z-index: 8; box-shadow: inset -1px 0 0 rgba(255,255,255,0.06); will-change: transform; }
+  /* ── Unified sticky strategy ──────────────────────────────────────
+     Pinning is ALWAYS CSS position:sticky (compositor-driven, frame-perfect).
+     Pattern: zero-height in-flow wrapper inside #tl spans the sticky range,
+     the sticky child pins inside it. Used by: phase labels, hour rail,
+     phase-detail popups, month labels. The ONLY remaining JS scroll sync is
+     #dayStickInner's horizontal mirror — unavoidable, because tlOuter is a
+     scroll container and would trap a vertical sticky placed inside it. */
+  .hour-rail-wrap { position: sticky; left: 0; width: 68px; height: 0; z-index: 8; pointer-events: none; }
+  .hour-rail { position: absolute; left: 0; width: 68px; border-right: 1px solid var(--border); background: rgba(0,0,0,0.18); pointer-events: none; box-shadow: inset -1px 0 0 rgba(255,255,255,0.06); }
   .hour-rail.light { background: rgba(255,255,255,0.62); }
   .hour-label { position: absolute; left: 16px; transform: translateY(-50%); font-size: 10px; font-family: var(--mono-font); color: var(--text); opacity: 0.95; white-space: nowrap; }
   .today-note { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--danger-fg); opacity: 0.85; margin-top: 10px; }
@@ -371,7 +386,7 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
   <div class="header-top">
     <span class="title" style="display:inline-flex;align-items:center;gap:10px;">
       <img src="icon-192.png" alt="" style="width:28px;height:25px;flex-shrink:0;opacity:0.92">
-      <img src="timeline-wordmark.svg" alt="Timeline" style="height:18px;width:auto;opacity:0.92;display:block;">
+      Timeline 
     </span>
     <div class="header-actions"></div>
   </div>
@@ -395,28 +410,33 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
       <button class="icon-btn" id="redoBtn" type="button" title="Wiederholen (Strg+Y)" disabled>
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M21 13C18.5 8 14 6 9 7.5A9 9 0 0 0 3 17"/></svg>
       </button>
-      <button class="icon-btn" id="settingsBtn" type="button" title="Settings">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      </button>
-      <button class="add-toggle" id="addToggle" type="button" title="Event/Phase hinzufügen (A)">+</button>
       <button class="view-toggle" id="viewToggle" type="button">Dayly</button>
+      <button class="icon-btn" id="settingsBtn" type="button" title="Settings">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
     </div>
   </div>
   <div id="dayStickBar"><div id="dayStickInner"></div></div>
   <div class="tl-outer" id="tlOuter">
     <div id="tl" class="tl-inner"></div>
-    <div id="hourRail" class="hour-rail"></div>
   </div>
   <div class="today-note">
     <span class="today-dash"></span>
     <span id="todayText">Heute</span>
   </div>
+  <button class="add-toggle" id="addToggle" type="button" title="Event/Phase hinzufügen (A)">+</button>
   <div id="draftModal" class="draft-modal">
     <div class="draft-card" tabindex="-1">
-      <p class="draft-title" id="draftHeading">Neuen Eintrag hinzufügen</p>
+      <div class="draft-header">
+        <button id="draftCancel" class="icon-btn" type="button" title="Abbrechen (Esc)">✕</button>
+        <span style="flex:1"></span>
+        <button id="draftDelete" class="icon-btn" type="button" title="Löschen">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+        </button>
+        <button id="draftSave" class="save-btn" type="button">Übernehmen</button>
+      </div>
       <div class="draft-grid">
-        <input id="draftTitle" type="text" placeholder="Titel">
-        <select id="draftCategory"></select>
+        <input id="draftTitle" type="text" placeholder="Titel hinzufügen">
         <div id="dateGoalRow" style="grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">
           <input id="draftStart" type="date">
           <input id="draftEnd" type="date">
@@ -425,7 +445,8 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
         </div>
         <input id="draftStartTime" type="time" step="900" style="display:none">
         <input id="draftEndTime" type="time" step="900" style="display:none">
-        <select id="draftRepeat" style="display:none;grid-column:1/-1">
+        <select id="draftCategory"></select>
+        <select id="draftRepeat" style="display:none">
           <option value="none">Einmalig</option>
           <option value="daily">Täglich</option>
           <option value="weekdays">Wochentage (Mo–Fr)</option>
@@ -465,11 +486,6 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
             <button type="button" id="addTodoBtn">+ Hinzufügen</button>
           </div>
         </div>
-      </div>
-      <div class="draft-actions">
-        <button id="draftDelete" type="button">Löschen</button>
-        <button id="draftCancel" type="button">Abbrechen</button>
-        <button id="draftSave" type="button">Übernehmen</button>
       </div>
     </div>
   </div>
@@ -627,7 +643,7 @@ subtitleRange.textContent = `Appversion last updated: ${lm.getDate()}. ${months[
 
 const tl = document.getElementById('tl');
 const tlOuter = document.getElementById('tlOuter');
-const hourRail = document.getElementById('hourRail');
+let hourRail = null; // recreated inside #tl each render (sticky-left wrapper, see CSS)
 const viewToggle    = document.getElementById('viewToggle');
 const addToggle     = document.getElementById('addToggle');
 const undoBtn       = document.getElementById('undoBtn');
@@ -665,7 +681,6 @@ undoBtn.addEventListener('click', () => { if (!undoStack.length) return; redoSta
 redoBtn.addEventListener('click', () => { if (!redoStack.length) return; undoStack.push(snapshotState()); restoreSnapshot(redoStack.pop()); updateUndoButtons(); persist(); renderAll(); renderOpenPoints(); renderCategorySection(); });
 
 const draftModal    = document.getElementById('draftModal');
-const draftHeading  = document.getElementById('draftHeading');
 const draftTitle    = document.getElementById('draftTitle');
 const draftCategory = document.getElementById('draftCategory');
 const draftStart    = document.getElementById('draftStart');
@@ -733,7 +748,6 @@ const ROW_HEIGHTS = [22, 44, 66];
 const ROW_H_MIN = 22;
 const ROW_H_MAX = 66;
 let rowHeightLevel = 1;
-let stickyUpdaters = [];
 let pinchStartDist = null;
 let pinchStartRowH = DAY_VIEW.rowHeight;
 
@@ -799,7 +813,7 @@ let phases = [
   { id:crypto.randomUUID(), l:'Endspirt',  f:'2026-06-20', t:'2026-07-01', categoryId:'cat-seminar' },
 ];
 
-const L = { WEEK_H:26, ITEM_H:24, ITEM_GAP:5, SECT_GAP:18, PROJ_ABOVE:22, PROJ_LINE:8, PROJ_BELOW:22, EXAM_H:34, NOTE_H:20 };
+const L = { WEEK_H:42, ITEM_H:24, ITEM_GAP:5, SECT_GAP:18, PROJ_ABOVE:22, PROJ_LINE:8, PROJ_BELOW:22, EXAM_H:34, NOTE_H:20 };  // WEEK_H 26→42: room for month-name row above date row
 
 let projects = [{
   id: 'proj-seminar', l: 'Seminararbeit', f: '2026-05-09', t: '2026-06-30', categoryId: 'cat-seminar',
@@ -885,6 +899,7 @@ function setDailyHover(min) {
   dailyHoverMin = min;
   const line = document.getElementById('dailyHoverLine');
   if (line) { if (min === null) { line.style.display = 'none'; } else { line.style.display = 'block'; line.style.top = `${yFromMin(min)}px`; } }
+  if (!hourRail) return;
   let lbl = hourRail.querySelector('.hover-time-label');
   if (!lbl && min !== null) { lbl = document.createElement('div'); lbl.className = 'hover-time-label hour-label'; lbl.style.zIndex = '3'; lbl.style.background = 'var(--surface)'; hourRail.appendChild(lbl); }
   if (lbl) { if (min === null) { lbl.style.display = 'none'; } else { lbl.style.display = ''; lbl.style.top = `${yFromMin(min) - DAY_VIEW.top}px`; lbl.textContent = minToTimeStr(min); } }
@@ -906,7 +921,8 @@ function setTimelineHover(date) {
 }
 
 // dayStickBar: sticky sibling of tlOuter. CSS handles vertical pinning;
-// the only JS job is mirroring horizontal scroll via translateX.
+// the only JS job is mirroring horizontal scroll via translateX (see scroll handler).
+// Content per PDF / Google pattern: weekday name above day-of-month number.
 function updateDayStickBar() {
   const bar   = document.getElementById('dayStickBar');
   const inner = document.getElementById('dayStickInner');
@@ -916,18 +932,20 @@ function updateDayStickBar() {
   bar.style.display = 'block';
   inner.style.width = (tl.offsetWidth || 700) + 'px';
   inner.style.transform = `translateX(${-tlOuter.scrollLeft}px)`;
-  const rangeKey = `${+S}:${+E}`;
-  if (inner.dataset.built !== rangeKey) {
-    inner.dataset.built = rangeKey;
-    inner.innerHTML = '';
-    for (let d = new Date(S); d < E; d = new Date(d.getTime() + DAY_MS)) {
-      const cx = pctCenterFromDate(d);
-      const isToday = d.toDateString() === new Date().toDateString();
-      const lbl = document.createElement('span');
-      lbl.style.cssText = `position:absolute;left:${cx}%;transform:translateX(-50%);font-size:10px;font-family:var(--ui-font);color:${isToday ? 'var(--danger-fg)' : 'var(--text2)'};top:3px;white-space:nowrap;letter-spacing:.04em;`;
-      lbl.textContent = weekdays[d.getDay()];
-      inner.appendChild(lbl);
-    }
+  inner.innerHTML = '';
+  for (let d = new Date(S); d < E; d = new Date(d.getTime() + DAY_MS)) {
+    const cx = pctCenterFromDate(d);
+    const isToday = d.toDateString() === new Date().toDateString();
+    const cell = document.createElement('div');
+    cell.style.cssText = `position:absolute;left:${cx}%;top:0;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:0;padding-top:4px;white-space:nowrap;`;
+    const wd = document.createElement('span');
+    wd.style.cssText = `font-size:10px;font-family:var(--ui-font);letter-spacing:.05em;line-height:1.2;color:${isToday ? 'var(--danger-fg)' : 'var(--text2)'};`;
+    wd.textContent = weekdays[d.getDay()];
+    const num = document.createElement('span');
+    num.style.cssText = `font-size:12px;font-family:var(--ui-font);font-weight:600;line-height:1.3;${isToday ? 'color:#fff;background:var(--danger-fg);border-radius:999px;min-width:20px;text-align:center;' : 'color:var(--text);'}`;
+    num.textContent = d.getDate();
+    cell.append(wd, num);
+    inner.appendChild(cell);
   }
 }
 
@@ -936,7 +954,6 @@ function styleFromColorKey(colorKey, fallbackBg, fallbackFg) { const pal = COLOR
 function openDraftModal({ mode = 'create', type, track, id = null, title = '', start, end, categoryId = '', details = '', startMin = 540, endMin = 600, todos = [], repeat = 'none', remindMin = null, goalDone = null, goalTotal = null }) {
   pendingDraft = { mode, type, track, id };
   const isDaily = type === 'daily';
-  draftHeading.textContent = mode === 'edit' ? (isDaily ? 'Tageseintrag bearbeiten' : (type === 'range' ? 'Phase bearbeiten' : 'Ereignis bearbeiten')) : (isDaily ? 'Neuen Tageseintrag hinzufügen' : (type === 'range' ? 'Neue Phase hinzufügen' : 'Neues Ereignis hinzufügen'));
   draftTitle.value = title || '';
   draftCategory.innerHTML = '';
   categories.forEach(cat => { const opt = document.createElement('option'); opt.value = cat.id; opt.textContent = cat.name; if (cat.id === categoryId) opt.selected = true; draftCategory.appendChild(opt); });
@@ -967,7 +984,7 @@ function openDraftModal({ mode = 'create', type, track, id = null, title = '', s
     draftDetails.innerHTML = sanitizeHtml(details || ''); updateEditorEmptyState();
   }
   if (fontSizeSelect) fontSizeSelect.value = '3';
-  draftDelete.style.display = mode === 'edit' ? 'inline-block' : 'none';
+  draftDelete.style.display = mode === 'edit' ? 'inline-flex' : 'none';
   draftModal.classList.add('open');
   setTimeout(() => { if (mode === 'edit') document.querySelector('.draft-card')?.focus(); else draftTitle.focus(); }, 30);
 }
@@ -1071,25 +1088,53 @@ function applyTimelineWidth() {
   tlOuter.style.overflowX = 'auto';
   tlOuter.style.overflowY = 'hidden';
   tl.style.setProperty('--phase-sticky-left', isDailyView ? `${DAY_VIEW.railWidth + 8}px` : '8px');
-  hourRail.style.display = isDailyView ? 'block' : 'none';
-  if (document.documentElement.getAttribute('data-theme') === 'light') hourRail.classList.add('light');
-  else hourRail.classList.remove('light');
-  // hourRail: position:absolute in tlOuter, stays at left via translateX(scrollLeft)
-  // dayStickBar: position:absolute in tlOuter, stays at top via syncStickBar() on window scroll
-  hourRail.style.top       = `${DAY_VIEW.top}px`;
-  hourRail.style.height    = `${dayViewHeight()}px`;
-  hourRail.style.transform = `translateX(${isDailyView ? tlOuter.scrollLeft : 0}px)`;
+  // hourRail is now CSS sticky-left inside #tl — no JS positioning needed (see renderHourRail)
 }
 
+// Hour rail: built fresh each render as a sticky-left wrapper INSIDE #tl.
+// #tl spans the full scroll width, so CSS sticky pins the rail frame-perfectly —
+// same compositor mechanism as the phase-bar labels. Zero JS on scroll.
 function renderHourRail() {
-  hourRail.innerHTML = '';
+  hourRail = null;
   if (!isDailyView) return;
+  const wrap = document.createElement('div');
+  wrap.className = 'hour-rail-wrap';
+  hourRail = document.createElement('div');
+  hourRail.id = 'hourRail';
+  hourRail.className = 'hour-rail' + (document.documentElement.getAttribute('data-theme') === 'light' ? ' light' : '');
+  hourRail.style.top = `${DAY_VIEW.top}px`;
+  hourRail.style.height = `${dayViewHeight()}px`;
   for (let h = DAY_VIEW.fromHour; h <= DAY_VIEW.toHour; h++) {
     const lbl = document.createElement('div');
     lbl.className = 'hour-label';
     lbl.style.top = `${(h - DAY_VIEW.fromHour) * DAY_VIEW.rowHeight}px`;
     lbl.textContent = `${String(h).padStart(2,'0')}:00`;
     hourRail.appendChild(lbl);
+  }
+  wrap.appendChild(hourRail);
+  tl.prepend(wrap);
+}
+
+// Month names: readable, and sticky-left within their own month span —
+// exactly like phase-bar labels ("Januar" pins until January ends, then "Februar" takes over).
+function renderMonthLabels(topPx) {
+  const MONTH_FULL = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+  let cur = new Date(S.getFullYear(), S.getMonth(), 1);
+  while (cur < E) {
+    const next = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+    const from = cur < S ? S : cur;
+    const to   = next > E ? E : next;
+    if (to > from) {
+      const left = pctFromDate(from);
+      const wrap = document.createElement('div');
+      wrap.style.cssText = `position:absolute;left:${left}%;width:${pctFromDate(to) - left}%;top:${topPx}px;height:0;overflow:visible;pointer-events:none;z-index:4;`;
+      const lbl = document.createElement('span');
+      lbl.style.cssText = `position:sticky;left:var(--phase-sticky-left, 8px);display:inline-block;font-family:var(--ui-font);font-size:14px;font-weight:600;color:var(--text);letter-spacing:.02em;white-space:nowrap;`;
+      lbl.textContent = MONTH_FULL[cur.getMonth()];
+      wrap.appendChild(lbl);
+      tl.appendChild(wrap);
+    }
+    cur = next;
   }
 }
 
@@ -1100,7 +1145,6 @@ function renderGrid() {
   const fullH = fullBottom - PY;
   const detailed = isDailyView;
   const dailyOpacity = detailed ? 0.34 : 0.1;
-  const weekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
   for (let i = 0; i <= TOTAL_DAYS; i++) {
     const d = new Date(S.getTime() + i * DAY_MS);
     const x = pctFromDate(d);
@@ -1109,31 +1153,25 @@ function renderGrid() {
     if (isSaturday) { const next = new Date(d.getTime() + 2 * DAY_MS); mk(`position:absolute;left:${x}%;top:${PY}px;width:${pctFromDate(next)-x}%;height:${fullH}px;background:var(--weekend-tint);opacity:${detailed ? 0.62 : 0.45}`); }
     const lineH = detailed ? fullH : (isMonday ? fullH + 4 : fullH);
     mk(`position:absolute;left:${x}%;top:${PY}px;width:1px;height:${lineH}px;background:var(--grid-minor);opacity:${dailyOpacity}`);
-    if (detailed) { const cx = pctCenterFromDate(d); mk(`position:absolute;left:${cx}%;top:5px;font-size:10px;color:var(--grid-label);transform:translateX(-50%);white-space:nowrap`, `${weekdays[d.getDay()]} ${d.getDate()}.${d.getMonth()+1}`); }
   }
   if (detailed) {
     viewToggle.textContent = 'Line';
-    for (let d = new Date(S); d < E; d = new Date(d.getTime() + DAY_MS)) {
-      const cx = pctCenterFromDate(d);
-      const isToday = d.toDateString() === new Date().toDateString();
-      mk(`position:absolute;left:${cx}%;top:${DAY_VIEW.top - 16}px;font-size:10px;color:${isToday ? 'var(--danger-fg)' : 'var(--text2)'};transform:translateX(-50%);white-space:nowrap;font-family:var(--ui-font);letter-spacing:.04em`, weekdays[d.getDay()]);
-    }
+    renderMonthLabels(4);
+    // Weekday + date headers live exclusively in the sticky #dayStickBar (PDF: no duplicate in-grid bar)
     mk(`position:absolute;left:0;right:0;top:${DAY_VIEW.top}px;height:${dayViewHeight()}px;border-top:1px solid var(--border);border-bottom:1px solid var(--border)`);
     for (let h = DAY_VIEW.fromHour; h <= DAY_VIEW.toHour; h++) { const y = hourLineY(h); const alpha = h % 3 === 0 ? 0.22 : 0.12; mk(`position:absolute;left:0;right:0;top:${y}px;height:1px;background:var(--grid-major);opacity:${alpha}`); }
     if (!document.getElementById('dailyHoverLine')) { const hl = document.createElement('div'); hl.id = 'dailyHoverLine'; hl.className = 'daily-hover-line'; tl.appendChild(hl); }
   } else {
     viewToggle.textContent = 'Day';
-    const MONTH_NAMES = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
     let lastM = -1;
     for (let d = new Date(S); d <= E; d = new Date(d.getTime() + DAY_MS)) {
       if (d.getMonth() !== lastM) {
         lastM = d.getMonth();
         const x = pctFromDate(d);
         mk(`position:absolute;left:${x}%;top:0;width:1px;height:${PY}px;background:var(--text2);opacity:0.2`);
-        const lbl = mk(`position:absolute;left:${x}%;top:1px;font-size:10px;color:var(--text2);opacity:0.65;letter-spacing:.07em;white-space:nowrap;font-family:var(--ui-font);padding-left:4px`);
-        lbl.textContent = MONTH_NAMES[d.getMonth()].toUpperCase();
       }
     }
+    renderMonthLabels(2);  // sticky month names (PDF: readable, move like phase labels)
     mk(`position:absolute;left:0;right:0;top:${L.WEEK_H - 8}px;height:1px;background:var(--border);opacity:0.35`);
     for (let d = new Date(S); d <= E; d = new Date(d.getTime() + 7 * DAY_MS)) {
       const x = pctFromDate(d);
@@ -1207,11 +1245,15 @@ function renderPhaseBar(ph, phaseTop) {
   e.onclick = () => { if (Date.now() - lastResizeEnd < 200) return; openQuickEditor({ id:ph.id, type:'range', track:'phase', title:ph.l, start:ph.f, end:toISODate(new Date(dateFromISO(ph.t).getTime()-DAY_MS)), categoryId:ph.categoryId, details:ph.details, goalDone:ph.goalDone, goalTotal:ph.goalTotal }); };
   if (hasDesc && expandedPhaseIds.has(ph.id)) {
     const tlW = tl.offsetWidth; const bL = (pctFromDate(ph.f) / 100) * tlW; const bR = bL + (widthPct(ph.f, ph.t) / 100) * tlW; const DW = Math.min(320, Math.max(160, bR - bL));
+    // Same sticky pattern as the bar label: zero-height wrapper spans the bar,
+    // the box pins via CSS sticky inside it. No JS on scroll.
+    const wrap = document.createElement('div');
+    wrap.style.cssText = `position:absolute;left:${pctFromDate(ph.f)}%;width:${widthPct(ph.f, ph.t)}%;top:${phaseTop + L.ITEM_H + 6}px;height:0;overflow:visible;z-index:30;pointer-events:none;`;
     const box = document.createElement('div'); box.className = 'phase-details'; box.innerHTML = sanitizeHtml(ph.details);
-    box.style.top = `${phaseTop + L.ITEM_H + 6}px`; box.style.width = `${DW}px`;
+    box.style.width = `${DW}px`;
     box.style.background = `color-mix(in srgb, ${barHex} 30%, #0d0d10 70%)`; box.style.color = '#dddcdc'; box.style.borderColor = `${barHex}60`;
-    tl.appendChild(box);
-    stickyUpdaters.push((scroll) => { const w = tl.offsetWidth; const bl = (pctFromDate(ph.f) / 100) * w; const br = bl + (widthPct(ph.f, ph.t) / 100) * w; box.style.left = `${Math.max(bl, Math.min(scroll + 8, Math.max(bl, br - DW)))}px`; });
+    wrap.appendChild(box);
+    tl.appendChild(wrap);
   }
 }
 
@@ -1456,8 +1498,6 @@ function renderOpenPoints() {
   const addCard = document.createElement('div'); addCard.className = 'op-add-card'; addCard.textContent = '+ Neue Gruppe'; addCard.onclick = () => { pushUndo(); openPoints.push({ id: crypto.randomUUID(), title: 'Neue Gruppe', colorKey: PALETTE_KEYS[openPoints.length % PALETTE_KEYS.length], items: [{ id: crypto.randomUUID(), text: 'Erster Punkt', done: false }] }); renderOpenPoints(); persist(); }; td.appendChild(addCard);
 }
 
-function updateStickyElements() { const scroll = tlOuter.scrollLeft; stickyUpdaters.forEach(fn => fn(scroll)); }
-
 function renderDaySizeStrip() {
   let strip = document.getElementById('daySizeStrip');
   if (!strip) { strip = document.createElement('div'); strip.id = 'daySizeStrip'; strip.className = 'day-size-strip'; strip.style.pointerEvents = 'auto'; strip.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); daySizeDrag = { startY: e.clientY, startLevel: rowHeightLevel }; strip.classList.add('dragging'); document.body.style.cursor = 'ns-resize'; document.body.style.userSelect = 'none'; }); tl.appendChild(strip); } else if (strip.parentElement !== tl) { tl.appendChild(strip); }
@@ -1468,7 +1508,6 @@ function renderDaySizeStrip() {
 function renderAll() {
   recomputeRange();
   DAY_VIEW.rowHeight = ROW_HEIGHTS[rowHeightLevel];
-  stickyUpdaters = [];
   currentLayout = computeLayout();
   DAY_VIEW.top = currentLayout.dailyTop;
   tl.innerHTML = '';
@@ -1477,7 +1516,6 @@ function renderAll() {
   renderBaseTimeline();
   renderTodayLine();
   renderHourRail();
-  updateStickyElements();
   renderDaySizeStrip();
   updateDayStickBar();
 }
@@ -1495,13 +1533,14 @@ viewToggle.addEventListener('click', () => { isDailyView = !isDailyView; renderA
 saveBtn.addEventListener('click', () => syncGist(true));
 addToggle.addEventListener('click', () => setAddMode(!addMode));
 
+// The ONLY JS scroll sync left in the app: dayStickBar's horizontal mirror.
+// It cannot be CSS sticky because the bar must pin vertically to the WINDOW,
+// and any element inside tlOuter (a scroll container) gets its sticky trapped there.
 tlOuter.addEventListener('scroll', () => {
   if (isDailyView) {
-    hourRail.style.transform = `translateX(${tlOuter.scrollLeft}px)`;
     const inner = document.getElementById('dayStickInner');
     if (inner) inner.style.transform = `translateX(${-tlOuter.scrollLeft}px)`;
   }
-  updateStickyElements();
 });
 
 // ═══ Unified pointer input ═══════════════════════════════════════
@@ -1593,7 +1632,7 @@ function drawDailyPreview() {
   const mkLine = () => { const l = document.createElement('div'); l.style.cssText = `position:absolute;left:0;right:0;height:2px;background:var(--text);opacity:0.45;pointer-events:none;z-index:8;`; tl.appendChild(l); return l; };
   if (!dailyDrag.topLine)    dailyDrag.topLine    = mkLine();
   if (!dailyDrag.bottomLine) dailyDrag.bottomLine = mkLine();
-  const ensureRailLabel = (key) => { let lbl = hourRail.querySelector(`[data-drag="${key}"]`); if (!lbl) { lbl = document.createElement('div'); lbl.className = 'hour-label'; lbl.dataset.drag = key; lbl.style.zIndex = '4'; lbl.style.background = 'var(--surface)'; hourRail.appendChild(lbl); } return lbl; };
+  const ensureRailLabel = (key) => { if (!hourRail) return document.createElement('div'); let lbl = hourRail.querySelector(`[data-drag="${key}"]`); if (!lbl) { lbl = document.createElement('div'); lbl.className = 'hour-label'; lbl.dataset.drag = key; lbl.style.zIndex = '4'; lbl.style.background = 'var(--surface)'; hourRail.appendChild(lbl); } return lbl; };
   const dayLeftPct = pctFromDate(dailyDrag.date); const dayWidthPct = widthPct(toISODate(dailyDrag.date), toISODate(new Date(dailyDrag.date.getTime() + DAY_MS)));
   const a = Math.min(dailyDrag.startMin, dailyDrag.currentMin); const b = Math.max(dailyDrag.startMin + 15, dailyDrag.currentMin);
   const top = yFromMin(a); const height = Math.max(14, yFromMin(b) - top);
@@ -1605,7 +1644,7 @@ function drawDailyPreview() {
 
 function clearDailyPreview() {
   if (dailyDrag) { dailyDrag.previewEl?.remove(); dailyDrag.topLine?.remove(); dailyDrag.bottomLine?.remove(); dailyDrag = null; }
-  hourRail.querySelectorAll('[data-drag]').forEach(el => el.remove());
+  hourRail?.querySelectorAll('[data-drag]').forEach(el => el.remove());
   dailyStagedPreview.forEach(el => el?.remove()); dailyStagedPreview = [];
 }
 
@@ -1765,7 +1804,7 @@ window.addEventListener('pointerup', (e) => {
     const date = toISODate(dailyDrag.date);
     const startMin = Math.min(dailyDrag.startMin, dailyDrag.currentMin);
     const endMin   = Math.max(dailyDrag.startMin + 15, dailyDrag.currentMin);
-    dailyStagedPreview = [dailyDrag.previewEl, dailyDrag.topLine, dailyDrag.bottomLine, ...hourRail.querySelectorAll('[data-drag]')].filter(Boolean);
+    dailyStagedPreview = [dailyDrag.previewEl, dailyDrag.topLine, dailyDrag.bottomLine, ...(hourRail ? hourRail.querySelectorAll('[data-drag]') : [])].filter(Boolean);
     dailyDrag = null;
     openDraftModal({ mode: 'create', type: 'daily', track: 'daily', start: date, startMin, endMin, categoryId: '', todos: [] });
     return;
@@ -1787,7 +1826,7 @@ window.addEventListener('pointercancel', (e) => {
   cancelLongPress();
 });
 
-draftCancel.addEventListener('click', closeDraftModal);draftCancel.addEventListener('click', closeDraftModal);
+draftCancel.addEventListener('click', closeDraftModal);
 draftCategory.addEventListener('change', () => { if (pendingDraft?.type === 'daily' && pendingDraft?.mode === 'create') { const existing = draftTodos.filter(t => t.state !== 'postponed'); draftTodos = [...getPostponedTodosForCategory(draftCategory.value), ...existing]; renderTodoEditor(); } });
 document.getElementById('draftModal').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') { if (e.target.contentEditable === 'true') return; if (e.target.id === 'newTodoText') return; e.preventDefault(); draftSave.click(); }
