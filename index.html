@@ -284,9 +284,8 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
     padding: 8px 0;
     justify-content: flex-end;
   }
-  section:first-of-type {
-    padding-top: 48px;
-  }
+  .header { margin-bottom: 10px; }
+  section { margin-bottom: 24px; }
 }
   .tl-inner { position: relative; height: 250px; min-width: 0px; }
   .hour-rail { position: absolute; left: 0; top: 0; width: 68px; height: 120px; border-right: 1px solid var(--border); background: rgba(0,0,0,0.18); display: none; pointer-events: none; z-index: 8; box-shadow: inset -1px 0 0 rgba(255,255,255,0.06); will-change: transform; }
@@ -344,6 +343,26 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
   .tl-outer::-webkit-scrollbar-track { background: var(--surface); }
   .tl-outer::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 999px; }
   .hour-rail::-webkit-scrollbar { display: none; }
+  .budget-page { position: fixed; inset: 0; z-index: 150; background: var(--bg); display: none; flex-direction: column; padding: 28px 20px 40px; overflow-y: auto; }
+  .budget-page.open { display: flex; animation: budget-fade .18s ease both; }
+  @keyframes budget-fade { from { opacity: 0; } to { opacity: 1; } }
+  .budget-head { display: flex; align-items: center; gap: 12px; width: 100%; max-width: 520px; margin: 0 auto 6px; }
+  .budget-title { font-family: var(--heading-font); font-size: 18px; font-weight: 700; letter-spacing: 0.02em; }
+  .budget-range { margin-left: auto; display: flex; gap: 6px; }
+  .range-btn { font-family: var(--ui-font); font-size: 12px; color: var(--text2); background: var(--surface2); border: 1px solid var(--border2); border-radius: 999px; padding: 6px 12px; cursor: pointer; transition: background .12s, color .12s; }
+  .range-btn.active { background: var(--ok-bg); color: var(--ok-fg); border-color: #2e5730; }
+  .budget-chart-wrap { position: relative; width: min(250px, 64vw); margin: 26px auto 22px; }
+  .budget-chart-wrap svg { width: 100%; height: auto; display: block; }
+  .budget-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; pointer-events: none; }
+  .budget-total { font-family: var(--heading-font); font-size: 18px; font-weight: 700; letter-spacing: 0.01em; }
+  .budget-center-sub { font-size: 10px; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; }
+  .budget-legend { display: grid; gap: 7px; width: 100%; max-width: 520px; margin: 0 auto; }
+  .budget-row { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 11px 14px; font-size: 12px; }
+  .budget-dot { width: 11px; height: 11px; border-radius: 4px; flex-shrink: 0; }
+  .budget-name { flex: 1; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .budget-hours { font-family: var(--mono-font); font-size: 12px; color: var(--text); }
+  .budget-pct { font-size: 10px; color: var(--text2); width: 36px; text-align: right; }
+  .budget-empty { color: var(--text3); font-size: 12px; text-align: center; padding: 24px 0; font-style: italic; }
   @media (max-width: 900px) { body { padding: 22px 14px 42px; } .notes-form { grid-template-columns: 1fr 1fr; } }
 </style>
 </head>
@@ -354,10 +373,7 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
       <img src="icon-192.png" alt="" style="width:28px;height:25px;flex-shrink:0;opacity:0.92">
       Timeline 
     </span>
-    <div class="header-actions">
-              
-      <button class="theme-toggle" id="themeToggle" type="button">Lightmode</button>
-    </div>
+    <div class="header-actions"></div>
   </div>
   <p class="subtitle" id="subtitleRange">Server currently unavaleable</p> 
 </div>
@@ -368,9 +384,9 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
     <span></span>
     <div class="tl-actions">
       <button class="save-btn" id="saveBtn" type="button">Save</button>
-      <button class="icon-btn" id="fullscreenBtn" type="button" title="Vollbild">
+      <button class="icon-btn" id="budgetBtn" type="button" title="Zeitbudget">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+          <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/>
         </svg>
       </button>
       <button class="icon-btn" id="undoBtn" type="button" title="Rückgängig (Strg+Z)" disabled>
@@ -401,8 +417,12 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
       <div class="draft-grid">
         <input id="draftTitle" type="text" placeholder="Titel">
         <select id="draftCategory"></select>
-        <input id="draftStart" type="date">
-        <input id="draftEnd" type="date">
+        <div id="dateGoalRow" style="grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">
+          <input id="draftStart" type="date">
+          <input id="draftEnd" type="date">
+          <input id="draftGoalDone" type="number" min="0" inputmode="numeric" placeholder="Erreicht" title="Ist — bereits erreicht (z.B. 18000 Zeichen)">
+          <input id="draftGoalTotal" type="number" min="0" inputmode="numeric" placeholder="Ziel" title="Soll — Zielwert (z.B. 30000 Zeichen)">
+        </div>
         <input id="draftStartTime" type="time" step="900" style="display:none">
         <input id="draftEndTime" type="time" step="900" style="display:none">
         <select id="draftRepeat" style="display:none;grid-column:1/-1">
@@ -411,6 +431,13 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
           <option value="weekdays">Wochentage (Mo–Fr)</option>
           <option value="weekly">Wöchentlich (selber Tag)</option>
           <option value="monthly">Monatlich (selbes Datum)</option>
+        </select>
+        <select id="draftReminder" style="display:none;grid-column:1/-1">
+          <option value="none">Keine Erinnerung</option>
+          <option value="0">Bei Beginn</option>
+          <option value="10">10 Min vorher</option>
+          <option value="30">30 Min vorher</option>
+          <option value="60">1 Std vorher</option>
         </select>
         <div class="editor-wrapper" id="descWrapper" style="grid-column:1/-1">
           <div class="editor-toolbar">
@@ -453,6 +480,25 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
   <div class="todo-grid" id="td"></div>
 </section>
 
+<div id="budgetPage" class="budget-page">
+  <div class="budget-head">
+    <button class="icon-btn" id="budgetBack" type="button" title="Zurück">←</button>
+    <span class="budget-title">Zeitbudget</span>
+    <div class="budget-range">
+      <button class="range-btn active" data-range="week" type="button">Woche</button>
+      <button class="range-btn" data-range="month" type="button">Monat</button>
+    </div>
+  </div>
+  <div class="budget-chart-wrap">
+    <svg id="budgetChart" viewBox="0 0 220 220" role="img" aria-label="Zeit pro Kategorie"></svg>
+    <div class="budget-center">
+      <span class="budget-total" id="budgetTotal">0 h</span>
+      <span class="budget-center-sub" id="budgetSub">Letzte 7 Tage</span>
+    </div>
+  </div>
+  <div class="budget-legend" id="budgetLegend"></div>
+</div>
+
 <div id="settingsModal" class="settings-modal">
   <div class="settings-panel">
     <div class="settings-header">
@@ -460,7 +506,19 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
       <button class="icon-btn" id="settingsClose" type="button">✕</button>
     </div>
     <div class="settings-body">
-      <p class="section-label" style="margin-top:0">Categories</p>
+      <p class="section-label" style="margin-top:0">Darstellung</p>
+      <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:22px">
+        <button class="theme-toggle" id="themeToggle" type="button" style="align-self:flex-start">Lightmode</button>
+        <div>
+          <div style="font-size:12px;color:var(--text2);margin-bottom:7px">Tagesansicht — sichtbare Tage</div>
+          <div style="display:flex;gap:6px" id="densityRow">
+            <button class="range-btn density-btn" data-days="7" type="button">7</button>
+            <button class="range-btn density-btn" data-days="5" type="button">5</button>
+            <button class="range-btn density-btn" data-days="3" type="button">3</button>
+          </div>
+        </div>
+      </div>
+      <p class="section-label">Categories</p>
       <div class="cat-list" id="catList"></div>
       <div class="cat-add-row">
         <input id="catNameInput" type="text" placeholder="Neue Kategorie…" maxlength="28">
@@ -473,9 +531,33 @@ Draft modal save/cancel handlers, todo cycling, repeat logic, initial data load 
 
 <script>
 const DAY_MS = 86400000;
-const S = new Date(2026, 4, 9);
-const E = new Date(2026, 6, 1);
-const TOTAL_DAYS = Math.round((E - S) / DAY_MS);
+// Range is data-driven: it always covers every item plus breathing room,
+// recomputed on each render. The timeline never "runs out of paper".
+let S = new Date(2026, 4, 9);
+let E = new Date(2026, 6, 1);
+let TOTAL_DAYS = Math.round((E - S) / DAY_MS);
+
+function recomputeRange() {
+  const ts = [];
+  const push = (iso) => { if (iso) ts.push(dateFromISO(iso).getTime()); };
+  phases.forEach(p => { push(p.f); push(p.t); });
+  privateEvents.forEach(p => { push(p.f); push(p.t); });
+  fixedExams.forEach(x => push(x.d));
+  noteItems.forEach(n => push(n.date));
+  projects.forEach(pr => { push(pr.f); push(pr.t); (pr.milestones || []).forEach(m => push(m.d)); });
+  dailyItems.forEach(d => push(d.date));
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  ts.push(today);
+  const min = Math.min(...ts) - 14 * DAY_MS;
+  const max = Math.max(...ts) + 42 * DAY_MS;
+  let s = new Date(min);
+  s = new Date(s.getTime() - ((s.getDay() + 6) % 7) * DAY_MS);   // snap back to Monday
+  S = new Date(s.getFullYear(), s.getMonth(), s.getDate());
+  const e = new Date(max);
+  E = new Date(e.getFullYear(), e.getMonth(), e.getDate());
+  TOTAL_DAYS = Math.round((E - S) / DAY_MS);
+}
 const timelineRows = { PY: 30, SY: 90, EY: 134, CTR: 175, VY: 212 };
 let currentLayout = null;
 
@@ -591,6 +673,10 @@ const draftEnd      = document.getElementById('draftEnd');
 const draftStartTime= document.getElementById('draftStartTime');
 const draftEndTime  = document.getElementById('draftEndTime');
 const draftRepeat   = document.getElementById('draftRepeat');
+const draftReminder = document.getElementById('draftReminder');
+const dateGoalRow    = document.getElementById('dateGoalRow');
+const draftGoalDone  = document.getElementById('draftGoalDone');
+const draftGoalTotal = document.getElementById('draftGoalTotal');
 const descWrapper   = document.getElementById('descWrapper');
 const todoWrapper   = document.getElementById('todoWrapper');
 const todoList      = document.getElementById('todoList');
@@ -602,8 +688,8 @@ const draftCancel   = document.getElementById('draftCancel');
 const draftSave     = document.getElementById('draftSave');
 const fontSizeSelect= document.getElementById('fontSizeSelect');
 
-let isDailyView = false;
-const DAILY_WIDTH_FACTOR = 3;
+let isDailyView = true;   // provisional — init() decides deterministically
+let visibleDays = [3, 5, 7].includes(Number(localStorage.getItem('tl_visible_days'))) ? Number(localStorage.getItem('tl_visible_days')) : 7;
 const DAY_VIEW = { top: 280, fromHour: 7, toHour: 23, rowHeight: 22, railWidth: 68 };
 let addMode = false;
 let dragStartDate = null;
@@ -830,8 +916,9 @@ function updateDayStickBar() {
   bar.style.display = 'block';
   inner.style.width = (tl.offsetWidth || 700) + 'px';
   inner.style.transform = `translateX(${-tlOuter.scrollLeft}px)`;
-  if (!inner.dataset.built) {
-    inner.dataset.built = '1';
+  const rangeKey = `${+S}:${+E}`;
+  if (inner.dataset.built !== rangeKey) {
+    inner.dataset.built = rangeKey;
     inner.innerHTML = '';
     for (let d = new Date(S); d < E; d = new Date(d.getTime() + DAY_MS)) {
       const cx = pctCenterFromDate(d);
@@ -846,7 +933,7 @@ function updateDayStickBar() {
 
 function styleFromColorKey(colorKey, fallbackBg, fallbackFg) { const pal = COLOR_PALETTE[colorKey]; if (pal) return { bg: pal.bg, fg: pal.fg, border: pal.border }; return { bg: fallbackBg || 'var(--cat-gray-bg)', fg: fallbackFg || 'var(--cat-gray-fg)', border: 'var(--cat-gray-border)' }; }
 
-function openDraftModal({ mode = 'create', type, track, id = null, title = '', start, end, categoryId = '', details = '', startMin = 540, endMin = 600, todos = [], repeat = 'none' }) {
+function openDraftModal({ mode = 'create', type, track, id = null, title = '', start, end, categoryId = '', details = '', startMin = 540, endMin = 600, todos = [], repeat = 'none', remindMin = null, goalDone = null, goalTotal = null }) {
   pendingDraft = { mode, type, track, id };
   const isDaily = type === 'daily';
   draftHeading.textContent = mode === 'edit' ? (isDaily ? 'Tageseintrag bearbeiten' : (type === 'range' ? 'Phase bearbeiten' : 'Ereignis bearbeiten')) : (isDaily ? 'Neuen Tageseintrag hinzufügen' : (type === 'range' ? 'Neue Phase hinzufügen' : 'Neues Ereignis hinzufügen'));
@@ -855,18 +942,26 @@ function openDraftModal({ mode = 'create', type, track, id = null, title = '', s
   categories.forEach(cat => { const opt = document.createElement('option'); opt.value = cat.id; opt.textContent = cat.name; if (cat.id === categoryId) opt.selected = true; draftCategory.appendChild(opt); });
   if (!categoryId && categories.length) draftCategory.value = categories[0].id;
   draftStart.value = typeof start === 'string' ? start : toISODate(start);
+  const isPhase = !isDaily && type === 'range' && track === 'phase';
+  dateGoalRow.style.display = isDaily ? 'none' : 'grid';
+  dateGoalRow.style.gridTemplateColumns = isPhase ? 'repeat(4,minmax(0,1fr))' : 'repeat(2,minmax(0,1fr))';
+  draftGoalDone.style.display = isPhase ? '' : 'none';
+  draftGoalTotal.style.display = isPhase ? '' : 'none';
+  draftGoalDone.value  = goalDone  ?? '';
+  draftGoalTotal.value = goalTotal ?? '';
   if (isDaily) {
     draftStart.style.display = 'none'; draftEnd.style.display = 'none';
     draftStartTime.style.display = ''; draftEndTime.style.display = '';
     draftStartTime.value = minToTimeStr(startMin); draftEndTime.value = minToTimeStr(endMin);
     draftRepeat.style.display = ''; draftRepeat.value = repeat || 'none';
+    draftReminder.style.display = ''; draftReminder.value = remindMin === null || remindMin === undefined ? 'none' : String(remindMin);
     descWrapper.style.display = 'none'; todoWrapper.style.display = 'block';
     draftTodos = mode === 'create' ? [...getPostponedTodosForCategory(draftCategory.value), ...todos.map(t => ({...t}))] : todos.map(t => ({...t}));
     renderTodoEditor();
   } else {
     draftStart.style.display = ''; draftEnd.style.display = '';
     draftStartTime.style.display = 'none'; draftEndTime.style.display = 'none';
-    draftRepeat.style.display = 'none';
+    draftRepeat.style.display = 'none'; draftReminder.style.display = 'none';
     draftEnd.value = typeof end === 'string' ? end : toISODate(end);
     descWrapper.style.display = ''; todoWrapper.style.display = 'none';
     draftDetails.innerHTML = sanitizeHtml(details || ''); updateEditorEmptyState();
@@ -878,9 +973,20 @@ function openDraftModal({ mode = 'create', type, track, id = null, title = '', s
 }
 
 function getPostponedTodosForCategory(categoryId) {
-  const seen = new Set(); const result = [];
-  dailyItems.filter(item => item.categoryId === categoryId).forEach(item => (item.todos || []).filter(t => t.state === 'postponed' && !seen.has(t.text)).forEach(t => { seen.add(t.text); result.push({ id: crypto.randomUUID(), text: t.text, state: 'postponed' }); }));
-  return result;
+  // A task follows you only while its MOST RECENT occurrence is still
+  // 'postponed'. Once it shows up later as done/cancelled/open, it is
+  // resolved and stops carrying over. (Chronological order: date, then time.)
+  const lastState = new Map(); // todo text → state of its latest occurrence
+  dailyItems
+    .filter(item => item.categoryId === categoryId)
+    .sort((a, b) => a.date === b.date ? a.startMin - b.startMin : (a.date < b.date ? -1 : 1))
+    .forEach(item => (item.todos || []).forEach(t => {
+      const key = (t.text || '').trim();
+      if (key) lastState.set(key, t.state || 'open');
+    }));
+  return [...lastState.entries()]
+    .filter(([, state]) => state === 'postponed')
+    .map(([text]) => ({ id: crypto.randomUUID(), text, state: 'postponed' }));
 }
 
 function renderTodoEditor() {
@@ -956,14 +1062,13 @@ function itemFont() { return isDailyView ? "font-size:12px;font-family:var(--ui-
 function applyTimelineWidth() {
   const base = tlOuter.clientWidth;
   const isMobile = window.innerWidth < 600;
-  const mobileDayW = isMobile ? window.innerWidth / 7 : base / 7;
-  const width = isDailyView
-    ? Math.max(700, TOTAL_DAYS * (isMobile ? mobileDayW : base * DAILY_WIDTH_FACTOR / TOTAL_DAYS))
-    : Math.max(700, base);
+  const dayW = (isMobile ? window.innerWidth : base) / visibleDays;
+  const lineDayW = (isMobile ? window.innerWidth : base) / (isMobile ? 28 : 56);   // 4 / 8 weeks visible
+  const width = isDailyView ? Math.max(700, TOTAL_DAYS * dayW) : Math.max(700, TOTAL_DAYS * lineDayW);
   tl.style.width = `${width}px`;
   const tlH = isDailyView ? dayViewBottom() + 32 : (currentLayout ? currentLayout.totalH : 250);
   tl.style.height = `${tlH}px`;
-  tlOuter.style.overflowX = isDailyView ? 'auto' : 'hidden';
+  tlOuter.style.overflowX = 'auto';
   tlOuter.style.overflowY = 'hidden';
   tl.style.setProperty('--phase-sticky-left', isDailyView ? `${DAY_VIEW.railWidth + 8}px` : '8px');
   hourRail.style.display = isDailyView ? 'block' : 'none';
@@ -974,7 +1079,6 @@ function applyTimelineWidth() {
   hourRail.style.top       = `${DAY_VIEW.top}px`;
   hourRail.style.height    = `${dayViewHeight()}px`;
   hourRail.style.transform = `translateX(${isDailyView ? tlOuter.scrollLeft : 0}px)`;
-  if (!isDailyView) tlOuter.scrollLeft = 0;
 }
 
 function renderHourRail() {
@@ -1083,12 +1187,24 @@ function renderPhaseBar(ph, phaseTop) {
     stickyGroup.appendChild(arrow);
   }
   const labelSpan = document.createElement('span'); labelSpan.style.cssText = 'pointer-events:none;white-space:nowrap;'; labelSpan.textContent = ph.l;
-  stickyGroup.appendChild(labelSpan); e.appendChild(stickyGroup);
+  stickyGroup.appendChild(labelSpan);
+  if (ph.goalTotal > 0) {
+    const prog = Math.max(0, Math.min(1, (ph.goalDone || 0) / ph.goalTotal));
+    const fill = document.createElement('div');
+    fill.style.cssText = `position:absolute;left:0;top:0;bottom:0;width:${prog * 100}%;background:rgba(255,255,255,0.17);pointer-events:none;border-radius:9999px 0 0 9999px;`;
+    e.insertBefore(fill, e.firstChild);
+    const pctSpan = document.createElement('span');
+    pctSpan.style.cssText = 'margin-left:7px;font-size:10px;opacity:.85;pointer-events:none;font-family:var(--mono-font);';
+    pctSpan.textContent = `${Math.round(((ph.goalDone || 0) / ph.goalTotal) * 100)} %`;
+    stickyGroup.appendChild(pctSpan);
+    e.title = `${ph.goalDone || 0} / ${ph.goalTotal}`;
+  }
+  e.appendChild(stickyGroup);
   fitLabel(e);
   e.addEventListener('pointermove', (evt) => { if (evt.pointerType !== 'mouse' || resizeDrag || addMode) return; const lx = evt.clientX - e.getBoundingClientRect().left; const EDGE = Math.min(10, e.offsetWidth * 0.2); e.style.cursor = lx <= EDGE ? 'w-resize' : lx >= e.offsetWidth - EDGE ? 'e-resize' : 'pointer'; });
   e.addEventListener('pointerleave', () => { if (!resizeDrag) e.style.cursor = 'pointer'; });
   e.addEventListener('pointerdown', (evt) => { if (addMode) return; const lx = evt.clientX - e.getBoundingClientRect().left; const EDGE = Math.min(10, e.offsetWidth * 0.2); if (lx <= EDGE) startResize(ph, 'left', e, evt); else if (lx >= e.offsetWidth - EDGE) startResize(ph, 'right', e, evt); });
-  e.onclick = () => { if (Date.now() - lastResizeEnd < 200) return; openQuickEditor({ id:ph.id, type:'range', track:'phase', title:ph.l, start:ph.f, end:toISODate(new Date(dateFromISO(ph.t).getTime()-DAY_MS)), categoryId:ph.categoryId, details:ph.details }); };
+  e.onclick = () => { if (Date.now() - lastResizeEnd < 200) return; openQuickEditor({ id:ph.id, type:'range', track:'phase', title:ph.l, start:ph.f, end:toISODate(new Date(dateFromISO(ph.t).getTime()-DAY_MS)), categoryId:ph.categoryId, details:ph.details, goalDone:ph.goalDone, goalTotal:ph.goalTotal }); };
   if (hasDesc && expandedPhaseIds.has(ph.id)) {
     const tlW = tl.offsetWidth; const bL = (pctFromDate(ph.f) / 100) * tlW; const bR = bL + (widthPct(ph.f, ph.t) / 100) * tlW; const DW = Math.min(320, Math.max(160, bR - bL));
     const box = document.createElement('div'); box.className = 'phase-details'; box.innerHTML = sanitizeHtml(ph.details);
@@ -1195,8 +1311,8 @@ function renderBaseTimeline() {
         el.appendChild(zone);
       }
       const titleEl = document.createElement('div'); titleEl.className = 'daily-item-title'; titleEl.textContent = item.title; if (allDone && hasTodos) titleEl.style.color = '#8fc14e'; el.appendChild(titleEl);
-      if (!isShort) { const meta = document.createElement('div'); meta.className = 'daily-item-meta'; meta.style.marginTop = 'auto'; const doneCt = (item.todos||[]).filter(t=>t.state==='done').length; const totalCt = (item.todos||[]).length; const repeatIcon = item.repeat && item.repeat !== 'none' ? ' ↻' : ''; meta.textContent = (totalCt ? `${minToTimeStr(item.startMin)}–${minToTimeStr(item.endMin)} · ${doneCt}/${totalCt} ✓` : `${minToTimeStr(item.startMin)}–${minToTimeStr(item.endMin)}`) + repeatIcon; el.appendChild(meta); }
-      el.onclick = (evt) => { if (Date.now() - lastResizeEnd < 200) return; evt.stopPropagation(); openDraftModal({ mode:'edit', type:'daily', track:'daily', id:item.id, title:item.title, start:item.date, startMin:item.startMin, endMin:item.endMin, categoryId:item.categoryId, todos:item.todos||[], repeat:item.repeat||'none' }); };
+      if (!isShort) { const meta = document.createElement('div'); meta.className = 'daily-item-meta'; meta.style.marginTop = 'auto'; const doneCt = (item.todos||[]).filter(t=>t.state==='done').length; const totalCt = (item.todos||[]).length; const repeatIcon = (item.repeat && item.repeat !== 'none' ? ' ↻' : '') + (item.remindMin != null ? ' 🔔' : ''); meta.textContent = (totalCt ? `${minToTimeStr(item.startMin)}–${minToTimeStr(item.endMin)} · ${doneCt}/${totalCt} ✓` : `${minToTimeStr(item.startMin)}–${minToTimeStr(item.endMin)}`) + repeatIcon; el.appendChild(meta); }
+      el.onclick = (evt) => { if (Date.now() - lastResizeEnd < 200) return; evt.stopPropagation(); openDraftModal({ mode:'edit', type:'daily', track:'daily', id:item.id, title:item.title, start:item.date, startMin:item.startMin, endMin:item.endMin, categoryId:item.categoryId, todos:item.todos||[], repeat:item.repeat||'none', remindMin:item.remindMin ?? null }); };
       tl.appendChild(el);
       addItemTouchDrag(el, item);
       if (isExpanded && hasTodos) {
@@ -1222,7 +1338,7 @@ function renderBaseTimeline() {
 
 setInterval(() => { if (isDailyView && !draftModal.classList.contains('open') && !anyDragActive()) renderAll(); }, 60000);
 
-function openQuickEditor(entry) { openDraftModal({ mode: 'edit', type: entry.type, track: entry.track, id: entry.id, title: entry.title, start: entry.start, end: entry.end || entry.start, categoryId: entry.categoryId || '', details: entry.details || '' }); }
+function openQuickEditor(entry) { openDraftModal({ mode: 'edit', type: entry.type, track: entry.track, id: entry.id, title: entry.title, start: entry.start, end: entry.end || entry.start, categoryId: entry.categoryId || '', details: entry.details || '', goalDone: entry.goalDone ?? null, goalTotal: entry.goalTotal ?? null }); }
 function removeById(id) { phases = phases.filter(x => x.id !== id); privateEvents = privateEvents.filter(x => x.id !== id); fixedExams = fixedExams.filter(x => x.id !== id); noteItems = noteItems.filter(x => x.id !== id); dailyItems = dailyItems.filter(x => x.id !== id); }
 
 function saveLocal() {
@@ -1350,6 +1466,7 @@ function renderDaySizeStrip() {
 }
 
 function renderAll() {
+  recomputeRange();
   DAY_VIEW.rowHeight = ROW_HEIGHTS[rowHeightLevel];
   stickyUpdaters = [];
   currentLayout = computeLayout();
@@ -1374,7 +1491,7 @@ document.querySelectorAll('.editor-toolbar button[data-cmd]').forEach(btn => {
 });
 if (fontSizeSelect) { fontSizeSelect.addEventListener('change', (evt) => { document.execCommand('fontSize', false, evt.target.value); draftDetails.focus(); }); fontSizeSelect.addEventListener('mousedown', (evt) => evt.stopPropagation()); }
 
-viewToggle.addEventListener('click', () => { isDailyView = !isDailyView; renderAll(); });
+viewToggle.addEventListener('click', () => { isDailyView = !isDailyView; renderAll(); scrollToToday(); });
 saveBtn.addEventListener('click', () => syncGist(true));
 addToggle.addEventListener('click', () => setAddMode(!addMode));
 
@@ -1688,10 +1805,17 @@ draftSave.addEventListener('click', () => {
   if (pendingDraft.type === 'daily') {
     const startMin = Math.min(timeStrToMin(draftStartTime.value), 24*60-15); let endMin = timeStrToMin(draftEndTime.value); if (endMin <= startMin) endMin = startMin + 15;
     const repeat = draftRepeat.value || 'none'; const todos = draftTodos.filter(t => t.text && t.text.trim()).map(t => ({ id: t.id || crypto.randomUUID(), text: t.text.trim(), state: t.state || 'open' }));
-    dailyItems.push({ id, date: start, startMin, endMin, title, categoryId, todos, repeat });
+    const remindMin = draftReminder.value === 'none' ? null : Number(draftReminder.value);
+    if (remindMin !== null) ensureNotifyPermission();
+    dailyItems.push({ id, date: start, startMin, endMin, title, categoryId, todos, repeat, remindMin });
   } else {
     const end = draftEnd.value || draftStart.value; const rawHtml = sanitizeHtml(draftDetails.innerHTML.trim()); const details = draftDetails.textContent.trim() ? rawHtml : '';
-    if (pendingDraft.type === 'range' && track === 'phase') phases.push({ id, l:title, f:start, t:toISODate(new Date(dateFromISO(end).getTime()+DAY_MS)), categoryId, details });
+    if (pendingDraft.type === 'range' && track === 'phase') {
+      const gT = parseFloat(draftGoalTotal.value);
+      const gD = parseFloat(draftGoalDone.value);
+      const goal = gT > 0 ? { goalTotal: gT, goalDone: isNaN(gD) ? 0 : Math.max(0, gD) } : {};
+      phases.push({ id, l:title, f:start, t:toISODate(new Date(dateFromISO(end).getTime()+DAY_MS)), categoryId, details, ...goal });
+    }
     else if (pendingDraft.type === 'range' && track === 'event') privateEvents.push({ id, l:title, f:start, t:toISODate(new Date(dateFromISO(end).getTime()+DAY_MS)), categoryId, details });
     else if (pendingDraft.type === 'point' && track === 'exam') fixedExams.push({ id, l:title, d:start, e:'3', p:'top', categoryId, details });
     else noteItems.push({ id, title, date:start, type:'info', categoryId, details });
@@ -1703,34 +1827,184 @@ draftSave.addEventListener('click', () => {
 
 addTodoBtn.addEventListener('click', () => { const txt = newTodoText.value.trim(); if (!txt) return; draftTodos.push({ id: crypto.randomUUID(), text: txt, state: 'open' }); newTodoText.value = ''; renderTodoEditor(); });
 newTodoText.addEventListener('keydown', (e) => { if (e.key === 'Enter') addTodoBtn.click(); });
-document.getElementById('fullscreenBtn').addEventListener('click', () => {
-  if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen();
-  } else {
-    document.exitFullscreen();
-  }
-});
+// ═══ Zeitbudget ═══════════════════════════════════════════════════
+// Time analog to a finance overview: where did the hours actually go.
+// Fed by real dailyItems instances (incl. repeats), not by plans.
+const budgetPage  = document.getElementById('budgetPage');
+const budgetBtn   = document.getElementById('budgetBtn');
+const budgetBack  = document.getElementById('budgetBack');
+let budgetRange = 'week';
 
-document.addEventListener('fullscreenchange', () => {
-  const btn = document.getElementById('fullscreenBtn');
-  const isFs = !!document.fullscreenElement;
-  btn.innerHTML = isFs
-    ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>`
-    : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>`;
-  renderAll();
+function budgetData() {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const days = budgetRange === 'week' ? 7 : 30;
+  const from = new Date(today.getTime() - (days - 1) * DAY_MS);
+  const perCat = new Map();
+  let totalMin = 0;
+  dailyItems.forEach(item => {
+    const dur = Math.max(0, item.endMin - item.startMin);
+    if (!dur) return;
+    getDailyItemInstances(item).forEach(d => {
+      if (d < from || d > today) return;
+      const key = item.categoryId || '_none';
+      perCat.set(key, (perCat.get(key) || 0) + dur);
+      totalMin += dur;
+    });
+  });
+  const rows = [...perCat.entries()].map(([catId, min]) => {
+    const cat = categories.find(c => c.id === catId);
+    return { name: cat ? cat.name : 'Ohne Kategorie', color: SOLID_COLORS[cat?.colorKey] || SOLID_COLORS.gray, min };
+  }).sort((a, b) => b.min - a.min);
+  return { rows, totalMin, days };
+}
+
+function fmtHours(min) { return (min / 60).toFixed(1).replace('.', ',') + ' h'; }
+
+function renderBudget() {
+  const { rows, totalMin, days } = budgetData();
+  const svg = document.getElementById('budgetChart');
+  const legend = document.getElementById('budgetLegend');
+  document.getElementById('budgetTotal').textContent = fmtHours(totalMin);
+  document.getElementById('budgetSub').textContent = days === 7 ? 'Letzte 7 Tage' : 'Letzte 30 Tage';
+  const CX = 110, CY = 110, R = 86, SW = 26;
+  const C = 2 * Math.PI * R;
+  let parts = `<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="var(--surface2)" stroke-width="${SW}"/>`;
+  if (totalMin > 0) {
+    const gap = rows.length > 1 ? Math.min(3, C * 0.008) : 0;
+    let offset = 0;
+    rows.forEach(r => {
+      const len = (r.min / totalMin) * C;
+      const seg = Math.max(0.5, len - gap);
+      parts += `<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="${r.color}" stroke-width="${SW}"
+        stroke-dasharray="${seg} ${C - seg}" stroke-dashoffset="${-offset}" stroke-linecap="round"
+        transform="rotate(-90 ${CX} ${CY})"/>`;
+      offset += len;
+    });
+  }
+  svg.innerHTML = parts;
+  legend.innerHTML = '';
+  if (!rows.length) {
+    const empty = document.createElement('div');
+    empty.className = 'budget-empty';
+    empty.textContent = 'Keine Tageseinträge im Zeitraum.';
+    legend.appendChild(empty);
+    return;
+  }
+  rows.forEach(r => {
+    const row = document.createElement('div'); row.className = 'budget-row';
+    const dot = document.createElement('span'); dot.className = 'budget-dot'; dot.style.background = r.color;
+    const name = document.createElement('span'); name.className = 'budget-name'; name.textContent = r.name;
+    const hours = document.createElement('span'); hours.className = 'budget-hours'; hours.textContent = fmtHours(r.min);
+    const pct = document.createElement('span'); pct.className = 'budget-pct'; pct.textContent = Math.round((r.min / totalMin) * 100) + ' %';
+    row.append(dot, name, hours, pct);
+    legend.appendChild(row);
+  });
+}
+
+budgetBtn.addEventListener('click', () => { budgetPage.classList.add('open'); renderBudget(); });
+budgetBack.addEventListener('click', () => budgetPage.classList.remove('open'));
+budgetPage.querySelectorAll('.range-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    budgetRange = btn.dataset.range;
+    budgetPage.querySelectorAll('.range-btn').forEach(b => b.classList.toggle('active', b === btn));
+    renderBudget();
+  });
 });
 window.addEventListener('resize', () => { if (!draftModal.classList.contains('open') && !anyDragActive()) renderAll(); });
 document.addEventListener('keydown', (e) => {
   if ((e.ctrlKey || e.metaKey) && !e.shiftKey && e.key === 'z') { e.preventDefault(); undoBtn.click(); return; }
   if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'Z'))) { e.preventDefault(); redoBtn.click(); return; }
-  if (e.key === 'Escape') { if (draftModal.classList.contains('open')) { closeDraftModal(); } else if (addMode || anyDragActive()) { setAddMode(false); clearDragPreview(); clearDailyPreview(); dragStartDate = null; dragMoved = false; } return; }
+  if (e.key === 'Escape') { if (budgetPage.classList.contains('open')) { budgetPage.classList.remove('open'); return; } if (draftModal.classList.contains('open')) { closeDraftModal(); } else if (addMode || anyDragActive()) { setAddMode(false); clearDragPreview(); clearDailyPreview(); dragStartDate = null; dragMoved = false; } return; }
   if ((e.key === 'a' || e.key === 'A') && !draftModal.classList.contains('open')) { const tag = e.target.tagName.toLowerCase(); if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.contentEditable === 'true') return; setAddMode(!addMode); }
 });
+function updateDensityButtons() {
+  document.querySelectorAll('.density-btn').forEach(b => b.classList.toggle('active', Number(b.dataset.days) === visibleDays));
+}
+document.querySelectorAll('.density-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    visibleDays = Number(btn.dataset.days);
+    localStorage.setItem('tl_visible_days', String(visibleDays));
+    updateDensityButtons();
+    renderAll();
+  });
+});
+
 themeToggle.addEventListener('click', () => { const root = document.documentElement; const light = root.getAttribute('data-theme') === 'light'; if (light) { root.removeAttribute('data-theme'); themeToggle.textContent = 'Lightmode'; } else { root.setAttribute('data-theme', 'light'); themeToggle.textContent = 'Darkmode'; } renderAll(); });
 
+// ═══ Reminders ════════════════════════════════════════════════════
+// Honest constraint of a serverless PWA: notifications fire only while
+// the app is open (incl. recently backgrounded on Android). True
+// closed-app push needs a server — out of scope by design.
+const NOTIF_STORE = 'ts_notified_v1';
+
+function ensureNotifyPermission() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') Notification.requestPermission();
+}
+
+async function showNotif(title, body, tag) {
+  try {
+    if ('serviceWorker' in navigator) {
+      const reg = await navigator.serviceWorker.getRegistration();
+      // Android Chrome only allows notifications via the SW registration
+      if (reg) return reg.showNotification(title, { body, tag, icon: 'icon-192.png', badge: 'icon-192.png' });
+    }
+    new Notification(title, { body, tag });
+  } catch(e) {}
+}
+
+function checkReminders() {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const now = new Date();
+  const todayKey = toISODate(now);
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  let fired = {};
+  try { fired = JSON.parse(localStorage.getItem(NOTIF_STORE)) || {}; } catch(e) {}
+  let changed = false;
+  // prune entries older than yesterday
+  const cutoff = toISODate(new Date(now.getTime() - 2 * DAY_MS));
+  for (const k of Object.keys(fired)) { if (fired[k] < cutoff) { delete fired[k]; changed = true; } }
+  dailyItems.forEach(item => {
+    if (item.remindMin == null) return;
+    const isToday = getDailyItemInstances(item).some(d => toISODate(d) === todayKey);
+    if (!isToday) return;
+    const dueMin = item.startMin - item.remindMin;
+    const key = `${item.id}:${todayKey}`;
+    if (nowMin >= dueMin && nowMin <= dueMin + 2 && !fired[key]) {
+      fired[key] = todayKey; changed = true;
+      const when = item.remindMin === 0 ? 'jetzt' : `in ${item.remindMin} Min`;
+      showNotif(item.title, `Beginnt ${when} · ${minToTimeStr(item.startMin)}–${minToTimeStr(item.endMin)}`, key);
+    }
+  });
+  if (changed) localStorage.setItem(NOTIF_STORE, JSON.stringify(fired));
+}
+setInterval(checkReminders, 30000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkReminders(); });
+
+function scrollToToday() {
+  const now = new Date();
+  const t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (t0 < S || t0 >= E) return;
+  const x = (pctFromDate(t0) / 100) * tl.offsetWidth;
+  // daily: today flush after the hour rail · line: today at ~25% for past context
+  const lead = isDailyView ? DAY_VIEW.railWidth + 4 : tlOuter.clientWidth * 0.25;
+  tlOuter.scrollLeft = Math.max(0, x - lead);
+}
+
 (async function init() {
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
   await loadFromStorage();
+  recomputeRange();
+  // Landing view: execution layer if anything is scheduled in the next 7 days,
+  // otherwise the planning timeline.
+  const t0 = new Date(); const day0 = new Date(t0.getFullYear(), t0.getMonth(), t0.getDate());
+  const horizon = new Date(day0.getTime() + 7 * DAY_MS);
+  isDailyView = dailyItems.some(it => getDailyItemInstances(it).some(d => d >= day0 && d < horizon));
   renderOpenPoints(); renderCategorySection(); renderAll(); updateUndoButtons();
+  updateDensityButtons();
+  scrollToToday();
+  checkReminders();
 })();
 </script>
 </body>
