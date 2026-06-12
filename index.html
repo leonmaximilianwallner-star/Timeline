@@ -25,6 +25,7 @@
   --soft:cubic-bezier(0.3,1,0.5,1);
   --shadow:0 12px 40px rgba(0,0,0,.5), 0 2px 8px rgba(0,0,0,.35);
   --rail-w:68px;
+  --sticky-left:calc(var(--rail-w) + 12px);
 }
 html[data-theme="light"]{
   --base:#f2f1ee; --surface:#ffffff; --surface2:#f7f6f3; --surface3:#ecebe7;
@@ -43,19 +44,27 @@ body{
 ::selection{background:rgba(233,71,58,.35)}
 button{font-family:inherit; color:inherit; background:none; border:none; cursor:pointer}
 input,select,textarea{font-family:inherit; font-size:14px; color:var(--text)}
-::-webkit-scrollbar{width:9px;height:9px}
-::-webkit-scrollbar-thumb{background:var(--surface3); border-radius:9999px; border:2px solid var(--base)}
-::-webkit-scrollbar-track,::-webkit-scrollbar-corner{background:transparent}
+/* Global: no visible scrollbars anywhere. Scrolling still works on every
+   scrollable element — we just hide the chrome (same strategy that makes
+   the day-grid vertical scroll feel clean). */
+*{ scrollbar-width:none; -ms-overflow-style:none; }
+*::-webkit-scrollbar,
+*::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-corner{
+  width:0 !important; height:0 !important; display:none !important; background:transparent !important;
+}
 
 /* ---------- app frame ---------- */
-#app{display:flex; flex-direction:column; height:100%}
-#tlWrap,#dayWrap{scrollbar-width:none}
-#tlWrap::-webkit-scrollbar,#dayWrap::-webkit-scrollbar{display:none}
+#app{display:flex; flex-direction:column; height:100%;
+overflow-y:auto; overflow-x:clip;
+}
 
 /* ---------- top bar ---------- */
 #topbar{
   display:flex; align-items:center; gap:10px;
   padding:10px 16px 8px; flex:0 0 auto;
+  position:sticky; top:0; z-index:30; background:var(--base);
 }
 #wordmark{height:16px; display:block; opacity:.95}
 #wordmark .wm{fill:var(--text)}
@@ -78,18 +87,24 @@ input,select,textarea{font-family:inherit; font-size:14px; color:var(--text)}
 
 /* ---------- timeline (planning layer) ---------- */
 #tlWrap{
-  flex:0 0 auto; overflow-x:auto; overflow-y:hidden;
-  background:var(--base);
-  scrollbar-width:thin; position:relative;
-  max-height:46vh;
+  flex:0 0 auto; position:relative; background:var(--base);
+  overflow:auto; overflow-y:visible;                  /* scrolls in JS-routed manner; chrome hidden globally */
 }
 #tlInner{position:relative; min-width:100%}
+#tlGrid{
+  position:absolute; left:var(--rail-w); right:0; top:30px; bottom:14px;
+  pointer-events:none; z-index:0;
+  background-image: linear-gradient(to right, var(--line-soft) 1px, transparent 1px);
+  background-size: var(--tl-ppd, 160px) 100%;
+  opacity:.45;
+}
+.tlRow{ z-index:1 }
 .tlRow{position:relative}
 #monthRow{display:flex; height:30px; align-items:center}
 .monthSpan{position:relative; height:100%; display:flex; align-items:center; border-left:1px solid var(--line-soft)}
 .monthSpan:first-child{border-left:none}
 .monthLabel{
-  position:sticky; left:calc(var(--rail-w) + 10px); display:inline-block;
+  position:sticky; left:var(--sticky-left); display:inline-block;
   font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase;
   color:var(--text-dim); padding:0 10px; white-space:nowrap;
 }
@@ -98,7 +113,7 @@ input,select,textarea{font-family:inherit; font-size:14px; color:var(--text)}
 .projSpine.colored{opacity:.55}
 .projLabelWrap{position:absolute; top:0; height:100%; display:flex; align-items:center; pointer-events:none}
 .projLabel{
-  position:sticky; left:calc(var(--rail-w) + 8px); font-size:12px; font-weight:700;
+  position:sticky; left:var(--sticky-left); font-size:12px; font-weight:700;
   color:var(--text-dim); background:var(--base); padding:2px 8px; border-radius:9999px;
   pointer-events:auto; white-space:nowrap; letter-spacing:.02em;
 }
@@ -114,26 +129,33 @@ input,select,textarea{font-family:inherit; font-size:14px; color:var(--text)}
 .laneRow{height:34px}
 .phase{
   position:absolute; top:4px; height:24px; border-radius:9999px;
-  display:flex; align-items:center; overflow:hidden;
   color:#ededec; cursor:pointer; user-select:none;
   transition:filter .15s;
+  /* clip-path clips like overflow:hidden but does NOT create a scroll context,
+     which is what lets position:sticky on .ph-stick inside use #tlWrap as its
+     scroll ancestor. overflow:hidden would scope sticky to the bar (which
+     doesn't scroll) and break it. */
+  clip-path: inset(0 round 9999px);
 }
 .phase:hover{filter:brightness(1.12)}
+.phase .ph-stick{
+  position:sticky; left:var(--sticky-left, calc(var(--rail-w) + 12px));
+  display:inline-flex; align-items:center; gap:6px;
+  height:24px; padding:0 12px 0 4px;
+  white-space:nowrap; line-height:24px;
+}
 .phase .ph-exp{
-  flex:0 0 18px; width:18px; height:18px; margin-left:4px; border-radius:50%;
-  display:flex; align-items:center; justify-content:center;
+  width:18px; height:18px; flex:0 0 18px; border-radius:50%;
+  display:inline-flex; align-items:center; justify-content:center;
   background:rgba(0,0,0,.22); font-size:9px; color:#ededec;
 }
-.phase .ph-label{
-  position:sticky; left:calc(var(--rail-w) + 4px); padding:0 12px 0 6px;
-  font-size:12px; font-weight:600; white-space:nowrap; line-height:24px;
-}
+.phase .ph-label{ font-size:12px; font-weight:600; }
 .phase .ph-handle{position:absolute; top:0; height:100%; width:10px; cursor:ew-resize}
 .phase .ph-handle.l{left:0}.phase .ph-handle.r{right:0}
 .bubbleRow{padding:2px 0 8px}
 .bubbleAnchor{display:flex}
 .bubble{
-  position:sticky; left:calc(var(--rail-w) + 10px);
+  position:sticky; left:var(--sticky-left);
   border-top:2px solid var(--line);
   background:var(--surface); border:1px solid var(--line); border-radius:var(--r-card);
   border-top-left-radius:4px;
@@ -162,7 +184,8 @@ input,select,textarea{font-family:inherit; font-size:14px; color:var(--text)}
 .tlCreate{position:absolute; height:24px; border:1.5px dashed var(--text-dim); border-radius:9999px; z-index:4; pointer-events:none; background:rgba(100,152,192,.10)}
 
 /* ---------- daily view (execution layer) ---------- */
-#dayWrap{flex:1 1 auto; overflow:auto; position:relative; background:var(--base)}
+#dayWrap{flex:0 0 auto; height:calc(100dvh - 52px); /* 52px = topbar (10+8 pad + 34 btn) */
+  overflow:auto; position:relative; background:var(--base)}
 #dayInner{position:relative}
 #dayHead{
   position:sticky; top:0; z-index:20; display:flex;
@@ -293,6 +316,42 @@ input[type="color"]{padding:2px; height:34px; cursor:pointer}
 .btn.danger{color:var(--c-red)}
 .mfoot .spacer{flex:1}
 
+/* compact head with three circular action buttons; no footer */
+.mhead{ gap:8px; }
+.mhead .cbtn.small.danger{ color:var(--c-red); }
+.mhead .cbtn.small.primary{
+  background:var(--c-blue); color:#fff; border-color:transparent;
+}
+.mhead .cbtn.small.primary:hover{ background:var(--c-blue); filter:brightness(1.08); }
+
+/* inline borderless title — placeholder doubles as the section heading */
+.field.title-field{ margin-bottom:-2px; }
+.field.title-field > label{ display:none; }
+.field input.title-inline{
+  background:transparent; border:none; border-radius:0;
+  padding:2px 0; font-size:22px; font-weight:700; color:var(--text);
+  width:100%;
+}
+.field input.title-inline:focus{ border:none; outline:none; }
+.field input.title-inline::placeholder{ color:var(--text-faint); font-weight:700; }
+.field input.title-inline:focus::placeholder{ color:transparent; }
+
+/* description loses its uppercase label */
+.field.desc-field > label{ display:none; }
+
+/* head merges title input + action buttons in one row */
+.mhead{ padding:12px 16px 6px; align-items:center; }
+.mhead .field.title-field{ flex:1; margin:0; min-width:0; }
+
+/* project selector with live color indicator on the right */
+.proj-row{ display:flex; gap:8px; align-items:center; }
+.proj-row select{ flex:1; min-width:0; }
+.proj-col{
+  width:26px; height:26px; border-radius:50%; flex:0 0 26px;
+  background:var(--text-faint); border:1px solid var(--line);
+  transition:background .15s;
+}
+
 /* ---------- todos ---------- */
 .todoList{display:flex; flex-direction:column; gap:2px}
 .todoRow{display:flex; align-items:center; gap:9px; padding:5px 6px; border-radius:var(--r-small)}
@@ -413,7 +472,7 @@ input[type="color"]{padding:2px; height:34px; cursor:pointer}
    ════════════════════════════════════════════════════════════ */
 const STORE_KEY  = "timeline.app.v2";
 const NOTIF_STORE= "timeline.notif.v2";
-const HOUR_START = 7, HOUR_END = 23, HOUR_PX = 52;
+const HOUR_START = 0, HOUR_END = 24, HOUR_PX = 52;
 const GRID_H     = (HOUR_END - HOUR_START) * HOUR_PX;
 let   TL_PPD     = 160;              // unified px/day — both views share one grid
 const SNAP       = 15;               // minutes
@@ -549,6 +608,11 @@ const cat = id => S.categories.find(c=>c.id===id) || { id, name:"?", color:"#909
 /* ════════════════════════════════════════════════════════════
    layout — recomputeRange(), lane packing, occurrence expansion
    ════════════════════════════════════════════════════════════ */
+/* Time is unbounded — render a generous window around today plus any data
+   outside it, and extend either edge when the user scrolls near it. */
+const PAST_DAYS = 180, FUTURE_DAYS = 540;
+const EDGE_BUFFER_PX = 600, EXTEND_DAYS = 180;
+
 function recomputeRange(){
   let min = todayISO(), max = todayISO();
   const see = d => { if(d){ if(d<min) min=d; if(d>max) max=d; } };
@@ -556,12 +620,23 @@ function recomputeRange(){
   S.exams.forEach(x=>see(x.date));
   S.events.forEach(e=>see(e.date));
   S.projects.forEach(p=>p.milestones.forEach(m=>see(m.date)));
-  let start = addDays(parseISO(min), -14);
-  start = addDays(start, -((start.getDay()+6)%7));            // back to Monday
-  const end = addDays(parseISO(max), 35);
-  const minEnd = addDays(parseISO(todayISO()), 60);
-  UI.range.start = isoDate(start);
-  UI.range.days  = Math.max(diffDays(UI.range.start, isoDate(end)), diffDays(UI.range.start, isoDate(minEnd)));
+
+  /* never shrink an existing range — only widen it */
+  let startISO = UI.range.start || isoDate(addDays(parseISO(todayISO()), -PAST_DAYS));
+  const want = isoDate(addDays(parseISO(min), -14));
+  if(want < startISO) startISO = want;
+  const sd = parseISO(startISO);
+  startISO = isoDate(addDays(sd, -((sd.getDay()+6)%7))); /* snap to Monday */
+
+  let endISO = isoDate(addDays(parseISO(todayISO()), FUTURE_DAYS));
+  const dataEnd = isoDate(addDays(parseISO(max), 35));
+  if(dataEnd > endISO) endISO = dataEnd;
+  if(UI.range.start){
+    const prevEnd = isoDate(addDays(parseISO(UI.range.start), UI.range.days));
+    if(prevEnd > endISO) endISO = prevEnd;
+  }
+  UI.range.start = startISO;
+  UI.range.days  = diffDays(startISO, endISO);
 }
 const dayIdx  = d => diffDays(UI.range.start, d);
 const idxDate = i => isoDate(addDays(parseISO(UI.range.start), i));
@@ -635,6 +710,7 @@ function renderAll(){
   recomputeRange();
   TL_PPD = dayPPD();                       // same grid in both views
   $tlInner.style.paddingLeft = railW()+"px";
+  document.documentElement.style.setProperty("--tl-ppd", TL_PPD+"px");
   renderTimeline();
   renderDays();
   renderTopdate();
@@ -711,6 +787,9 @@ function renderTimeline(){
   tl.style.left = (dayIdx(todayISO())+.5)*TL_PPD+"px"; frag.appendChild(tl);
   const hov = document.createElement("div"); hov.className="tlHover"; hov.id="tlHover"; frag.appendChild(hov);
 
+  const tlg = document.createElement("div"); tlg.id="tlGrid";
+  frag.insertBefore(tlg, frag.firstChild);
+
   $tlInner.replaceChildren(frag);
   $tlInner.style.width = (W + railW())+"px";
   fitLabels(frag);
@@ -719,22 +798,32 @@ function renderTimeline(){
 function appendPhaseLanes(frag, phases, W){
   if(!phases.length) return;
   const nLanes = packLanes(phases);
-  const rows = [];
-  for(let l=0;l<nLanes;l++){
-    const r = document.createElement("div"); r.className="tlRow laneRow"; rows.push(r); frag.appendChild(r);
-  }
-  phases.forEach(ph=>{
-    const x = dayIdx(ph.start)*TL_PPD, w = Math.max((diffDays(ph.start, ph.end)+1)*TL_PPD, 26);
-    const el = document.createElement("div");
-    el.className="phase"; el.style.left=x+"px"; el.style.width=w+"px";
-    el.style.background = cat(ph.categoryId).color;
-    el.dataset.phase = ph.id;
-    el.innerHTML =
-      `<button class="ph-exp" data-expand="${ph.id}" title="Details">${ph.expanded?"▾":"▸"}</button>`+
-      `<span class="ph-label">${esc(ph.title)}</span>`+
-      `<span class="ph-handle l" data-rez="l"></span><span class="ph-handle r" data-rez="r"></span>`;
-    rows[ph._lane].appendChild(el);
-    if(ph.expanded){
+  /* group phases by their packed lane so each lane row owns its own bubble rows */
+  const byLane = Array.from({length:nLanes}, ()=>[]);
+  phases.forEach(ph => byLane[ph._lane].push(ph));
+
+  for(let l = 0; l < nLanes; l++){
+    const r = document.createElement("div"); r.className = "tlRow laneRow";
+    frag.appendChild(r);
+
+    byLane[l].forEach(ph => {
+      const x = dayIdx(ph.start)*TL_PPD, w = Math.max((diffDays(ph.start, ph.end)+1)*TL_PPD, 26);
+      const el = document.createElement("div");
+      el.className="phase"; el.style.left=x+"px"; el.style.width=w+"px";
+      el.style.background = cat(ph.categoryId).color;
+      el.dataset.phase = ph.id;
+      el.innerHTML =
+        `<span class="ph-stick"><button class="ph-exp" data-expand="${ph.id}" title="Details">${ph.expanded?"▾":"▸"}</button>`+
+        `<span class="ph-label">${esc(ph.title)}</span></span>`+
+        `<span class="ph-handle l" data-rez="l"></span><span class="ph-handle r" data-rez="r"></span>`;
+      r.appendChild(el);
+    });
+
+    /* bubble rows for this lane's expanded phases — inserted immediately
+       after the lane row so the popup always sits under its parent bar */
+    byLane[l].forEach(ph => {
+      if(!ph.expanded) return;
+      const x = dayIdx(ph.start)*TL_PPD, w = Math.max((diffDays(ph.start, ph.end)+1)*TL_PPD, 26);
       const br = document.createElement("div"); br.className="tlRow bubbleRow";
       const anchor = document.createElement("div"); anchor.className="bubbleAnchor";
       anchor.style.marginLeft = x+"px"; anchor.style.width = Math.max(w, 340)+"px";
@@ -743,8 +832,8 @@ function appendPhaseLanes(frag, phases, W){
       bb.innerHTML = sanitize(ph.details||"");
       anchor.appendChild(bb); br.appendChild(anchor);
       frag.appendChild(br);
-    }
-  });
+    });
+  }
 }
 
 /* shrink label font before ever compromising the pill — never the radius */
@@ -875,15 +964,138 @@ function positionNowLine(){
 }
 setInterval(positionNowLine, 60000);
 
-/* ---------- scroll sync: two scales, one map ---------- */
+/* ════════════════════════════════════════════════════════════
+   scroll routing — one rule:
+   • horizontal movement (mouse, touch, trackpad) moves the entire
+     scene: timeline + daily slide together as one map
+   • vertical movement on the timeline area is routed to the daily
+     view (because the timeline doesn't move vertically — there's
+     nothing above it to reveal; what scrolling down does is bring
+     the rest of the day's hours into view)
+   • vertical movement on the daily area scrolls the daily view
+     itself (the hour rail)
+   The daily view is the master scroller; the timeline mirrors its
+   horizontal position. Touch and wheel events on the timeline are
+   intercepted and forwarded.
+   ════════════════════════════════════════════════════════════ */
+
+/* horizontal sync: bidirectional, with edge-extension for unbounded scroll */
 $dayWrap.addEventListener("scroll", ()=>{
-  if(UI.syncing){ UI.syncing=false; return; }
-  UI.syncing = true; $tlWrap.scrollLeft = $dayWrap.scrollLeft;
+  if(UI.syncing){ UI.syncing=false; } else { UI.syncing=true; $tlWrap.scrollLeft = $dayWrap.scrollLeft; }
+  scheduleExtend();
 });
 $tlWrap.addEventListener("scroll", ()=>{
-  if(UI.syncing){ UI.syncing=false; return; }
-  UI.syncing = true; $dayWrap.scrollLeft = $tlWrap.scrollLeft;
+  if(UI.syncing){ UI.syncing=false; } else { UI.syncing=true; $dayWrap.scrollLeft = $tlWrap.scrollLeft; }
+  scheduleExtend();
 });
+
+/* vertical handoff: outer (#app) consumes downward delta until the timeline
+   is fully collapsed under the topbar; remainder goes to dayWrap's hour scroll.
+   Upward: drain dayWrap first, then pull the timeline back into view. */
+const $appEl = document.getElementById("app");
+function routeY(dy){
+  if(dy > 0){
+    const room = $appEl.scrollHeight - $appEl.clientHeight - $appEl.scrollTop;
+    if(room > 0.5){ const used = Math.min(room, dy); $appEl.scrollTop += used; dy -= used; }
+    if(dy) $dayWrap.scrollTop += dy;
+  } else if(dy < 0){
+    const room = $dayWrap.scrollTop;
+    if(room > 0.5){ const used = Math.min(room, -dy); $dayWrap.scrollTop -= used; dy += used; }
+    if(dy) $appEl.scrollTop += dy;
+  }
+}
+/* wheel on the timeline area: route vertical delta to the daily view.
+   Native horizontal still scrolls tlWrap, which mirrors via the sync handler. */
+$tlWrap.addEventListener("wheel", e=>{
+  if(e.deltaY){
+    e.preventDefault();
+    routeY(e.deltaY);
+  }
+  if(e.deltaX){
+    e.preventDefault();
+    $dayWrap.scrollLeft += e.deltaX;
+  }
+}, { passive:false });
+
+/* touch on the timeline area:
+   - native panning is disabled (touch-action:none) so we can route both axes ourselves
+   - horizontal delta → dayWrap.scrollLeft (which syncs back to tlWrap)
+   - vertical delta → dayWrap.scrollTop (timeline area itself doesn't move vertically) */
+$tlWrap.style.touchAction = "none";
+let _tlT = null;
+$tlWrap.addEventListener("touchstart", e=>{
+  if(e.touches.length === 1) _tlT = { x:e.touches[0].clientX, y:e.touches[0].clientY };
+}, { passive:true });
+$tlWrap.addEventListener("touchmove", e=>{
+  if(!_tlT || e.touches.length !== 1) return;
+  const t = e.touches[0];
+  const dx = _tlT.x - t.clientX, dy = _tlT.y - t.clientY;
+  if(Math.abs(dx) >= 1 || Math.abs(dy) >= 1){
+    $dayWrap.scrollLeft += dx;
+    routeY(dy);
+    _tlT.x = t.clientX; _tlT.y = t.clientY;
+    if(e.cancelable) e.preventDefault();
+  }
+}, { passive:false });
+$tlWrap.addEventListener("touchend",    ()=>{ _tlT = null; }, { passive:true });
+$tlWrap.addEventListener("touchcancel", ()=>{ _tlT = null; }, { passive:true });
+
+/* wheel over the daily view: route vertically so the timeline collapses first */
+$dayWrap.addEventListener("wheel", e=>{
+  if(e.ctrlKey || !e.deltaY) return;        /* keep pinch-zoom + pure-horizontal native */
+  e.preventDefault();
+  routeY(e.deltaY);
+}, { passive:false });
+
+/* touch over the daily view: manual routing only while the timeline is still
+   (partially) visible at gesture start; otherwise fully native inner scroll.
+   Pulling the timeline back down from the collapsed state chains natively
+   (dayWrap at scrollTop 0 → overscroll propagates to #app). */
+let _dwT = null;
+$dayWrap.addEventListener("touchstart", e=>{
+  const room = $appEl.scrollHeight - $appEl.clientHeight - $appEl.scrollTop;
+  _dwT = (e.touches.length === 1 && room > 0.5)
+       ? { x:e.touches[0].clientX, y:e.touches[0].clientY } : null;
+}, { passive:true });
+$dayWrap.addEventListener("touchmove", e=>{
+  if(!_dwT || e.touches.length !== 1 || UI.dragLive) return;
+  const t = e.touches[0];
+  const dx = _dwT.x - t.clientX, dy = _dwT.y - t.clientY;
+  if(Math.abs(dx) >= 1 || Math.abs(dy) >= 1){
+    $dayWrap.scrollLeft += dx;
+    routeY(dy);
+    _dwT.x = t.clientX; _dwT.y = t.clientY;
+    if(e.cancelable) e.preventDefault();
+  }
+}, { passive:false });
+$dayWrap.addEventListener("touchend",    ()=>{ _dwT = null; }, { passive:true });
+$dayWrap.addEventListener("touchcancel", ()=>{ _dwT = null; }, { passive:true });
+
+/* dynamic range extension when scrolling near either edge */
+let _extendT = null;
+function scheduleExtend(){
+  clearTimeout(_extendT);
+  _extendT = setTimeout(()=>{ if(!UI.dragLive) maybeExtendRange(); }, 80);
+}
+function maybeExtendRange(){
+  const w = $dayWrap.scrollLeft, max = $dayWrap.scrollWidth - $dayWrap.clientWidth;
+  if(w < EDGE_BUFFER_PX){
+    /* prepend EXTEND_DAYS — preserve visual scroll position */
+    UI.range.start = isoDate(addDays(parseISO(UI.range.start), -EXTEND_DAYS));
+    UI.range.days += EXTEND_DAYS;
+    renderAll();
+    const delta = EXTEND_DAYS * TL_PPD;
+    UI.syncing = true; $dayWrap.scrollLeft = w + delta;
+    UI.syncing = true; $tlWrap.scrollLeft  = w + delta;
+    return true;
+  }
+  if(max - w < EDGE_BUFFER_PX){
+    UI.range.days += EXTEND_DAYS;
+    renderAll();
+    return true;
+  }
+  return false;
+}
 
 /* auto-landing: open on today, near current hour */
 function scrollToToday(animated){
@@ -1220,16 +1432,17 @@ function openModal(ctx){
   }
   const ov = document.createElement("div");
   ov.className = "overlay"; ov.id = "modalOv";
-  ov.innerHTML = `<div class="mcard"><div class="mhead"><h2 id="mTitle"></h2>
-    <button class="cbtn small" id="mClose" title="Schließen (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-    <div class="mbody" id="mBody"></div>
-    <div class="mfoot"><button class="btn danger" id="mDelete" style="display:none">Löschen</button>
-    <div class="spacer"></div><button class="btn" id="mCancel">Abbrechen</button>
-    <button class="btn primary" id="mSave">Speichern</button></div></div>`;
+  ov.innerHTML = `<div class="mcard">
+    <div class="mhead">
+      <div id="mTitleBox" style="flex:1; min-width:0"></div>
+      <button class="cbtn small" id="mClose" title="Abbrechen (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      <button class="cbtn small danger" id="mDelete" style="display:none" title="Löschen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/></svg></button>
+      <button class="cbtn small primary" id="mSave" title="Speichern (Strg+Enter)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></button>
+    </div>
+    <div class="mbody" id="mBody"></div></div>`;
   document.body.appendChild(ov);
   ov.addEventListener("pointerdown", e=>{ if(e.target===ov) closeModal(); });
   ov.querySelector("#mClose").onclick = closeModal;
-  ov.querySelector("#mCancel").onclick = closeModal;
   ov.querySelector("#mSave").onclick = saveModal;
   renderModalBody();
 }
@@ -1245,7 +1458,11 @@ function renderModalBody(){
   const T = document.getElementById("mTitle");
   const v = (ed||ctx.draft||{});
   let h = "";
-  const titleField = (lab,val)=>`<div class="field"><label>${lab}</label><input id="fTitle" value="${esc(val||"")}" autocomplete="off"></div>`;
+  const titleField = (placeholder,val)=>{
+    document.getElementById("mTitleBox").innerHTML =
+      `<div class="field title-field"><input id="fTitle" class="title-inline" value="${esc(val||"")}" placeholder="${esc(placeholder||"")}" autocomplete="off"></div>`;
+    return "";
+  };
   const dateField  = (id,lab,val)=>`<div class="field"><label>${lab}</label><input id="${id}" type="date" value="${val||todayISO()}"></div>`;
 
   if(ctx.type==="point"){
@@ -1257,8 +1474,7 @@ function renderModalBody(){
   const kind = ctx.type==="point" ? ctx.pointKind : ctx.type;
 
   if(kind==="event"){
-    T.textContent = ed ? "Termin bearbeiten" : "Neuer Termin";
-    h += titleField("Titel", v.title);
+    h += titleField(ed ? "Termin bearbeiten" : "Neuer Termin", v.title);
     h += `<div class="field"><label>Kategorie</label>${catDots(v.categoryId)}</div>`;
     h += `<div class="frow">${dateField("fDate","Datum",v.date)}
       <div class="field"><label>Von</label><input id="fStart" type="time" step="900" value="${fmtMin(v.startMin??9*60)}"></div>
@@ -1273,13 +1489,16 @@ function renderModalBody(){
       ${(v.todos||[]).some(t=>t.carried)?`<div class="thint" style="margin-top:5px">↻ aus dem letzten Termin dieser Kategorie übernommen (war verschoben)</div>`:""}</div>`;
   }
   else if(kind==="phase"){
-    T.textContent = ed ? "Phase bearbeiten" : "Neue Phase";
-    h += titleField("Titel", v.title);
-    h += `<div class="field"><label>Kategorie</label>${catDots(v.categoryId||S.categories[0].id)}</div>`;
-    h += `<div class="field"><label>Projekt</label><select id="fProj"><option value="">— frei —</option>
-      ${S.projects.map(p=>`<option value="${p.id}" ${v.projectId===p.id?"selected":""}>${esc(p.name)}</option>`).join("")}</select></div>`;
+    h += titleField(ed ? "Phase bearbeiten" : "Neue Phase", v.title);
+    h += `<div class="field"><label>Projekt</label>
+      <div class="proj-row">
+        <select id="fProj"><option value="">— frei —</option>
+        ${S.projects.map(p=>`<option value="${p.id}" ${v.projectId===p.id?"selected":""}>${esc(p.name)}</option>`).join("")}
+        </select>
+        <span class="proj-col" id="fProjCol"></span>
+      </div></div>`;
     h += `<div class="frow">${dateField("fStart2","Beginn",v.start)}${dateField("fEnd2","Ende",v.end)}</div>`;
-    h += `<div class="field"><label>Beschreibung</label>
+    h += `<div class="field desc-field"><label>Beschreibung</label>
       <div class="rte-tools">
         <button class="cbtn small" data-cmd="bold" title="Fett"><b style="font-size:12px">B</b></button>
         <button class="cbtn small" data-cmd="italic" title="Kursiv"><i style="font-size:12px;font-family:serif">I</i></button>
@@ -1326,6 +1545,17 @@ function renderModalBody(){
     e.preventDefault(); document.getElementById("fDetails").focus();
     document.execCommand(b.dataset.cmd, false, null);            // deprecated, fine for this scope
   });
+  /* phase modal: project dropdown drives the color swatch + (on save) the categoryId */
+  const _fProj = B.querySelector("#fProj"), _fProjCol = document.getElementById("fProjCol");
+  if(_fProj && _fProjCol){
+    const _free = S.categories.find(c=>c.id==="private") || S.categories[0];
+    const paint = ()=>{
+      const p = S.projects.find(x=>x.id===_fProj.value);
+      _fProjCol.style.background = p ? cat(p.categoryId).color : _free.color;
+    };
+    paint();
+    _fProj.addEventListener("change", paint);
+  }
   const addTodo = ()=>{
     const inp = B.querySelector("#fNewTodo"); const txt = inp.value.trim(); if(!txt) return;
     const list = ed ? ed.todos : ctx.draft.todos;
@@ -1394,9 +1624,12 @@ function saveModal(){
   else if(kind==="phase"){
     let a = val("fStart2")||todayISO(), b = val("fEnd2")||a;
     if(b<a) [a,b]=[b,a];
+    const _pid  = val("fProj")||null;
+    const _proj = _pid && S.projects.find(p=>p.id===_pid);
+    const _free = S.categories.find(c=>c.id==="private") || S.categories[0];
     const data = { title:(val("fTitle")||"").trim()||"Phase",
-      categoryId:selCat?selCat.dataset.cat:S.categories[0].id,
-      projectId: val("fProj")||null, start:a, end:b,
+      categoryId: _proj ? _proj.categoryId : _free.id,
+      projectId: _pid, start:a, end:b,
       details: sanitize(B.querySelector("#fDetails").innerHTML) };
     mutate(st=>{ if(ed) Object.assign(st.phases.find(x=>x.id===ed.id), data);
                  else st.phases.push({ id:uid(), expanded:false, ...data }); });
