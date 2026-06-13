@@ -1100,22 +1100,58 @@ $tlWrap.addEventListener("wheel", e=>{
    - vertical delta → dayWrap.scrollTop (timeline area itself doesn't move vertically) */
 $tlWrap.style.touchAction = "none";
 let _tlT = null;
-$tlWrap.addEventListener("touchstart", e=>{
-  if(e.touches.length === 1) _tlT = { x:e.touches[0].clientX, y:e.touches[0].clientY };
-}, { passive:true });
-$tlWrap.addEventListener("touchmove", e=>{
-  if(!_tlT || e.touches.length !== 1 || UI.dragLive) return;
+let longPressTimer = null;
+
+$tlWrap.addEventListener("touchstart", (e) => {
+  if (e.touches.length === 1) {
+    _tlT = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    
+    // START LONG-PRESS TIMER (Only if not touching a phase bar)
+    if (!e.target.closest(".phase")) {
+      longPressTimer = setTimeout(() => {
+        if (navigator.vibrate) navigator.vibrate(50);
+        const pos = tlPos(e.touches[0]);
+        openModal({ type: "phase", draft: { start: idxDate(pos), end: idxDate(pos) } });
+      }, 500);
+    }
+  }
+}, { passive: true });
+
+/* ════════════════════════════════════════════════════════════
+   Timeline Touch Pipeline: Routing, Edge-Scrolling, Long-Press Add*/
+$tlWrap.addEventListener("touchmove", (e) => {
+  // Clear long-press if user moves (it's a drag, not a creation intent)
+  if (longPressTimer) clearTimeout(longPressTimer);
+  
+  if (!_tlT || e.touches.length !== 1 || UI.dragLive) return;
+  
   const t = e.touches[0];
   const dx = _tlT.x - t.clientX, dy = _tlT.y - t.clientY;
-  if(Math.abs(dx) >= 1 || Math.abs(dy) >= 1){
+
+  if (Math.abs(dx) >= 1 || Math.abs(dy) >= 1) {
+    // 1. Edge-Scrolling Logic
+    const rect = $tlWrap.getBoundingClientRect();
+    const EDGE_THRESHOLD = 50;
+    if (t.clientX > rect.right - EDGE_THRESHOLD) $tlWrap.scrollLeft += 15;
+    else if (t.clientX < rect.left + EDGE_THRESHOLD) $tlWrap.scrollLeft -= 15;
+
+    // 2. Standard Routing
     $dayWrap.scrollLeft += dx;
     routeY(dy);
     _tlT.x = t.clientX; _tlT.y = t.clientY;
-    if(e.cancelable) e.preventDefault();
+    if (e.cancelable) e.preventDefault();
   }
-}, { passive:false });
-$tlWrap.addEventListener("touchend",    ()=>{ _tlT = null; }, { passive:true });
-$tlWrap.addEventListener("touchcancel", ()=>{ _tlT = null; }, { passive:true });
+}, { passive: false });
+
+$tlWrap.addEventListener("touchend", () => {
+  clearTimeout(longPressTimer);
+  _tlT = null;
+}, { passive: true });
+
+$tlWrap.addEventListener("touchcancel", () => {
+  clearTimeout(longPressTimer);
+  _tlT = null;
+}, { passive: true });
 
 /* wheel over the daily view: route vertically so the timeline collapses first */
 $dayWrap.addEventListener("wheel", e=>{
@@ -1423,6 +1459,12 @@ $tlWrap.addEventListener("pointerdown", e=>{
     let ns = ph.start, ne = ph.end;
     const move = mv=>{
       const d = idxDate(tlPos(mv));
+      const rect = $tlWrap.getBoundingClientRect();
+      const EDGE_THRESHOLD = 50;
+      if (mv.clientX > rect.right - EDGE_THRESHOLD) $tlWrap.scrollLeft += 15;
+      else if (mv.clientX < rect.left + EDGE_THRESHOLD) $tlWrap.scrollLeft -= 15;
+      /* --------------------------------- */
+
       if(side==="l") ns = d <= ph.end ? d : ph.end; else ne = d >= ph.start ? d : ph.start;
       const x = dayIdx(ns)*TL_PPD, w = Math.max((diffDays(ns,ne)+1)*TL_PPD, 26);
       phEl.style.left = x+"px"; phEl.style.width = w+"px";
