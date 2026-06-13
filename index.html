@@ -57,7 +57,7 @@ input,select,textarea{font-family:inherit; font-size:14px; color:var(--text)}
 
 /* ---------- app frame ---------- */
 #app{display:flex; flex-direction:column; height:100%;
-overflow-y:auto; overflow-x:clip;
+overflow-y:auto; overflow-x:clip; overscroll-behavior:contain;
 }
 
 /* ---------- top bar ---------- */
@@ -109,7 +109,7 @@ overflow-y:auto; overflow-x:clip;
   color:var(--text-dim); padding:0 10px; white-space:nowrap;
 }
 .projRow{height:36px}
-.projSpine{position:absolute; left:0; right:0; top:50%; height:2px; background:var(--line); border-radius:2px}
+.projSpine{position:absolute; top:50%; height:2px; background:var(--line); border-radius:2px}
 .projSpine.colored{opacity:.55}
 .projLabelWrap{position:absolute; top:0; height:100%; display:flex; align-items:center; pointer-events:none}
 .projLabel{
@@ -327,14 +327,19 @@ input[type="color"]{padding:2px; height:34px; cursor:pointer}
 /* inline borderless title — placeholder doubles as the section heading */
 .field.title-field{ margin-bottom:-2px; }
 .field.title-field > label{ display:none; }
-.field input.title-inline{
+.field input.title-inline,
+.field textarea.title-inline{
   background:transparent; border:none; border-radius:0;
   padding:2px 0; font-size:22px; font-weight:700; color:var(--text);
-  width:100%;
+  width:100%; font-family:inherit; line-height:1.25;
+  display:block; resize:none; overflow:hidden;   /* textarea grows via JS on input */
 }
-.field input.title-inline:focus{ border:none; outline:none; }
-.field input.title-inline::placeholder{ color:var(--text-faint); font-weight:700; }
-.field input.title-inline:focus::placeholder{ color:transparent; }
+.field input.title-inline:focus,
+.field textarea.title-inline:focus{ border:none; outline:none; }
+.field input.title-inline::placeholder,
+.field textarea.title-inline::placeholder{ color:var(--text-faint); font-weight:700; }
+.field input.title-inline:focus::placeholder,
+.field textarea.title-inline:focus::placeholder{ color:transparent; }
 
 /* description loses its uppercase label */
 .field.desc-field > label{ display:none; }
@@ -397,9 +402,35 @@ input[type="color"]{padding:2px; height:34px; cursor:pointer}
 #setPanel.open{transform:translateX(0)}
 #setPanel h2{font-size:18px}
 #setPanel section h3{font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--text-faint); margin-bottom:8px; font-weight:600}
-.catRow{display:flex; align-items:center; gap:8px; margin-bottom:6px}
+.catRow{display:flex; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap}
 .catRow input[type="color"]{width:34px; flex:0 0 34px; background:var(--surface2); border:1px solid var(--line); border-radius:50%; height:34px; overflow:hidden}
-.catRow input[type="text"]{flex:1; background:var(--surface2); border:1px solid var(--line); border-radius:var(--r-small); padding:7px 10px; outline:none; min-width:0}
+.catRow input[type="text"]{flex:1; min-width:120px; background:var(--surface2); border:1px solid var(--line); border-radius:var(--r-small); padding:7px 10px; outline:none}
+.catRow input[type="date"]{flex:0 0 auto; background:var(--surface2); border:1px solid var(--line); border-radius:var(--r-small); padding:6px 8px; color:var(--text); font-size:12px; outline:none}
+.catRow .colDot{width:26px; height:26px; flex:0 0 26px; border-radius:50%; border:1px solid var(--line)}
+
+/* color picker (7 swatches, grey reserved) */
+.cpicker{display:flex; flex-wrap:wrap; gap:8px; margin:6px 0}
+.cpicker .csw{
+  width:30px; height:30px; border-radius:50%; border:2px solid transparent;
+  cursor:pointer; transition:transform .15s var(--spring), opacity .15s;
+  padding:0;
+}
+.cpicker .csw.on{ border-color:var(--text); transform:scale(1.12) }
+.cpicker .csw.taken{ opacity:.25; cursor:not-allowed; transform:scale(.85) }
+
+/* inline add-form for projects/categories in settings */
+.add-form{
+  background:var(--surface2); border:1px solid var(--line);
+  border-radius:var(--r-small); padding:10px; margin-top:6px;
+  display:flex; flex-direction:column; gap:8px;
+}
+.add-form input[type="text"], .add-form input[type="date"]{
+  background:var(--base); border:1px solid var(--line); border-radius:var(--r-small);
+  padding:7px 10px; color:var(--text); outline:none; font-size:13px;
+}
+.add-form .af-dates{ display:flex; gap:8px }
+.add-form .af-dates input{ flex:1; min-width:0 }
+.add-form .af-actions{ display:flex; gap:8px; justify-content:flex-end }
 .note{font-size:11.5px; color:var(--text-faint); line-height:1.5}
 
 /* ---------- budget overlay ---------- */
@@ -484,27 +515,27 @@ function seedData(){
   const t = new Date(); t.setHours(0,0,0,0);
   const d = n => isoDate(addDays(t, n));
   return {
+    /* unified tracks: entries with start&end are projects (get a spine);
+       entries without dates are categories (named color only). Grey is reserved for "frei". */
     categories: [
+      { id:"seminar", name:"Seminararbeit", color:"#40838b",
+        start:d(-14), end:d(28),
+        milestones:[
+          { id:uid(), date:d(4),  label:"Entwurf fertig", end:false },
+          { id:uid(), date:d(11), label:"Review",         end:false },
+          { id:uid(), date:d(18), label:"Abgabe + Präsentation", end:true },
+        ] },
       { id:"work",    name:"Arbeit",     color:"#f4971f" },
       { id:"exam",    name:"Prüfung",    color:"#e9473a" },
-      { id:"seminar", name:"Seminar",    color:"#40838b" },
       { id:"meeting", name:"Meeting",    color:"#6498c0" },
       { id:"done",    name:"Bestätigt",  color:"#8fc14e" },
-      { id:"private", name:"Privat",     color:"#90909a" },
       { id:"misc",    name:"Sonstiges",  color:"#a060c8" },
       { id:"personal",name:"Persönlich", color:"#d86e9a" },
     ],
-    projects: [
-      { id:"p1", name:"Seminararbeit", categoryId:"seminar", milestones:[
-        { id:uid(), date:d(4),  label:"Entwurf fertig", end:false },
-        { id:uid(), date:d(11), label:"Review",         end:false },
-        { id:uid(), date:d(18), label:"Abgabe + Präsentation", end:true },
-      ]},
-    ],
     phases: [
-      { id:uid(), title:"Schreiben §2–§3", categoryId:"seminar", projectId:"p1", start:d(-3), end:d(4),  details:"", expanded:false },
-      { id:uid(), title:"Folien & Probevortrag", categoryId:"seminar", projectId:"p1", start:d(5), end:d(17), details:"<b>Fokus:</b> LOS als Brückenvariable sauber erzählen.<ul><li>Evidenzstärke pro Variable kennzeichnen</li><li>max. 12 Folien</li></ul>", expanded:false },
-      { id:uid(), title:"Viewer: Cache & Kompression", categoryId:"work", projectId:null, start:d(1), end:d(14), details:"", expanded:false },
+      { id:uid(), title:"Schreiben §2–§3", categoryId:"seminar", start:d(-3), end:d(4),  details:"", expanded:false },
+      { id:uid(), title:"Folien & Probevortrag", categoryId:"seminar", start:d(5), end:d(17), details:"<b>Fokus:</b> LOS als Brückenvariable sauber erzählen.<ul><li>Evidenzstärke pro Variable kennzeichnen</li><li>max. 12 Folien</li></ul>", expanded:false },
+      { id:uid(), title:"Viewer: Cache & Kompression", categoryId:"work", start:d(1), end:d(14), details:"", expanded:false },
     ],
     exams: [
       { id:uid(), title:"Präsentation", date:d(18), points:"30 Punkte" },
@@ -559,7 +590,8 @@ let S = loadFromStorage();
 const UI = {
   addMode:false, range:{ start:null, days:0 },
   undo:[], redo:[],
-  settingsOpen:false, budgetOpen:false, budgetDays:7,
+  settingsOpen:false, settingsForm:null,   // "proj" | "cat" | null
+  budgetOpen:false, budgetDays:7,
   modal:null,           // current draft modal context
   pop:null,             // todo popover context
   syncing:false,        // scroll-sync guard
@@ -569,9 +601,48 @@ const UI = {
 function loadFromStorage(){
   try{
     const raw = localStorage.getItem(STORE_KEY);
-    if(raw){ const d = JSON.parse(raw); if(d && d.categories) return d; }
+    if(raw){ const d = JSON.parse(raw); if(d && d.categories) return migrateData(d); }
   }catch(e){ console.warn("load failed", e); }
   return seedData();
+}
+/* migrate older storage shape (separate categories+projects, projectId on phases) to the unified tracks model */
+function migrateData(d){
+  /* 1. absorb each project into its linked category (project consumes that color slot) */
+  if(Array.isArray(d.projects) && d.projects.length){
+    d.projects.forEach(p=>{
+      const c = d.categories && d.categories.find(c=>c.id===p.categoryId);
+      if(!c) return;
+      c.name = p.name;
+      c.milestones = p.milestones || [];
+      const dates = [
+        ...(d.phases||[]).filter(ph=>ph.projectId===p.id).flatMap(ph=>[ph.start, ph.end]),
+        ...(p.milestones||[]).map(m=>m.date),
+      ].filter(Boolean);
+      if(dates.length){
+        c.start = dates.reduce((a,b)=> a<b?a:b);
+        c.end   = dates.reduce((a,b)=> a>b?a:b);
+      } else {
+        c.start = todayISO();
+        c.end   = isoDate(addDays(new Date(), 30));
+      }
+      /* phases that previously belonged to this project via projectId — re-point to its absorbed category, preserving intent over color-mismatch */
+      (d.phases||[]).forEach(ph=>{ if(ph.projectId===p.id) ph.categoryId = c.id; });
+    });
+    delete d.projects;
+  }
+  /* 2. grey is reserved for "frei": drop any track that claims it; re-point refs to null */
+  if(Array.isArray(d.categories)){
+    const grey = "#90909a";
+    const dropIds = new Set(d.categories.filter(c=>c.color===grey).map(c=>c.id));
+    if(dropIds.size){
+      d.categories = d.categories.filter(c=>!dropIds.has(c.id));
+      (d.phases||[]).forEach(p=>{ if(dropIds.has(p.categoryId)) p.categoryId = null; });
+      (d.events||[]).forEach(e=>{ if(dropIds.has(e.categoryId)) e.categoryId = null; });
+    }
+  }
+  /* 3. drop now-redundant projectId field from phases */
+  (d.phases||[]).forEach(p=>delete p.projectId);
+  return d;
 }
 function persist(){
   try{ localStorage.setItem(STORE_KEY, JSON.stringify(S)); }
@@ -603,7 +674,8 @@ function updateUndoButtons(){
   document.getElementById("btnUndo").toggleAttribute("disabled", !UI.undo.length);
   document.getElementById("btnRedo").toggleAttribute("disabled", !UI.redo.length);
 }
-const cat = id => S.categories.find(c=>c.id===id) || { id, name:"?", color:"#90909a" };
+const FREE_COLOR = "#90909a";
+const cat = id => (id && S.categories.find(c=>c.id===id)) || { id:null, name:"frei", color:FREE_COLOR };
 
 /* ════════════════════════════════════════════════════════════
    layout — recomputeRange(), lane packing, occurrence expansion
@@ -619,7 +691,8 @@ function recomputeRange(){
   S.phases.forEach(p=>{ see(p.start); see(p.end); });
   S.exams.forEach(x=>see(x.date));
   S.events.forEach(e=>see(e.date));
-  S.projects.forEach(p=>p.milestones.forEach(m=>see(m.date)));
+  S.categories.forEach(c=>(c.milestones||[]).forEach(m=>see(m.date)));
+  S.categories.forEach(c=>{ if(c.start && c.end){ see(c.start); see(c.end); } });
 
   /* never shrink an existing range — only widen it */
   let startISO = UI.range.start || isoDate(addDays(parseISO(todayISO()), -PAST_DAYS));
@@ -742,32 +815,36 @@ function renderTimeline(){
   }
   frag.appendChild(mrow);
 
-  /* per-project: spine + milestones, then its phase lanes */
-  S.projects.forEach(p=>{
+  /* per-project (dated category): spine bounded by start..end + milestones, then its phase lanes */
+  S.categories.filter(c=>c.start && c.end).forEach(p=>{
     const row = document.createElement("div"); row.className = "tlRow projRow";
-    const spine = document.createElement("div"); spine.className = "projSpine";
-    const col = cat(p.categoryId).color;
-    spine.style.background = col; spine.classList.add("colored");
+    const x = dayIdx(p.start)*TL_PPD;
+    const w = Math.max((diffDays(p.start, p.end)+1)*TL_PPD, 26);
+    const spine = document.createElement("div"); spine.className = "projSpine colored";
+    spine.style.left = x+"px"; spine.style.width = w+"px";
+    spine.style.background = p.color;
     row.appendChild(spine);
-    const lw = document.createElement("div"); lw.className="projLabelWrap"; lw.style.width = W+"px";
-    lw.innerHTML = `<span class="projLabel" data-edit-project="${p.id}" style="color:${col}">${esc(p.name)}</span>`;
+    const lw = document.createElement("div"); lw.className="projLabelWrap";
+    lw.style.left = x+"px"; lw.style.width = w+"px";
+    lw.innerHTML = `<span class="projLabel" data-edit-project="${p.id}" style="color:${p.color}">${esc(p.name)}</span>`;
     row.appendChild(lw);
-    p.milestones.slice().sort((a,b)=>a.date<b.date?-1:1).forEach(m=>{
-      const x = (dayIdx(m.date)+.5)*TL_PPD;
+    (p.milestones||[]).slice().sort((a,b)=>a.date<b.date?-1:1).forEach(m=>{
+      const mx = (dayIdx(m.date)+.5)*TL_PPD;
       const dot = document.createElement("div");
       dot.className = "ms"+(m.end?" end":"");
-      dot.style.left = x+"px";
+      dot.style.left = mx+"px";
       dot.dataset.editMilestone = p.id+"/"+m.id;
       dot.title = m.label;
       dot.innerHTML = `<span class="msLabel">${m.end?"★ ":""}${esc(m.label)}</span>`;
       row.appendChild(dot);
     });
     frag.appendChild(row);
-    appendPhaseLanes(frag, S.phases.filter(ph=>ph.projectId===p.id), W);
+    appendPhaseLanes(frag, S.phases.filter(ph=>ph.categoryId===p.id), W);
   });
 
-  /* free phases (no project) */
-  appendPhaseLanes(frag, S.phases.filter(ph=>!ph.projectId || !S.projects.some(p=>p.id===ph.projectId)), W);
+  /* ungrouped: phases tagged with a dateless category, or no tag at all (frei → grey) */
+  const datedIds = new Set(S.categories.filter(c=>c.start && c.end).map(c=>c.id));
+  appendPhaseLanes(frag, S.phases.filter(ph=>!ph.categoryId || !datedIds.has(ph.categoryId)), W);
 
   /* exam chips */
   const xr = document.createElement("div"); xr.className="tlRow"; xr.id="examRow";
@@ -1027,7 +1104,7 @@ $tlWrap.addEventListener("touchstart", e=>{
   if(e.touches.length === 1) _tlT = { x:e.touches[0].clientX, y:e.touches[0].clientY };
 }, { passive:true });
 $tlWrap.addEventListener("touchmove", e=>{
-  if(!_tlT || e.touches.length !== 1) return;
+  if(!_tlT || e.touches.length !== 1 || UI.dragLive) return;
   const t = e.touches[0];
   const dx = _tlT.x - t.clientX, dy = _tlT.y - t.clientY;
   if(Math.abs(dx) >= 1 || Math.abs(dy) >= 1){
@@ -1048,16 +1125,10 @@ $dayWrap.addEventListener("wheel", e=>{
 }, { passive:false });
 
 /* touch over the daily view: manual routing only while the timeline is still
-   (partially) visible at gesture start; otherwise fully native inner scroll.
-   Pulling the timeline back down from the collapsed state chains natively
-   (dayWrap at scrollTop 0 → overscroll propagates to #app). */
+   (partially) visible. Dynamically attaches/detaches the passive:false listener
+   to prevent scroll-lag when native panning takes over. */
 let _dwT = null;
-$dayWrap.addEventListener("touchstart", e=>{
-  const room = $appEl.scrollHeight - $appEl.clientHeight - $appEl.scrollTop;
-  _dwT = (e.touches.length === 1 && room > 0.5)
-       ? { x:e.touches[0].clientX, y:e.touches[0].clientY } : null;
-}, { passive:true });
-$dayWrap.addEventListener("touchmove", e=>{
+const dwTouchMove = e => {
   if(!_dwT || e.touches.length !== 1 || UI.dragLive) return;
   const t = e.touches[0];
   const dx = _dwT.x - t.clientX, dy = _dwT.y - t.clientY;
@@ -1067,7 +1138,31 @@ $dayWrap.addEventListener("touchmove", e=>{
     _dwT.x = t.clientX; _dwT.y = t.clientY;
     if(e.cancelable) e.preventDefault();
   }
-}, { passive:false });
+};
+
+let dwTouchAttached = false;
+function updateDayWrapRouting() {
+  const room = $appEl.scrollHeight - $appEl.clientHeight - $appEl.scrollTop;
+  const needsRouting = room > 0.5;
+  if(needsRouting && !dwTouchAttached) {
+    $dayWrap.addEventListener("touchmove", dwTouchMove, { passive:false });
+    dwTouchAttached = true;
+  } else if(!needsRouting && dwTouchAttached) {
+    $dayWrap.removeEventListener("touchmove", dwTouchMove);
+    dwTouchAttached = false;
+    _dwT = null;
+  }
+}
+
+$appEl.addEventListener("scroll", updateDayWrapRouting, { passive: true });
+window.addEventListener("resize", updateDayWrapRouting, { passive: true });
+updateDayWrapRouting(); /* initial eval */
+
+$dayWrap.addEventListener("touchstart", e=>{
+  const room = $appEl.scrollHeight - $appEl.clientHeight - $appEl.scrollTop;
+  _dwT = (e.touches.length === 1 && room > 0.5)
+       ? { x:e.touches[0].clientX, y:e.touches[0].clientY } : null;
+}, { passive:true });
 $dayWrap.addEventListener("touchend",    ()=>{ _dwT = null; }, { passive:true });
 $dayWrap.addEventListener("touchcancel", ()=>{ _dwT = null; }, { passive:true });
 
@@ -1115,8 +1210,19 @@ function scrollToToday(animated){
    ════════════════════════════════════════════════════════════ */
 const MOVE_THRESHOLD = 5, LONGPRESS = 500, EDGE = 7;
 
-/* single passive:false touchmove — suppresses native scroll while a drag is live */
-window.addEventListener("touchmove", e=>{ if(UI.dragLive) e.preventDefault(); }, { passive:false });
+/* Dynamic setter for UI.dragLive: only attaches the heavy passive:false touchmove
+   listener when a drag is actively occurring, ensuring zero lag during normal scrolling. */
+let _dragLive = false;
+const globalDragSuppressor = e => e.preventDefault();
+Object.defineProperty(UI, 'dragLive', {
+  get() { return _dragLive; },
+  set(v) {
+    if(_dragLive === v) return;
+    _dragLive = v;
+    if(v) window.addEventListener("touchmove", globalDragSuppressor, { passive: false });
+    else window.removeEventListener("touchmove", globalDragSuppressor);
+  }
+});
 
 function gridPos(e){
   const g = document.getElementById("dayGrid").getBoundingClientRect();
@@ -1373,12 +1479,12 @@ $tlWrap.addEventListener("click", e=>{
   const mEl = e.target.closest("[data-edit-milestone]");
   if(mEl){
     const [pid,mid] = mEl.dataset.editMilestone.split("/");
-    const p = S.projects.find(v=>v.id===pid); const m = p && p.milestones.find(v=>v.id===mid);
+    const p = S.categories.find(v=>v.id===pid && v.start && v.end); const m = p && (p.milestones||[]).find(v=>v.id===mid);
     if(m) openModal({ type:"milestone", edit:m, project:p });
     return;
   }
   const prEl = e.target.closest("[data-edit-project]");
-  if(prEl){ const p = S.projects.find(v=>v.id===prEl.dataset.editProject); if(p) openModal({ type:"project", edit:p }); }
+  if(prEl){ toggleSettings(true); }
 });
 </script>
 <script>
@@ -1427,7 +1533,6 @@ function openModal(ctx){
   const ed = ctx.edit;
   if(ctx.type==="point") ctx.pointKind = ctx.pointKind || "exam";
   if(ctx.type==="event" && !ed){
-    ctx.draft.categoryId = ctx.draft.categoryId || S.categories[0].id;
     ctx.draft.todos = getCarryover(ctx.draft.categoryId, ctx.draft.date, null);
   }
   const ov = document.createElement("div");
@@ -1460,22 +1565,34 @@ function renderModalBody(){
   let h = "";
   const titleField = (placeholder,val)=>{
     document.getElementById("mTitleBox").innerHTML =
-      `<div class="field title-field"><input id="fTitle" class="title-inline" value="${esc(val||"")}" placeholder="${esc(placeholder||"")}" autocomplete="off"></div>`;
+      `<div class="field title-field"><textarea id="fTitle" class="title-inline" rows="1" placeholder="${esc(placeholder||"")}" autocomplete="off">${esc(val||"")}</textarea></div>`;
     return "";
   };
   const dateField  = (id,lab,val)=>`<div class="field"><label>${lab}</label><input id="${id}" type="date" value="${val||todayISO()}"></div>`;
+  const trackPicker = (selectedId)=>{
+    const projs = S.categories.filter(c=>c.start && c.end);
+    const cats  = S.categories.filter(c=>!c.start && !c.end);
+    return `<div class="field"><label>Projekt / Kategorie</label>
+      <div class="proj-row">
+        <select id="fProj">
+          <option value="">— frei —</option>
+          ${projs.length?`<optgroup label="Projekte">${projs.map(p=>`<option value="${p.id}" ${selectedId===p.id?"selected":""}>${esc(p.name)}</option>`).join("")}</optgroup>`:""}
+          ${cats.length?`<optgroup label="Kategorien">${cats.map(c=>`<option value="${c.id}" ${selectedId===c.id?"selected":""}>${esc(c.name)}</option>`).join("")}</optgroup>`:""}
+        </select>
+        <span class="proj-col" id="fProjCol"></span>
+      </div></div>`;
+  };
 
   if(ctx.type==="point"){
     h += `<div class="seg" id="pointSeg">
       <button data-k="exam" class="${ctx.pointKind==="exam"?"on":""}">Prüfung</button>
-      <button data-k="milestone" class="${ctx.pointKind==="milestone"?"on":""}" ${S.projects.length?"":"disabled"}>Meilenstein</button>
-      <button data-k="project" class="${ctx.pointKind==="project"?"on":""}">Projekt</button></div>`;
+      <button data-k="milestone" class="${ctx.pointKind==="milestone"?"on":""}" ${S.categories.some(c=>c.start&&c.end)?"":"disabled"}>Meilenstein</button></div>`;
   }
   const kind = ctx.type==="point" ? ctx.pointKind : ctx.type;
 
   if(kind==="event"){
     h += titleField(ed ? "Termin bearbeiten" : "Neuer Termin", v.title);
-    h += `<div class="field"><label>Kategorie</label>${catDots(v.categoryId)}</div>`;
+    h += trackPicker(v.categoryId);
     h += `<div class="frow">${dateField("fDate","Datum",v.date)}
       <div class="field"><label>Von</label><input id="fStart" type="time" step="900" value="${fmtMin(v.startMin??9*60)}"></div>
       <div class="field"><label>Bis</label><input id="fEnd" type="time" step="900" value="${fmtMin(v.endMin??10*60)}"></div></div>`;
@@ -1490,13 +1607,7 @@ function renderModalBody(){
   }
   else if(kind==="phase"){
     h += titleField(ed ? "Phase bearbeiten" : "Neue Phase", v.title);
-    h += `<div class="field"><label>Projekt</label>
-      <div class="proj-row">
-        <select id="fProj"><option value="">— frei —</option>
-        ${S.projects.map(p=>`<option value="${p.id}" ${v.projectId===p.id?"selected":""}>${esc(p.name)}</option>`).join("")}
-        </select>
-        <span class="proj-col" id="fProjCol"></span>
-      </div></div>`;
+    h += trackPicker(v.categoryId);
     h += `<div class="frow">${dateField("fStart2","Beginn",v.start)}${dateField("fEnd2","Ende",v.end)}</div>`;
     h += `<div class="field desc-field"><label>Beschreibung</label>
       <div class="rte-tools">
@@ -1507,54 +1618,57 @@ function renderModalBody(){
       <div class="rte" id="fDetails" contenteditable="true">${sanitize(v.details||"")}</div></div>`;
   }
   else if(kind==="exam"){
-    T.textContent = ed ? "Prüfung bearbeiten" : "Neue Prüfung";
-    h += titleField("Titel", v.title);
+    h += titleField(ed ? "Prüfung bearbeiten" : "Neue Prüfung", v.title);
     h += `<div class="frow">${dateField("fDate","Datum",v.date)}
       <div class="field"><label>Punkte / Notiz</label><input id="fPoints" value="${esc(v.points||"")}" placeholder="z. B. 30 Punkte"></div></div>`;
   }
   else if(kind==="milestone"){
-    T.textContent = ed ? "Meilenstein bearbeiten" : "Neuer Meilenstein";
+    const projs = S.categories.filter(c=>c.start && c.end);
+    h += titleField(ed ? "Meilenstein bearbeiten" : "Neuer Meilenstein", v.label);
     h += `<div class="field"><label>Projekt</label><select id="fProj" ${ed?"disabled":""}>
-      ${S.projects.map(p=>`<option value="${p.id}" ${(ctx.project&&ctx.project.id===p.id)?"selected":""}>${esc(p.name)}</option>`).join("")}</select></div>`;
-    h += titleField("Bezeichnung", v.label);
+      ${projs.map(p=>`<option value="${p.id}" ${(ctx.project&&ctx.project.id===p.id)?"selected":""}>${esc(p.name)}</option>`).join("")}</select></div>`;
     h += `<div class="frow">${dateField("fDate","Datum",v.date)}
       <div class="field"><label>&nbsp;</label><label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:13px;color:var(--text);letter-spacing:0;cursor:pointer">
       <input id="fEndFlag" type="checkbox" ${v.end?"checked":""} style="width:auto"> Abschluss ★</label></div></div>`;
   }
   else if(kind==="project"){
-    T.textContent = ed ? "Projekt bearbeiten" : "Neues Projekt";
-    h += titleField("Name", v.name);
-    h += `<div class="field"><label>Kategorie</label>${catDots(v.categoryId||S.categories[0].id)}</div>`;
-    if(!ed) h += dateField("fDate","Ziel-Datum (Abschluss-Meilenstein)", ctx.draft && ctx.draft.date);
+    /* project creation/edit now lives in the settings panel — this branch retained only as a no-op safety net */
+    h += titleField(ed ? "Projekt bearbeiten" : "Neues Projekt", v.name);
+    h += `<div class="field"><p class="note">Projekte werden im Einstellungs-Panel verwaltet.</p></div>`;
   }
   B.innerHTML = h;
 
   /* wiring */
-  B.querySelectorAll(".catdot").forEach(d=>d.onclick=()=>{
-    B.querySelectorAll(".catdot").forEach(x=>x.classList.remove("on"));
-    d.classList.add("on");
-    if(ctx.type==="event" && !ed){                  // carry-over follows the chosen category
-      ctx.draft.categoryId = d.dataset.cat;
-      ctx.draft.todos = ctx.draft.todos.filter(t=>!t.carried).concat(getCarryover(d.dataset.cat, ctx.draft.date, null));
-      renderModalBody();
-    }
-  });
   const seg = B.querySelector("#pointSeg");
   if(seg) seg.querySelectorAll("button").forEach(b=>b.onclick=()=>{ ctx.pointKind = b.dataset.k; renderModalBody(); });
   B.querySelectorAll(".rte-tools .cbtn").forEach(b=>b.onclick=e=>{
     e.preventDefault(); document.getElementById("fDetails").focus();
     document.execCommand(b.dataset.cmd, false, null);            // deprecated, fine for this scope
   });
-  /* phase modal: project dropdown drives the color swatch + (on save) the categoryId */
+  /* title textarea: wordwrap by auto-growing to scrollHeight; Enter is suppressed (titles are single-line semantically) */
+  const _fTitle = document.getElementById("fTitle");
+  if(_fTitle && _fTitle.tagName === "TEXTAREA"){
+    const grow = ()=>{ _fTitle.style.height = "auto"; _fTitle.style.height = _fTitle.scrollHeight + "px"; };
+    _fTitle.addEventListener("input", grow);
+    _fTitle.addEventListener("keydown", e=>{ if(e.key === "Enter") e.preventDefault(); });
+    requestAnimationFrame(grow);   // initial size after layout settles
+  }
+  /* unified track dropdown: paints color swatch + (event modal) refreshes carry-over */
   const _fProj = B.querySelector("#fProj"), _fProjCol = document.getElementById("fProjCol");
   if(_fProj && _fProjCol){
-    const _free = S.categories.find(c=>c.id==="private") || S.categories[0];
     const paint = ()=>{
-      const p = S.projects.find(x=>x.id===_fProj.value);
-      _fProjCol.style.background = p ? cat(p.categoryId).color : _free.color;
+      const t = S.categories.find(c=>c.id===_fProj.value);
+      _fProjCol.style.background = t ? t.color : FREE_COLOR;
     };
     paint();
-    _fProj.addEventListener("change", paint);
+    _fProj.addEventListener("change", ()=>{
+      paint();
+      if(ctx.type==="event" && !ed){
+        ctx.draft.categoryId = _fProj.value || null;
+        ctx.draft.todos = ctx.draft.todos.filter(t=>!t.carried).concat(getCarryover(ctx.draft.categoryId, ctx.draft.date, null));
+        renderModalBody();
+      }
+    });
   }
   const addTodo = ()=>{
     const inp = B.querySelector("#fNewTodo"); const txt = inp.value.trim(); if(!txt) return;
@@ -1590,28 +1704,26 @@ function renderModalBody(){
       if(k==="event") s.events = s.events.filter(x=>x.id!==ed.id);
       else if(k==="phase") s.phases = s.phases.filter(x=>x.id!==ed.id);
       else if(k==="exam") s.exams = s.exams.filter(x=>x.id!==ed.id);
-      else if(k==="milestone"){ const p=s.projects.find(p=>p.id===ctx.project.id); p.milestones=p.milestones.filter(m=>m.id!==ed.id); }
-      else if(k==="project"){ s.projects = s.projects.filter(p=>p.id!==ed.id); s.phases.forEach(ph=>{ if(ph.projectId===ed.id) ph.projectId=null; }); }
+      else if(k==="milestone"){ const p=s.categories.find(c=>c.id===ctx.project.id); if(p && p.milestones) p.milestones=p.milestones.filter(m=>m.id!==ed.id); }
     });
     toast(k==="event" && ed.repeat && ed.repeat!=="none" ? "Serie gelöscht" : "Gelöscht");
     closeModal();
   };
-  const f = B.querySelector("#fTitle"); if(f) f.focus();
+  const f = document.getElementById("fTitle"); if(f) f.focus();
 }
 
 function saveModal(){
   const ctx = UI.modal, ed = ctx.edit, B = document.getElementById("mBody");
   const kind = ctx.type==="point" ? ctx.pointKind : ctx.type;
-  const val = id => { const el=B.querySelector("#"+id); return el?el.value:undefined; };
+  const val = id => { const el=document.getElementById(id); return el?el.value:undefined; };
   const mins = id => { const t=val(id); if(!t) return null; const [h,m]=t.split(":").map(Number); return h*60+m; };
-  const selCat = B.querySelector(".catdot.on");
 
   if(kind==="event"){
     const title = (val("fTitle")||"").trim() || "Termin";
     let s = clamp(mins("fStart")??9*60, HOUR_START*60, HOUR_END*60);
     let e = clamp(mins("fEnd")??s+60, HOUR_START*60, HOUR_END*60);
     if(e<=s) e = Math.min(s+SNAP, HOUR_END*60);
-    const data = { title, categoryId:selCat?selCat.dataset.cat:S.categories[0].id,
+    const data = { title, categoryId: val("fProj")||null,
       date: val("fDate")||todayISO(), startMin:s, endMin:e,
       repeat: val("fRepeat")||"none",
       reminderMin: val("fRem")==="" ? null : Number(val("fRem")),
@@ -1619,17 +1731,13 @@ function saveModal(){
     if(data.reminderMin!=null) requestNotifPermission();
     mutate(st=>{ if(ed) Object.assign(st.events.find(x=>x.id===ed.id), data);
                  else st.events.push({ id:uid(), ...data }); });
-    if(UI.addMode) setAddMode(false);                 // add-mode auto-exits after one creation
+    if(UI.addMode) setAddMode(false);
   }
   else if(kind==="phase"){
     let a = val("fStart2")||todayISO(), b = val("fEnd2")||a;
     if(b<a) [a,b]=[b,a];
-    const _pid  = val("fProj")||null;
-    const _proj = _pid && S.projects.find(p=>p.id===_pid);
-    const _free = S.categories.find(c=>c.id==="private") || S.categories[0];
     const data = { title:(val("fTitle")||"").trim()||"Phase",
-      categoryId: _proj ? _proj.categoryId : _free.id,
-      projectId: _pid, start:a, end:b,
+      categoryId: val("fProj")||null, start:a, end:b,
       details: sanitize(B.querySelector("#fDetails").innerHTML) };
     mutate(st=>{ if(ed) Object.assign(st.phases.find(x=>x.id===ed.id), data);
                  else st.phases.push({ id:uid(), expanded:false, ...data }); });
@@ -1644,22 +1752,15 @@ function saveModal(){
   else if(kind==="milestone"){
     const data = { label:(val("fTitle")||"").trim()||"Meilenstein", date:val("fDate")||todayISO(), end:B.querySelector("#fEndFlag").checked };
     mutate(st=>{
-      const p = st.projects.find(p=>p.id===(ed?ctx.project.id:val("fProj")));
+      const p = st.categories.find(c=>c.id===(ed?ctx.project.id:val("fProj")) && c.start && c.end);
+      if(!p) return;
+      if(!p.milestones) p.milestones = [];
       if(ed) Object.assign(p.milestones.find(m=>m.id===ed.id), data);
       else p.milestones.push({ id:uid(), ...data });
     });
     if(UI.addMode) setAddMode(false);
   }
-  else if(kind==="project"){
-    const name = (val("fTitle")||"").trim()||"Projekt";
-    const cid = selCat?selCat.dataset.cat:S.categories[0].id;
-    mutate(st=>{
-      if(ed) Object.assign(st.projects.find(p=>p.id===ed.id), { name, categoryId:cid });
-      else st.projects.push({ id:uid(), name, categoryId:cid,
-        milestones:[{ id:uid(), date:val("fDate")||todayISO(), label:"Ziel", end:true }] });
-    });
-    if(UI.addMode) setAddMode(false);
-  }
+  /* kind==="project" is intentionally not handled — project CRUD lives in settings */
   closeModal();
 }
 
@@ -1772,49 +1873,160 @@ function toggleSettings(on){
   $set.classList.toggle("open", UI.settingsOpen);
 }
 function renderSettings(){
+  const grey = "#90909a";
+  const projs = S.categories.filter(c=>c.start && c.end);
+  const cats  = S.categories.filter(c=>!c.start && !c.end);
+  /* color picker — 7 palette colors minus grey; colors claimed by any track (except `exceptId`) are disabled */
+  const colorPicker = exceptId => {
+    const claimed = new Map(S.categories.filter(c=>c.id!==exceptId).map(c=>[c.color, c.name]));
+    return `<div class="cpicker">${PALETTE.filter(c=>c!==grey).map(c=>{
+      const taken = claimed.has(c);
+      return `<button type="button" class="csw${taken?" taken":""}" data-col="${c}" ${taken?`disabled title="belegt von ${esc(claimed.get(c))}"`:""} style="background:${c}"></button>`;
+    }).join("")}</div>`;
+  };
+  const projForm = `<div class="add-form" id="sNewProjForm">
+    ${colorPicker(null)}
+    <input id="sNewProjName" type="text" placeholder="Projektname" autocomplete="off">
+    <div class="af-dates">
+      <input id="sNewProjStart" type="date" value="${todayISO()}">
+      <input id="sNewProjEnd" type="date" value="${isoDate(addDays(new Date(), 30))}">
+    </div>
+    <div class="af-actions">
+      <button class="btn" data-act="cancel">Abbrechen</button>
+      <button class="btn primary" data-act="save-proj">Speichern</button>
+    </div></div>`;
+  const catForm = `<div class="add-form" id="sNewCatForm">
+    ${colorPicker(null)}
+    <input id="sNewCatName" type="text" placeholder="Kategorie-Name" autocomplete="off">
+    <div class="af-actions">
+      <button class="btn" data-act="cancel">Abbrechen</button>
+      <button class="btn primary" data-act="save-cat">Speichern</button>
+    </div></div>`;
+
   $set.innerHTML = `<div style="display:flex;align-items:center;gap:10px"><h2 style="flex:1">Einstellungen</h2>
     <button class="cbtn small" id="sClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+
     <section><h3>Darstellung</h3><div class="seg" id="sTheme">
       <button data-t="dark" class="${S.settings.theme==="dark"?"on":""}">Dunkel</button>
       <button data-t="light" class="${S.settings.theme==="light"?"on":""}">Hell</button></div></section>
+
     <section><h3>Sichtbare Tage (Zoom)</h3><div class="seg" id="sDens">
       ${[3,5,7].map(d=>`<button data-d="${d}" class="${S.settings.density===d?"on":""}">${d}</button>`).join("")}</div></section>
-    <section><h3>Kategorien</h3><div id="sCats">
-      ${S.categories.map(c=>`<div class="catRow" data-cid="${c.id}">
-        <input type="color" value="${c.color}">
-        <input type="text" value="${esc(c.name)}">
+
+    <section><h3>Projekte</h3>
+      <div id="sProjs">${projs.map(p=>`<div class="catRow" data-pid="${p.id}">
+        <span class="colDot" style="background:${p.color}"></span>
+        <input type="text" value="${esc(p.name)}" data-f="name">
+        <input type="date" value="${p.start}" data-f="start">
+        <input type="date" value="${p.end}" data-f="end">
         <button class="cbtn small" data-del title="Löschen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button></div>`).join("")}</div>
-      <button class="btn" id="sAddCat" style="margin-top:4px">+ Kategorie</button></section>
+      <button class="btn" id="sAddProj" style="margin-top:4px">+ Projekt</button>
+      ${UI.settingsForm==="proj" ? projForm : ""}</section>
+
+    <section><h3>Kategorien</h3>
+      <div id="sCats">${cats.map(c=>`<div class="catRow" data-cid="${c.id}">
+        <span class="colDot" style="background:${c.color}"></span>
+        <input type="text" value="${esc(c.name)}" data-f="name">
+        <button class="cbtn small" data-del title="Löschen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button></div>`).join("")}</div>
+      <button class="btn" id="sAddCat" style="margin-top:4px">+ Kategorie</button>
+      ${UI.settingsForm==="cat" ? catForm : ""}
+      <p class="note" style="margin-top:8px">Grau ist fix für „frei". Jede Farbe gehört nur einem Projekt oder einer Kategorie.</p></section>
+
     <section><h3>Daten</h3><div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn" id="sExport">Exportieren</button>
       <button class="btn" id="sImport">Importieren</button>
       <input id="sFile" type="file" accept="application/json" style="display:none"></div>
       <p class="note" style="margin-top:8px">Alles liegt lokal in diesem Browser (localStorage). Export = JSON-Sicherung.</p></section>
+
     <section><h3>Erinnerungen</h3><p class="note">Benachrichtigungen funktionieren, solange die App offen oder (auf Android) kürzlich im Hintergrund ist. Es gibt keinen Server — bei geschlossener App kann kein Push zugestellt werden.</p></section>`;
 
+  /* wiring */
   $set.querySelector("#sClose").onclick = ()=>toggleSettings(false);
-  $set.querySelectorAll("#sTheme button").forEach(b=>b.onclick=()=>mutate(s=>{ s.settings.theme=b.dataset.t; }, {skipRender:false}) || renderSettings());
+  $set.querySelectorAll("#sTheme button").forEach(b=>b.onclick=()=>{ mutate(s=>{ s.settings.theme=b.dataset.t; }); renderSettings(); });
   $set.querySelectorAll("#sDens button").forEach(b=>b.onclick=()=>{ mutate(s=>{ s.settings.density=+b.dataset.d; }); renderSettings(); });
-  $set.querySelectorAll(".catRow").forEach(row=>{
-    const cid = row.dataset.cid;
-    row.querySelector('input[type="color"]').addEventListener("change", e=>mutate(s=>{ s.categories.find(c=>c.id===cid).color=e.target.value; }));
-    row.querySelector('input[type="text"]').addEventListener("change", e=>mutate(s=>{ s.categories.find(c=>c.id===cid).name=e.target.value.trim()||"Kategorie"; }));
+
+  /* color-picker click handling (inside the open add form) */
+  $set.querySelectorAll(".cpicker").forEach(pk=>pk.addEventListener("click", e=>{
+    const sw = e.target.closest(".csw"); if(!sw || sw.classList.contains("taken")) return;
+    pk.querySelectorAll(".csw").forEach(x=>x.classList.remove("on"));
+    sw.classList.add("on");
+  }));
+
+  /* project rows: edit name + dates + delete */
+  $set.querySelectorAll("#sProjs .catRow").forEach(row=>{
+    const pid = row.dataset.pid;
+    row.querySelector('[data-f="name"]').addEventListener("change", e=>mutate(s=>{
+      const p = s.categories.find(c=>c.id===pid); if(p) p.name = e.target.value.trim() || "Projekt";
+    }));
+    row.querySelector('[data-f="start"]').addEventListener("change", e=>mutate(s=>{
+      const p = s.categories.find(c=>c.id===pid); if(!p) return;
+      p.start = e.target.value; if(p.end < p.start) p.end = p.start;
+    }));
+    row.querySelector('[data-f="end"]').addEventListener("change", e=>mutate(s=>{
+      const p = s.categories.find(c=>c.id===pid); if(!p) return;
+      p.end = e.target.value; if(p.end < p.start) p.end = p.start;
+    }));
     row.querySelector("[data-del]").onclick = ()=>{
-      if(S.categories.length<=1){ toast("Mindestens eine Kategorie nötig"); return; }
-      const fb = S.categories.find(c=>c.id!==cid).id;
       mutate(s=>{
-        s.categories = s.categories.filter(c=>c.id!==cid);
-        s.phases.forEach(p=>{ if(p.categoryId===cid) p.categoryId=fb; });
-        s.events.forEach(e2=>{ if(e2.categoryId===cid) e2.categoryId=fb; });
-        s.projects.forEach(p=>{ if(p.categoryId===cid) p.categoryId=fb; });
+        s.categories = s.categories.filter(c=>c.id!==pid);
+        s.phases.forEach(p=>{ if(p.categoryId===pid) p.categoryId=null; });
+        s.events.forEach(e2=>{ if(e2.categoryId===pid) e2.categoryId=null; });
       });
       renderSettings();
     };
   });
-  $set.querySelector("#sAddCat").onclick = ()=>{
-    mutate(s=>s.categories.push({ id:uid(), name:"Neue Kategorie", color:PALETTE[s.categories.length%PALETTE.length] }));
-    renderSettings();
-  };
+
+  /* category rows: edit name + delete */
+  $set.querySelectorAll("#sCats .catRow").forEach(row=>{
+    const cid = row.dataset.cid;
+    row.querySelector('[data-f="name"]').addEventListener("change", e=>mutate(s=>{
+      const c = s.categories.find(x=>x.id===cid); if(c) c.name = e.target.value.trim() || "Kategorie";
+    }));
+    row.querySelector("[data-del]").onclick = ()=>{
+      mutate(s=>{
+        s.categories = s.categories.filter(c=>c.id!==cid);
+        s.phases.forEach(p=>{ if(p.categoryId===cid) p.categoryId=null; });
+        s.events.forEach(e2=>{ if(e2.categoryId===cid) e2.categoryId=null; });
+      });
+      renderSettings();
+    };
+  });
+
+  /* + Projekt / + Kategorie buttons */
+  $set.querySelector("#sAddProj").onclick = ()=>{ UI.settingsForm = "proj"; renderSettings(); };
+  $set.querySelector("#sAddCat").onclick  = ()=>{ UI.settingsForm = "cat";  renderSettings(); };
+
+  const openForm = $set.querySelector(".add-form");
+  if(openForm){
+    openForm.querySelector('[data-act="cancel"]').onclick = ()=>{ UI.settingsForm = null; renderSettings(); };
+    const saveProj = openForm.querySelector('[data-act="save-proj"]');
+    const saveCat  = openForm.querySelector('[data-act="save-cat"]');
+    if(saveProj){
+      saveProj.onclick = ()=>{
+        const sw = openForm.querySelector(".csw.on");
+        if(!sw){ toast("Farbe wählen"); return; }
+        const name  = openForm.querySelector("#sNewProjName").value.trim() || "Projekt";
+        let start = openForm.querySelector("#sNewProjStart").value || todayISO();
+        let end   = openForm.querySelector("#sNewProjEnd").value   || start;
+        if(end < start) [start, end] = [end, start];
+        mutate(s=>s.categories.push({ id:uid(), name, color:sw.dataset.col, start, end, milestones:[] }));
+        UI.settingsForm = null; renderSettings();
+      };
+    }
+    if(saveCat){
+      saveCat.onclick = ()=>{
+        const sw = openForm.querySelector(".csw.on");
+        if(!sw){ toast("Farbe wählen"); return; }
+        const name = openForm.querySelector("#sNewCatName").value.trim() || "Kategorie";
+        mutate(s=>s.categories.push({ id:uid(), name, color:sw.dataset.col }));
+        UI.settingsForm = null; renderSettings();
+      };
+    }
+    /* focus name input on form open */
+    const nameInp = openForm.querySelector('input[type="text"]');
+    if(nameInp) setTimeout(()=>nameInp.focus(), 0);
+  }
+
   $set.querySelector("#sExport").onclick = ()=>{
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([JSON.stringify(S,null,2)], {type:"application/json"}));
@@ -1826,7 +2038,7 @@ function renderSettings(){
     f.text().then(t=>{
       const d = JSON.parse(t);
       if(!d || !d.categories || !d.events) throw 0;
-      mutate(()=>{ S = d; });
+      mutate(()=>{ S = migrateData(d); });
       renderSettings(); toast("Import erfolgreich");
     }).catch(()=>toast("Import fehlgeschlagen: ungültige Datei"));
   });
