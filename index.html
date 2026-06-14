@@ -185,7 +185,8 @@ overflow-y:auto; overflow-x:clip; overscroll-behavior:contain;
 
 /* ---------- daily view (execution layer) ---------- */
 #dayWrap{flex:0 0 auto; height:calc(100dvh - 52px); /* 52px = topbar (10+8 pad + 34 btn) */
-  overflow:auto; position:relative; background:var(--base)}
+  overflow:auto; position:relative; background:var(--base);
+  overscroll-behavior:contain; touch-action:pan-y}
 #dayInner{position:relative}
 #dayHead{
   position:sticky; top:0; z-index:20; display:flex;
@@ -327,19 +328,14 @@ input[type="color"]{padding:2px; height:34px; cursor:pointer}
 /* inline borderless title — placeholder doubles as the section heading */
 .field.title-field{ margin-bottom:-2px; }
 .field.title-field > label{ display:none; }
-.field input.title-inline,
-.field textarea.title-inline{
+.field input.title-inline{
   background:transparent; border:none; border-radius:0;
   padding:2px 0; font-size:22px; font-weight:700; color:var(--text);
-  width:100%; font-family:inherit; line-height:1.25;
-  display:block; resize:none; overflow:hidden;   /* textarea grows via JS on input */
+  width:100%;
 }
-.field input.title-inline:focus,
-.field textarea.title-inline:focus{ border:none; outline:none; }
-.field input.title-inline::placeholder,
-.field textarea.title-inline::placeholder{ color:var(--text-faint); font-weight:700; }
-.field input.title-inline:focus::placeholder,
-.field textarea.title-inline:focus::placeholder{ color:transparent; }
+.field input.title-inline:focus{ border:none; outline:none; }
+.field input.title-inline::placeholder{ color:var(--text-faint); font-weight:700; }
+.field input.title-inline:focus::placeholder{ color:transparent; }
 
 /* description loses its uppercase label */
 .field.desc-field > label{ display:none; }
@@ -407,27 +403,12 @@ input[type="color"]{padding:2px; height:34px; cursor:pointer}
 .catRow input[type="text"]{flex:1; min-width:120px; background:var(--surface2); border:1px solid var(--line); border-radius:var(--r-small); padding:7px 10px; outline:none}
 .catRow input[type="date"]{flex:0 0 auto; background:var(--surface2); border:1px solid var(--line); border-radius:var(--r-small); padding:6px 8px; color:var(--text); font-size:12px; outline:none}
 .catRow .colDot{width:26px; height:26px; flex:0 0 26px; border-radius:50%; border:1px solid var(--line)}
-
-/* color picker (7 swatches, grey reserved) */
 .cpicker{display:flex; flex-wrap:wrap; gap:8px; margin:6px 0}
-.cpicker .csw{
-  width:30px; height:30px; border-radius:50%; border:2px solid transparent;
-  cursor:pointer; transition:transform .15s var(--spring), opacity .15s;
-  padding:0;
-}
+.cpicker .csw{width:30px; height:30px; border-radius:50%; border:2px solid transparent; cursor:pointer; transition:transform .15s var(--spring), opacity .15s; padding:0}
 .cpicker .csw.on{ border-color:var(--text); transform:scale(1.12) }
 .cpicker .csw.taken{ opacity:.25; cursor:not-allowed; transform:scale(.85) }
-
-/* inline add-form for projects/categories in settings */
-.add-form{
-  background:var(--surface2); border:1px solid var(--line);
-  border-radius:var(--r-small); padding:10px; margin-top:6px;
-  display:flex; flex-direction:column; gap:8px;
-}
-.add-form input[type="text"], .add-form input[type="date"]{
-  background:var(--base); border:1px solid var(--line); border-radius:var(--r-small);
-  padding:7px 10px; color:var(--text); outline:none; font-size:13px;
-}
+.add-form{ background:var(--surface2); border:1px solid var(--line); border-radius:var(--r-small); padding:10px; margin-top:6px; display:flex; flex-direction:column; gap:8px }
+.add-form input[type="text"], .add-form input[type="date"]{ background:var(--base); border:1px solid var(--line); border-radius:var(--r-small); padding:7px 10px; color:var(--text); outline:none; font-size:13px }
 .add-form .af-dates{ display:flex; gap:8px }
 .add-form .af-dates input{ flex:1; min-width:0 }
 .add-form .af-actions{ display:flex; gap:8px; justify-content:flex-end }
@@ -515,8 +496,7 @@ function seedData(){
   const t = new Date(); t.setHours(0,0,0,0);
   const d = n => isoDate(addDays(t, n));
   return {
-    /* unified tracks: entries with start&end are projects (get a spine);
-       entries without dates are categories (named color only). Grey is reserved for "frei". */
+    /* unified tracks: entries with start&end are projects (get a spine); dateless entries are categories. Grey is reserved for "frei". */
     categories: [
       { id:"seminar", name:"Seminararbeit", color:"#40838b",
         start:d(-14), end:d(28),
@@ -590,8 +570,7 @@ let S = loadFromStorage();
 const UI = {
   addMode:false, range:{ start:null, days:0 },
   undo:[], redo:[],
-  settingsOpen:false, settingsForm:null,   // "proj" | "cat" | null
-  budgetOpen:false, budgetDays:7,
+  settingsOpen:false, settingsForm:null, budgetOpen:false, budgetDays:7,
   modal:null,           // current draft modal context
   pop:null,             // todo popover context
   syncing:false,        // scroll-sync guard
@@ -605,9 +584,8 @@ function loadFromStorage(){
   }catch(e){ console.warn("load failed", e); }
   return seedData();
 }
-/* migrate older storage shape (separate categories+projects, projectId on phases) to the unified tracks model */
+/* migrate older shape (separate categories+projects, projectId on phases) to unified tracks */
 function migrateData(d){
-  /* 1. absorb each project into its linked category (project consumes that color slot) */
   if(Array.isArray(d.projects) && d.projects.length){
     d.projects.forEach(p=>{
       const c = d.categories && d.categories.find(c=>c.id===p.categoryId);
@@ -625,12 +603,10 @@ function migrateData(d){
         c.start = todayISO();
         c.end   = isoDate(addDays(new Date(), 30));
       }
-      /* phases that previously belonged to this project via projectId — re-point to its absorbed category, preserving intent over color-mismatch */
       (d.phases||[]).forEach(ph=>{ if(ph.projectId===p.id) ph.categoryId = c.id; });
     });
     delete d.projects;
   }
-  /* 2. grey is reserved for "frei": drop any track that claims it; re-point refs to null */
   if(Array.isArray(d.categories)){
     const grey = "#90909a";
     const dropIds = new Set(d.categories.filter(c=>c.color===grey).map(c=>c.id));
@@ -640,7 +616,6 @@ function migrateData(d){
       (d.events||[]).forEach(e=>{ if(dropIds.has(e.categoryId)) e.categoryId = null; });
     }
   }
-  /* 3. drop now-redundant projectId field from phases */
   (d.phases||[]).forEach(p=>delete p.projectId);
   return d;
 }
@@ -815,14 +790,14 @@ function renderTimeline(){
   }
   frag.appendChild(mrow);
 
-  /* per-project (dated category): spine bounded by start..end + milestones, then its phase lanes */
+  /* per-project: spine + milestones, then its phase lanes */
+  /* per-project (dated category): spine bounded by start..end, then its phase lanes */
   S.categories.filter(c=>c.start && c.end).forEach(p=>{
     const row = document.createElement("div"); row.className = "tlRow projRow";
     const x = dayIdx(p.start)*TL_PPD;
     const w = Math.max((diffDays(p.start, p.end)+1)*TL_PPD, 26);
     const spine = document.createElement("div"); spine.className = "projSpine colored";
-    spine.style.left = x+"px"; spine.style.width = w+"px";
-    spine.style.background = p.color;
+    spine.style.left = x+"px"; spine.style.width = w+"px"; spine.style.background = p.color;
     row.appendChild(spine);
     const lw = document.createElement("div"); lw.className="projLabelWrap";
     lw.style.left = x+"px"; lw.style.width = w+"px";
@@ -842,7 +817,7 @@ function renderTimeline(){
     appendPhaseLanes(frag, S.phases.filter(ph=>ph.categoryId===p.id), W);
   });
 
-  /* ungrouped: phases tagged with a dateless category, or no tag at all (frei → grey) */
+  /* ungrouped: phases tagged with a dateless category, or untagged (frei → grey) */
   const datedIds = new Set(S.categories.filter(c=>c.start && c.end).map(c=>c.id));
   appendPhaseLanes(frag, S.phases.filter(ph=>!ph.categoryId || !datedIds.has(ph.categoryId)), W);
 
@@ -1100,58 +1075,22 @@ $tlWrap.addEventListener("wheel", e=>{
    - vertical delta → dayWrap.scrollTop (timeline area itself doesn't move vertically) */
 $tlWrap.style.touchAction = "none";
 let _tlT = null;
-let longPressTimer = null;
-
-$tlWrap.addEventListener("touchstart", (e) => {
-  if (e.touches.length === 1) {
-    _tlT = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    
-    // START LONG-PRESS TIMER (Only if not touching a phase bar)
-    if (!e.target.closest(".phase")) {
-      longPressTimer = setTimeout(() => {
-        if (navigator.vibrate) navigator.vibrate(50);
-        const pos = tlPos(e.touches[0]);
-        openModal({ type: "phase", draft: { start: idxDate(pos), end: idxDate(pos) } });
-      }, 500);
-    }
-  }
-}, { passive: true });
-
-/* ════════════════════════════════════════════════════════════
-   Timeline Touch Pipeline: Routing, Edge-Scrolling, Long-Press Add*/
-$tlWrap.addEventListener("touchmove", (e) => {
-  // Clear long-press if user moves (it's a drag, not a creation intent)
-  if (longPressTimer) clearTimeout(longPressTimer);
-  
-  if (!_tlT || e.touches.length !== 1 || UI.dragLive) return;
-  
+$tlWrap.addEventListener("touchstart", e=>{
+  if(e.touches.length === 1) _tlT = { x:e.touches[0].clientX, y:e.touches[0].clientY };
+}, { passive:true });
+$tlWrap.addEventListener("touchmove", e=>{
+  if(!_tlT || e.touches.length !== 1 || UI.dragLive) return;
   const t = e.touches[0];
   const dx = _tlT.x - t.clientX, dy = _tlT.y - t.clientY;
-
-  if (Math.abs(dx) >= 1 || Math.abs(dy) >= 1) {
-    // 1. Edge-Scrolling Logic
-    const rect = $tlWrap.getBoundingClientRect();
-    const EDGE_THRESHOLD = 50;
-    if (t.clientX > rect.right - EDGE_THRESHOLD) $tlWrap.scrollLeft += 15;
-    else if (t.clientX < rect.left + EDGE_THRESHOLD) $tlWrap.scrollLeft -= 15;
-
-    // 2. Standard Routing
+  if(Math.abs(dx) >= 1 || Math.abs(dy) >= 1){
     $dayWrap.scrollLeft += dx;
     routeY(dy);
     _tlT.x = t.clientX; _tlT.y = t.clientY;
-    if (e.cancelable) e.preventDefault();
+    if(e.cancelable) e.preventDefault();
   }
-}, { passive: false });
-
-$tlWrap.addEventListener("touchend", () => {
-  clearTimeout(longPressTimer);
-  _tlT = null;
-}, { passive: true });
-
-$tlWrap.addEventListener("touchcancel", () => {
-  clearTimeout(longPressTimer);
-  _tlT = null;
-}, { passive: true });
+}, { passive:false });
+$tlWrap.addEventListener("touchend",    ()=>{ _tlT = null; }, { passive:true });
+$tlWrap.addEventListener("touchcancel", ()=>{ _tlT = null; }, { passive:true });
 
 /* wheel over the daily view: route vertically so the timeline collapses first */
 $dayWrap.addEventListener("wheel", e=>{
@@ -1161,10 +1100,18 @@ $dayWrap.addEventListener("wheel", e=>{
 }, { passive:false });
 
 /* touch over the daily view: manual routing only while the timeline is still
-   (partially) visible. Dynamically attaches/detaches the passive:false listener
-   to prevent scroll-lag when native panning takes over. */
+   (partially) visible at gesture start; otherwise fully native inner scroll.
+   Pulling the timeline back down from the collapsed state chains natively
+   (dayWrap at scrollTop 0 → overscroll propagates to #app). */
 let _dwT = null;
-const dwTouchMove = e => {
+$dayWrap.addEventListener("touchstart", e=>{
+  const room = $appEl.scrollHeight - $appEl.clientHeight - $appEl.scrollTop;
+  const inHandoff = (e.touches.length === 1 && room > 0.5);
+  /* declare intent up-front: JS owns the gesture in the handoff zone, native pan-y once collapsed */
+  $dayWrap.style.touchAction = inHandoff ? "none" : "pan-y";
+  _dwT = inHandoff ? { x:e.touches[0].clientX, y:e.touches[0].clientY } : null;
+}, { passive:true });
+$dayWrap.addEventListener("touchmove", e=>{
   if(!_dwT || e.touches.length !== 1 || UI.dragLive) return;
   const t = e.touches[0];
   const dx = _dwT.x - t.clientX, dy = _dwT.y - t.clientY;
@@ -1174,31 +1121,7 @@ const dwTouchMove = e => {
     _dwT.x = t.clientX; _dwT.y = t.clientY;
     if(e.cancelable) e.preventDefault();
   }
-};
-
-let dwTouchAttached = false;
-function updateDayWrapRouting() {
-  const room = $appEl.scrollHeight - $appEl.clientHeight - $appEl.scrollTop;
-  const needsRouting = room > 0.5;
-  if(needsRouting && !dwTouchAttached) {
-    $dayWrap.addEventListener("touchmove", dwTouchMove, { passive:false });
-    dwTouchAttached = true;
-  } else if(!needsRouting && dwTouchAttached) {
-    $dayWrap.removeEventListener("touchmove", dwTouchMove);
-    dwTouchAttached = false;
-    _dwT = null;
-  }
-}
-
-$appEl.addEventListener("scroll", updateDayWrapRouting, { passive: true });
-window.addEventListener("resize", updateDayWrapRouting, { passive: true });
-updateDayWrapRouting(); /* initial eval */
-
-$dayWrap.addEventListener("touchstart", e=>{
-  const room = $appEl.scrollHeight - $appEl.clientHeight - $appEl.scrollTop;
-  _dwT = (e.touches.length === 1 && room > 0.5)
-       ? { x:e.touches[0].clientX, y:e.touches[0].clientY } : null;
-}, { passive:true });
+}, { passive:false });
 $dayWrap.addEventListener("touchend",    ()=>{ _dwT = null; }, { passive:true });
 $dayWrap.addEventListener("touchcancel", ()=>{ _dwT = null; }, { passive:true });
 
@@ -1246,19 +1169,8 @@ function scrollToToday(animated){
    ════════════════════════════════════════════════════════════ */
 const MOVE_THRESHOLD = 5, LONGPRESS = 500, EDGE = 7;
 
-/* Dynamic setter for UI.dragLive: only attaches the heavy passive:false touchmove
-   listener when a drag is actively occurring, ensuring zero lag during normal scrolling. */
-let _dragLive = false;
-const globalDragSuppressor = e => e.preventDefault();
-Object.defineProperty(UI, 'dragLive', {
-  get() { return _dragLive; },
-  set(v) {
-    if(_dragLive === v) return;
-    _dragLive = v;
-    if(v) window.addEventListener("touchmove", globalDragSuppressor, { passive: false });
-    else window.removeEventListener("touchmove", globalDragSuppressor);
-  }
-});
+/* single passive:false touchmove — suppresses native scroll while a drag is live */
+window.addEventListener("touchmove", e=>{ if(UI.dragLive) e.preventDefault(); }, { passive:false });
 
 function gridPos(e){
   const g = document.getElementById("dayGrid").getBoundingClientRect();
@@ -1459,12 +1371,6 @@ $tlWrap.addEventListener("pointerdown", e=>{
     let ns = ph.start, ne = ph.end;
     const move = mv=>{
       const d = idxDate(tlPos(mv));
-      const rect = $tlWrap.getBoundingClientRect();
-      const EDGE_THRESHOLD = 50;
-      if (mv.clientX > rect.right - EDGE_THRESHOLD) $tlWrap.scrollLeft += 15;
-      else if (mv.clientX < rect.left + EDGE_THRESHOLD) $tlWrap.scrollLeft -= 15;
-      /* --------------------------------- */
-
       if(side==="l") ns = d <= ph.end ? d : ph.end; else ne = d >= ph.start ? d : ph.start;
       const x = dayIdx(ns)*TL_PPD, w = Math.max((diffDays(ns,ne)+1)*TL_PPD, 26);
       phEl.style.left = x+"px"; phEl.style.width = w+"px";
@@ -1607,7 +1513,7 @@ function renderModalBody(){
   let h = "";
   const titleField = (placeholder,val)=>{
     document.getElementById("mTitleBox").innerHTML =
-      `<div class="field title-field"><textarea id="fTitle" class="title-inline" rows="1" placeholder="${esc(placeholder||"")}" autocomplete="off">${esc(val||"")}</textarea></div>`;
+      `<div class="field title-field"><input id="fTitle" class="title-inline" value="${esc(val||"")}" placeholder="${esc(placeholder||"")}" autocomplete="off"></div>`;
     return "";
   };
   const dateField  = (id,lab,val)=>`<div class="field"><label>${lab}</label><input id="${id}" type="date" value="${val||todayISO()}"></div>`;
@@ -1674,7 +1580,6 @@ function renderModalBody(){
       <input id="fEndFlag" type="checkbox" ${v.end?"checked":""} style="width:auto"> Abschluss ★</label></div></div>`;
   }
   else if(kind==="project"){
-    /* project creation/edit now lives in the settings panel — this branch retained only as a no-op safety net */
     h += titleField(ed ? "Projekt bearbeiten" : "Neues Projekt", v.name);
     h += `<div class="field"><p class="note">Projekte werden im Einstellungs-Panel verwaltet.</p></div>`;
   }
@@ -1687,14 +1592,6 @@ function renderModalBody(){
     e.preventDefault(); document.getElementById("fDetails").focus();
     document.execCommand(b.dataset.cmd, false, null);            // deprecated, fine for this scope
   });
-  /* title textarea: wordwrap by auto-growing to scrollHeight; Enter is suppressed (titles are single-line semantically) */
-  const _fTitle = document.getElementById("fTitle");
-  if(_fTitle && _fTitle.tagName === "TEXTAREA"){
-    const grow = ()=>{ _fTitle.style.height = "auto"; _fTitle.style.height = _fTitle.scrollHeight + "px"; };
-    _fTitle.addEventListener("input", grow);
-    _fTitle.addEventListener("keydown", e=>{ if(e.key === "Enter") e.preventDefault(); });
-    requestAnimationFrame(grow);   // initial size after layout settles
-  }
   /* unified track dropdown: paints color swatch + (event modal) refreshes carry-over */
   const _fProj = B.querySelector("#fProj"), _fProjCol = document.getElementById("fProjCol");
   if(_fProj && _fProjCol){
@@ -1751,7 +1648,7 @@ function renderModalBody(){
     toast(k==="event" && ed.repeat && ed.repeat!=="none" ? "Serie gelöscht" : "Gelöscht");
     closeModal();
   };
-  const f = document.getElementById("fTitle"); if(f) f.focus();
+  const f = B.querySelector("#fTitle"); if(f) f.focus();
 }
 
 function saveModal(){
@@ -1773,7 +1670,7 @@ function saveModal(){
     if(data.reminderMin!=null) requestNotifPermission();
     mutate(st=>{ if(ed) Object.assign(st.events.find(x=>x.id===ed.id), data);
                  else st.events.push({ id:uid(), ...data }); });
-    if(UI.addMode) setAddMode(false);
+    if(UI.addMode) setAddMode(false);                 // add-mode auto-exits after one creation
   }
   else if(kind==="phase"){
     let a = val("fStart2")||todayISO(), b = val("fEnd2")||a;
@@ -1802,7 +1699,7 @@ function saveModal(){
     });
     if(UI.addMode) setAddMode(false);
   }
-  /* kind==="project" is intentionally not handled — project CRUD lives in settings */
+  /* kind==="project" handled in settings panel, not here */
   closeModal();
 }
 
@@ -1918,7 +1815,6 @@ function renderSettings(){
   const grey = "#90909a";
   const projs = S.categories.filter(c=>c.start && c.end);
   const cats  = S.categories.filter(c=>!c.start && !c.end);
-  /* color picker — 7 palette colors minus grey; colors claimed by any track (except `exceptId`) are disabled */
   const colorPicker = exceptId => {
     const claimed = new Map(S.categories.filter(c=>c.id!==exceptId).map(c=>[c.color, c.name]));
     return `<div class="cpicker">${PALETTE.filter(c=>c!==grey).map(c=>{
@@ -1982,19 +1878,16 @@ function renderSettings(){
 
     <section><h3>Erinnerungen</h3><p class="note">Benachrichtigungen funktionieren, solange die App offen oder (auf Android) kürzlich im Hintergrund ist. Es gibt keinen Server — bei geschlossener App kann kein Push zugestellt werden.</p></section>`;
 
-  /* wiring */
   $set.querySelector("#sClose").onclick = ()=>toggleSettings(false);
   $set.querySelectorAll("#sTheme button").forEach(b=>b.onclick=()=>{ mutate(s=>{ s.settings.theme=b.dataset.t; }); renderSettings(); });
   $set.querySelectorAll("#sDens button").forEach(b=>b.onclick=()=>{ mutate(s=>{ s.settings.density=+b.dataset.d; }); renderSettings(); });
 
-  /* color-picker click handling (inside the open add form) */
   $set.querySelectorAll(".cpicker").forEach(pk=>pk.addEventListener("click", e=>{
     const sw = e.target.closest(".csw"); if(!sw || sw.classList.contains("taken")) return;
     pk.querySelectorAll(".csw").forEach(x=>x.classList.remove("on"));
     sw.classList.add("on");
   }));
 
-  /* project rows: edit name + dates + delete */
   $set.querySelectorAll("#sProjs .catRow").forEach(row=>{
     const pid = row.dataset.pid;
     row.querySelector('[data-f="name"]').addEventListener("change", e=>mutate(s=>{
@@ -2018,7 +1911,6 @@ function renderSettings(){
     };
   });
 
-  /* category rows: edit name + delete */
   $set.querySelectorAll("#sCats .catRow").forEach(row=>{
     const cid = row.dataset.cid;
     row.querySelector('[data-f="name"]').addEventListener("change", e=>mutate(s=>{
@@ -2034,7 +1926,6 @@ function renderSettings(){
     };
   });
 
-  /* + Projekt / + Kategorie buttons */
   $set.querySelector("#sAddProj").onclick = ()=>{ UI.settingsForm = "proj"; renderSettings(); };
   $set.querySelector("#sAddCat").onclick  = ()=>{ UI.settingsForm = "cat";  renderSettings(); };
 
@@ -2064,7 +1955,6 @@ function renderSettings(){
         UI.settingsForm = null; renderSettings();
       };
     }
-    /* focus name input on form open */
     const nameInp = openForm.querySelector('input[type="text"]');
     if(nameInp) setTimeout(()=>nameInp.focus(), 0);
   }
