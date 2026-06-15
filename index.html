@@ -341,20 +341,21 @@ input[type="color"]{padding:2px; height:34px; cursor:pointer}
 /* inline borderless title — placeholder doubles as the section heading */
 .field.title-field{ margin-bottom:-2px; }
 .field.title-field > label{ display:none; }
-.field input.title-inline{
+.field textarea.title-inline{
   background:transparent; border:none; border-radius:0;
   padding:2px 0; font-size:22px; font-weight:700; color:var(--text);
-  width:100%;
+  width:100%; display:block; resize:none; overflow:hidden;
+  font-family:inherit; line-height:1.2;
 }
-.field input.title-inline:focus{ border:none; outline:none; }
-.field input.title-inline::placeholder{ color:var(--text-faint); font-weight:700; }
-.field input.title-inline:focus::placeholder{ color:transparent; }
+.field textarea.title-inline:focus{ border:none; outline:none; }
+.field textarea.title-inline::placeholder{ color:var(--text-faint); font-weight:700; }
+.field textarea.title-inline:focus::placeholder{ color:transparent; }
 
 /* description loses its uppercase label */
 .field.desc-field > label{ display:none; }
 
 /* head merges title input + action buttons in one row */
-.mhead{ padding:12px 16px 6px; align-items:center; }
+.mhead{ padding:12px 16px 6px; align-items:flex-start; }
 .mhead .field.title-field{ flex:1; margin:0; min-width:0; }
 
 /* project selector with live color indicator on the right */
@@ -1095,7 +1096,7 @@ function scrollToToday(animated){
    input — unified Pointer Events pipeline, drag machines
    one pipeline for mouse / touch / pen; branch on pointerType only
    ════════════════════════════════════════════════════════════ */
-const MOVE_THRESHOLD = 5, LONGPRESS = 500, EDGE = 7;
+const MOVE_THRESHOLD = 5, LONGPRESS = 500, EDGE = 7, RESIZE_HOLD = 140;
 
 /* single passive:false touchmove — suppresses native scroll while a drag is live */
 window.addEventListener("touchmove", e=>{ if(UI.dragLive) e.preventDefault(); }, { passive:false });
@@ -1163,23 +1164,19 @@ $dayWrap.addEventListener("pointerdown", e=>{
   if(UI.addMode){
     startCreateDrag(e, p);
   } else if(e.pointerType !== "mouse"){
-    /* long-press on empty space (touch/pen): create directly, no add-mode needed */
+    /* touch/pen: hold to arm a create-drag, then drag to size, release → modal.
+       (No add-mode needed.) Moving before the hold completes cancels it. */
     const sx=e.clientX, sy=e.clientY;
-    lpTimer = setTimeout(()=>{
-      vibrate(12);
-      const start = snapMin(p.min - 0);
-      openModal({ type:"event", draft:{ date:idxDate(p.day), startMin:start, endMin:clamp(start+60, start+SNAP, HOUR_END*60) } });
-    }, LONGPRESS);
-    const cancel = ev=>{
-      if(Math.hypot(ev.clientX-sx, ev.clientY-sy) > MOVE_THRESHOLD) clearTimeout(lpTimer);
-    };
-    const off = ()=>{ clearTimeout(lpTimer); window.removeEventListener("pointermove",cancel); window.removeEventListener("pointerup",off); window.removeEventListener("pointercancel",off); };
+    const teardown = ()=>{ clearTimeout(lpTimer); window.removeEventListener("pointermove",cancel); window.removeEventListener("pointerup",off); window.removeEventListener("pointercancel",off); };
+    lpTimer = setTimeout(()=>{ teardown(); vibrate(12); startCreateDrag(e, p, true); }, LONGPRESS);
+    const cancel = ev=>{ if(Math.hypot(ev.clientX-sx, ev.clientY-sy) > MOVE_THRESHOLD) teardown(); };
+    const off = ()=> teardown();
     window.addEventListener("pointermove", cancel);
     window.addEventListener("pointerup", off); window.addEventListener("pointercancel", off);
   }
 });
 
-function startCreateDrag(e, p){
+function startCreateDrag(e, p, fromHold=false){
   const grid = document.getElementById("dayGrid");
   grid.setPointerCapture(e.pointerId);
   UI.dragLive = true;
@@ -1195,7 +1192,15 @@ function startCreateDrag(e, p){
     window.removeEventListener("pointermove",move); window.removeEventListener("pointerup",up); window.removeEventListener("pointercancel",up);
     UI.dragLive = false;
     const d = drag; drag = null;
-    if(!d.moved){ clearPreview(d); return; }   // click without drag does nothing
+    if(!d.moved){
+      clearPreview(d);
+      /* hold without drag → default-length item; add-mode click without drag → nothing */
+      if(fromHold){
+        const s = snapMin(d.a);
+        openModal({ type:"event", draft:{ date:idxDate(d.day), startMin:s, endMin:clamp(s+60, s+SNAP, HOUR_END*60) } });
+      }
+      return;
+    }
     const s = Math.min(d.a,d.b), en = Math.max(d.a,d.b);
     openModal({ type:"event", draft:{ date:idxDate(d.day), startMin:s, endMin:Math.max(en, s+SNAP) }, preview:d });
   };
@@ -1226,11 +1231,12 @@ function cardPointerDown(e, cardEl){
   const zone = (e.clientY - rect.top) <= EDGE ? "t" : (rect.bottom - e.clientY) <= EDGE ? "b" : "move";
   const copy = e.ctrlKey || e.metaKey;
   const startP = gridPos(e);
-  let armed = e.pointerType === "mouse" || e.pointerType === "pen" || zone!=="move";
+  let armed = e.pointerType === "mouse" || e.pointerType === "pen";
   let armTimer = null;
 
-  if(!armed){ /* touch move needs long-press confirmation */
-    armTimer = setTimeout(()=>{ armed = true; UI.dragLive = true; vibrate(12); cardEl.classList.add("dragging"); }, LONGPRESS);
+  if(!armed){ /* touch: move needs a long-press; resize needs only a short deliberate dwell */
+    const hold = zone==="move" ? LONGPRESS : RESIZE_HOLD;
+    armTimer = setTimeout(()=>{ armed = true; UI.dragLive = true; vibrate(12); if(zone==="move") cardEl.classList.add("dragging"); }, hold);
   }
   cardEl.setPointerCapture(e.pointerId);
   const st = { moved:false, day:startP.day,
@@ -1296,15 +1302,22 @@ $tlWrap.addEventListener("pointerdown", e=>{
     const phEl = handle.closest(".phase");
     const ph = S.phases.find(p=>p.id===phEl.dataset.phase); if(!ph) return;
     const side = handle.dataset.rez;
-    phEl.setPointerCapture(e.pointerId); UI.dragLive = true;
+    const sx = e.clientX, sy = e.clientY;
+    let armed = e.pointerType === "mouse" || e.pointerType === "pen";
+    let armTimer = null;
+    phEl.setPointerCapture(e.pointerId);
+    if(armed){ UI.dragLive = true; }
+    else { armTimer = setTimeout(()=>{ armed = true; UI.dragLive = true; vibrate(12); }, RESIZE_HOLD); }
     let ns = ph.start, ne = ph.end;
     const move = mv=>{
+      if(!armed){ if(Math.hypot(mv.clientX-sx, mv.clientY-sy) > MOVE_THRESHOLD) clearTimeout(armTimer); return; }
       const d = idxDate(tlPos(mv));
       if(side==="l") ns = d <= ph.end ? d : ph.end; else ne = d >= ph.start ? d : ph.start;
       const x = dayIdx(ns)*TL_PPD, w = Math.max((diffDays(ns,ne)+1)*TL_PPD, 26);
       phEl.style.left = x+"px"; phEl.style.width = w+"px";
     };
     const up = ()=>{
+      clearTimeout(armTimer);
       try{ phEl.releasePointerCapture(e.pointerId); }catch(_){}
       window.removeEventListener("pointermove",move); window.removeEventListener("pointerup",up); window.removeEventListener("pointercancel",up);
       UI.dragLive = false;
@@ -1317,8 +1330,22 @@ $tlWrap.addEventListener("pointerdown", e=>{
   /* expand arrow / edit clicks are handled in the click handler below */
   if(e.target.closest(".ph-exp,.phase,.exam,.ms,.projLabel")) return;
 
-  /* add-mode drag on empty timeline → phase (multi-day) or point (single day) */
-  if(!UI.addMode) return;
+  if(UI.addMode){ startPhaseCreate(e, false); return; }   // mouse/touch: add-mode → drag to create
+
+  if(e.pointerType !== "mouse"){
+    /* touch/pen: hold to arm phase creation, then drag across days, release → modal */
+    const sx=e.clientX, sy=e.clientY;
+    const teardown = ()=>{ clearTimeout(lpTimer); window.removeEventListener("pointermove",cancel); window.removeEventListener("pointerup",off); window.removeEventListener("pointercancel",off); };
+    lpTimer = setTimeout(()=>{ teardown(); vibrate(12); startPhaseCreate(e, true); }, LONGPRESS);
+    const cancel = ev=>{ if(Math.hypot(ev.clientX-sx, ev.clientY-sy) > MOVE_THRESHOLD) teardown(); };
+    const off = ()=> teardown();
+    window.addEventListener("pointermove", cancel);
+    window.addEventListener("pointerup", off); window.addEventListener("pointercancel", off);
+  }
+});
+
+/* phase / point creation drag on the empty timeline (shared by add-mode + long-press) */
+function startPhaseCreate(e, fromHold=false){
   const a = tlPos(e);
   $tlWrap.setPointerCapture(e.pointerId); UI.dragLive = true;
   let b = a, ghost = null, moved = false;
@@ -1334,13 +1361,17 @@ $tlWrap.addEventListener("pointerdown", e=>{
     window.removeEventListener("pointermove",move); window.removeEventListener("pointerup",up); window.removeEventListener("pointercancel",up);
     UI.dragLive = false;
     if(ghost) ghost.remove();
-    if(!moved) return;                              // click without drag does nothing
+    if(!moved){
+      /* hold without drag → single-day point; add-mode click without drag → nothing */
+      if(fromHold) openModal({ type:"point", draft:{ date:idxDate(a) } });
+      return;
+    }
     const lo = idxDate(Math.min(a,b)), hi = idxDate(Math.max(a,b));
     if(lo===hi) openModal({ type:"point", draft:{ date:lo } });
     else        openModal({ type:"phase", draft:{ start:lo, end:hi } });
   };
   window.addEventListener("pointermove",move); window.addEventListener("pointerup",up); window.addEventListener("pointercancel",up);
-});
+}
 
 /* click routing on the timeline (expand, edit) */
 $tlWrap.addEventListener("click", e=>{
@@ -1442,7 +1473,7 @@ function renderModalBody(){
   let h = "";
   const titleField = (placeholder,val)=>{
     document.getElementById("mTitleBox").innerHTML =
-      `<div class="field title-field"><input id="fTitle" class="title-inline" value="${esc(val||"")}" placeholder="${esc(placeholder||"")}" autocomplete="off"></div>`;
+      `<div class="field title-field"><textarea id="fTitle" class="title-inline" rows="1" placeholder="${esc(placeholder||"")}" autocomplete="off">${esc(val||"")}</textarea></div>`;
     return "";
   };
   const dateField  = (id,lab,val)=>`<div class="field"><label>${lab}</label><input id="${id}" type="date" value="${val||todayISO()}"></div>`;
@@ -1577,7 +1608,15 @@ function renderModalBody(){
     toast(k==="event" && ed.repeat && ed.repeat!=="none" ? "Serie gelöscht" : "Gelöscht");
     closeModal();
   };
-  const f = B.querySelector("#fTitle"); if(f) f.focus();
+  const f = B.querySelector("#fTitle");
+  if(f){
+    const grow = ()=>{ f.style.height="auto"; f.style.height = f.scrollHeight+"px"; };
+    grow(); f.addEventListener("input", grow);
+    f.addEventListener("keydown", ev=>{
+      if(ev.key==="Enter"){ ev.preventDefault(); if(ev.ctrlKey||ev.metaKey) saveModal(); } // never a literal newline in a title
+    });
+    f.focus();
+  }
 }
 
 function saveModal(){
