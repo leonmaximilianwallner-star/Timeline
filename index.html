@@ -454,7 +454,7 @@ input[type="color"]{padding:2px; height:34px; cursor:pointer}
   *,*::before,*::after{animation-duration:.01ms !important; transition-duration:.01ms !important}
 }
 @media (max-width:640px){
-  :root{--rail-w:52px}
+  :root{--rail-w:48px}
   #topdate{display:none}
   .bubble{max-width:260px}
 }
@@ -705,7 +705,7 @@ const dayIdx  = d => diffDays(UI.range.start, d);
 const idxDate = i => isoDate(addDays(parseISO(UI.range.start), i));
 function dayPPD(){
   const vw = document.getElementById("scene").clientWidth || window.innerWidth;
-  return Math.max(120, (vw - railW()) / S.settings.density);
+  return Math.max(50, (vw - railW()) / S.settings.density);
 }
 function railW(){ return parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--rail-w")) || 68; }
 
