@@ -1114,6 +1114,34 @@ function tlPos(e){
 }
 function vibrate(ms){ if(navigator.vibrate) try{ navigator.vibrate(ms); }catch(_){} }
 
+/* ---------- edge auto-pan (shared by every drag machine) ----------
+   While a drag is live AND the pointer dwells inside the edge padding of the
+   #scene viewport, scroll the scene and re-apply the drag at the (stationary)
+   pointer so the item keeps extending past the visible cutout. Gated on
+   UI.dragLive, so it can NEVER pan unless an edit is actually in progress. */
+const PAN_ZONE = 48, PAN_MAX = 16, PAN_DWELL = 140;
+let _pan = null, _panRAF = 0;
+
+function panSpeed(depth){ const r = clamp(depth/PAN_ZONE, 0, 1); return PAN_MAX * r * r; }
+function panBind(apply, axes, x0, y0){ _pan = { apply, axes, x:x0, y:y0, zoneSince:0 }; if(!_panRAF) _panRAF = requestAnimationFrame(panFrame); }
+function panTrack(x, y){ if(_pan){ _pan.x = x; _pan.y = y; } }
+function panRelease(){ _pan = null; if(_panRAF){ cancelAnimationFrame(_panRAF); _panRAF = 0; } }
+
+function panFrame(){
+  if(!_pan){ _panRAF = 0; return; }
+  _panRAF = requestAnimationFrame(panFrame);
+  if(!UI.dragLive){ _pan.zoneSince = 0; return; }
+  const p = _pan, r = $scene.getBoundingClientRect();
+  let dx = 0;
+  const dl = PAN_ZONE - (p.x - r.left), dr = PAN_ZONE - (r.right - p.x);
+  if(dl > 0) dx = -panSpeed(dl); else if(dr > 0) dx = panSpeed(dr);
+  if(!dx){ p.zoneSince = 0; return; }
+  if(!p.zoneSince) p.zoneSince = performance.now();
+  if(performance.now() - p.zoneSince < PAN_DWELL) return;
+  $scene.scrollLeft += dx;
+  p.apply({ clientX: p.x, clientY: p.y });
+}
+
 /* ---------- add mode ---------- */
 const $fab = document.getElementById("fab");
 function setAddMode(on){
@@ -1310,6 +1338,7 @@ $tlWrap.addEventListener("pointerdown", e=>{
     else { armTimer = setTimeout(()=>{ armed = true; UI.dragLive = true; vibrate(12); }, RESIZE_HOLD); }
     let ns = ph.start, ne = ph.end;
     const move = mv=>{
+      panTrack(mv.clientX, mv.clientY);
       if(!armed){ if(Math.hypot(mv.clientX-sx, mv.clientY-sy) > MOVE_THRESHOLD) clearTimeout(armTimer); return; }
       const d = idxDate(tlPos(mv));
       if(side==="l") ns = d <= ph.end ? d : ph.end; else ne = d >= ph.start ? d : ph.start;
@@ -1320,9 +1349,11 @@ $tlWrap.addEventListener("pointerdown", e=>{
       clearTimeout(armTimer);
       try{ phEl.releasePointerCapture(e.pointerId); }catch(_){}
       window.removeEventListener("pointermove",move); window.removeEventListener("pointerup",up); window.removeEventListener("pointercancel",up);
+      panRelease();
       UI.dragLive = false;
       if(ns!==ph.start || ne!==ph.end) mutate(s=>{ const t=s.phases.find(p=>p.id===ph.id); t.start=ns; t.end=ne; });
     };
+    panBind(move, "x", e.clientX, e.clientY); 
     window.addEventListener("pointermove",move); window.addEventListener("pointerup",up); window.addEventListener("pointercancel",up);
     return;
   }
@@ -1350,6 +1381,7 @@ function startPhaseCreate(e, fromHold=false){
   $tlWrap.setPointerCapture(e.pointerId); UI.dragLive = true;
   let b = a, ghost = null, moved = false;
   const move = mv=>{
+    panTrack(mv.clientX, mv.clientY);
     b = tlPos(mv); if(b!==a) moved = true;
     if(!ghost){ ghost = document.createElement("div"); ghost.className="tlCreate"; ghost.style.top="4px"; $tlInner.firstChild.appendChild(ghost); }
     const lo = Math.min(a,b), hi = Math.max(a,b);
@@ -1359,6 +1391,7 @@ function startPhaseCreate(e, fromHold=false){
   const up = ()=>{
     try{ $tlWrap.releasePointerCapture(e.pointerId); }catch(_){}
     window.removeEventListener("pointermove",move); window.removeEventListener("pointerup",up); window.removeEventListener("pointercancel",up);
+    panRelease(); 
     UI.dragLive = false;
     if(ghost) ghost.remove();
     if(!moved){
@@ -1370,6 +1403,7 @@ function startPhaseCreate(e, fromHold=false){
     if(lo===hi) openModal({ type:"point", draft:{ date:lo } });
     else        openModal({ type:"phase", draft:{ start:lo, end:hi } });
   };
+  panBind(move, "x", e.clientX, e.clientY);
   window.addEventListener("pointermove",move); window.addEventListener("pointerup",up); window.addEventListener("pointercancel",up);
 }
 
