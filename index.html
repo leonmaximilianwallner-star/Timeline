@@ -56,15 +56,26 @@ input,select,textarea{font-family:inherit; font-size:14px; color:var(--text)}
 }
 
 /* ---------- app frame ---------- */
-#app{display:flex; flex-direction:column; height:100%;
-overflow-y:auto; overflow-x:clip; overscroll-behavior:contain;
+#app{display:flex; flex-direction:column; height:100dvh; overflow:clip}
+/* ── single scroll viewport ──────────────────────────────────────────
+   #scene owns BOTH axes natively (compositor-driven). The timeline band and
+   the daily band stack inside it; every pinned element is position:sticky and
+   resolves against #scene. This replaces the former three-scroller stack
+   (#app vertical + #tlWrap horizontal + #dayWrap both) and all the JS scroll
+   routing that kept them in sync on the main thread. */
+#scene{
+  flex:1 1 auto; min-height:0;        /* min-height:0 lets a flex child actually scroll */
+  position:relative; overflow:auto;
+  overscroll-behavior:contain; touch-action:pan-x pan-y;
+  background:var(--base);
 }
+#scene.addmode{touch-action:none}     /* in add-mode every gesture is JS creation, not a pan */
 
 /* ---------- top bar ---------- */
 #topbar{
   display:flex; align-items:center; gap:10px;
   padding:10px 16px 8px; flex:0 0 auto;
-  position:sticky; top:0; z-index:30; background:var(--base);
+  z-index:30; background:var(--base);
 }
 #wordmark{height:16px; display:block; opacity:.95}
 #wordmark .wm{fill:var(--text)}
@@ -87,8 +98,9 @@ overflow-y:auto; overflow-x:clip; overscroll-behavior:contain;
 
 /* ---------- timeline (planning layer) ---------- */
 #tlWrap{
-  flex:0 0 auto; position:relative; background:var(--base);
-  overflow:auto; overflow-y:visible;                  /* scrolls in JS-routed manner; chrome hidden globally */
+  position:relative; background:var(--base);
+  /* not a scroller — the planning band inside #scene. sticky-left labels
+     (month / project / phase / bubble) resolve against #scene. */
 }
 #tlInner{position:relative; min-width:100%}
 #tlGrid{
@@ -131,8 +143,9 @@ overflow-y:auto; overflow-x:clip; overscroll-behavior:contain;
   position:absolute; top:4px; height:24px; border-radius:9999px;
   color:#ededec; cursor:pointer; user-select:none;
   transition:filter .15s;
+  touch-action:none;   /* taps/resize here are JS — never a compositor pan-steal */
   /* clip-path clips like overflow:hidden but does NOT create a scroll context,
-     which is what lets position:sticky on .ph-stick inside use #tlWrap as its
+     which is what lets position:sticky on .ph-stick inside use #scene as its
      scroll ancestor. overflow:hidden would scope sticky to the bar (which
      doesn't scroll) and break it. */
   clip-path: inset(0 round 9999px);
@@ -184,9 +197,9 @@ overflow-y:auto; overflow-x:clip; overscroll-behavior:contain;
 .tlCreate{position:absolute; height:24px; border:1.5px dashed var(--text-dim); border-radius:9999px; z-index:4; pointer-events:none; background:rgba(100,152,192,.10)}
 
 /* ---------- daily view (execution layer) ---------- */
-#dayWrap{flex:0 0 auto; height:calc(100dvh - 52px); /* 52px = topbar (10+8 pad + 34 btn) */
-  overflow:auto; position:relative; background:var(--base);
-  overscroll-behavior:contain; touch-action:pan-y}
+#dayWrap{position:relative; background:var(--base)}
+/* not a scroller — the execution band inside #scene. #dayHead pins via
+   sticky-top and #hourRail via sticky-left, both against #scene. */
 #dayInner{position:relative}
 #dayHead{
   position:sticky; top:0; z-index:20; display:flex;
@@ -468,8 +481,10 @@ input[type="color"]{padding:2px; height:34px; cursor:pointer}
     <button class="cbtn" id="btnSettings" title="Einstellungen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.01a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55h.01a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.01a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1z"/></svg></button>
   </div>
 
-  <div id="tlWrap"><div id="tlInner"></div></div>
-  <div id="dayWrap"><div id="dayInner"></div></div>
+  <div id="scene">
+    <div id="tlWrap"><div id="tlInner"></div></div>
+    <div id="dayWrap"><div id="dayInner"></div></div>
+  </div>
 </div>
 
 <button id="fab" title="Hinzufügen (A)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
@@ -573,7 +588,6 @@ const UI = {
   settingsOpen:false, settingsForm:null, budgetOpen:false, budgetDays:7,
   modal:null,           // current draft modal context
   pop:null,             // todo popover context
-  syncing:false,        // scroll-sync guard
   dragLive:false,
 };
 
@@ -689,7 +703,7 @@ function recomputeRange(){
 const dayIdx  = d => diffDays(UI.range.start, d);
 const idxDate = i => isoDate(addDays(parseISO(UI.range.start), i));
 function dayPPD(){
-  const vw = document.getElementById("dayWrap").clientWidth || window.innerWidth;
+  const vw = document.getElementById("scene").clientWidth || window.innerWidth;
   return Math.max(120, (vw - railW()) / S.settings.density);
 }
 function railW(){ return parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--rail-w")) || 68; }
@@ -1017,130 +1031,40 @@ function positionNowLine(){
 setInterval(positionNowLine, 60000);
 
 /* ════════════════════════════════════════════════════════════
-   scroll routing — one rule:
-   • horizontal movement (mouse, touch, trackpad) moves the entire
-     scene: timeline + daily slide together as one map
-   • vertical movement on the timeline area is routed to the daily
-     view (because the timeline doesn't move vertically — there's
-     nothing above it to reveal; what scrolling down does is bring
-     the rest of the day's hours into view)
-   • vertical movement on the daily area scrolls the daily view
-     itself (the hour rail)
-   The daily view is the master scroller; the timeline mirrors its
-   horizontal position. Touch and wheel events on the timeline are
-   intercepted and forwarded.
+   scroll — ONE native viewport (#scene), both axes, compositor-driven.
+
+   Horizontal: the timeline band and the daily band share a single scrollLeft
+   because they live in one scroll container. There is nothing to sync, so they
+   cannot desync. "One map that slides" is now structural, not maintained.
+
+   Vertical: the timeline band sits above the daily band; scrolling down moves
+   from planning into execution. #dayHead (sticky-top) and #hourRail
+   (sticky-left) pin themselves — the compositor does, for free, the work the
+   old routeY()/touch handlers did on the main thread.
+
+   The ONLY JS left here is unbounded-range edge extension, which reads one
+   scrollLeft and (rarely) re-anchors it after prepending days. All panning is
+   native: no wheel handlers, no touch handlers, no scroll-sync. The unified
+   Pointer Events pipeline (next block) is now the sole JS input system.
    ════════════════════════════════════════════════════════════ */
+const $scene = document.getElementById("scene");
 
-/* horizontal sync: bidirectional, with edge-extension for unbounded scroll */
-$dayWrap.addEventListener("scroll", ()=>{
-  if(UI.syncing){ UI.syncing=false; } else { UI.syncing=true; $tlWrap.scrollLeft = $dayWrap.scrollLeft; }
-  scheduleExtend();
-});
-$tlWrap.addEventListener("scroll", ()=>{
-  if(UI.syncing){ UI.syncing=false; } else { UI.syncing=true; $dayWrap.scrollLeft = $tlWrap.scrollLeft; }
-  scheduleExtend();
-});
-
-/* vertical handoff: outer (#app) consumes downward delta until the timeline
-   is fully collapsed under the topbar; remainder goes to dayWrap's hour scroll.
-   Upward: drain dayWrap first, then pull the timeline back into view. */
-const $appEl = document.getElementById("app");
-function routeY(dy){
-  if(dy > 0){
-    const room = $appEl.scrollHeight - $appEl.clientHeight - $appEl.scrollTop;
-    if(room > 0.5){ const used = Math.min(room, dy); $appEl.scrollTop += used; dy -= used; }
-    if(dy) $dayWrap.scrollTop += dy;
-  } else if(dy < 0){
-    const room = $dayWrap.scrollTop;
-    if(room > 0.5){ const used = Math.min(room, -dy); $dayWrap.scrollTop -= used; dy += used; }
-    if(dy) $appEl.scrollTop += dy;
-  }
-}
-/* wheel on the timeline area: route vertical delta to the daily view.
-   Native horizontal still scrolls tlWrap, which mirrors via the sync handler. */
-$tlWrap.addEventListener("wheel", e=>{
-  if(e.deltaY){
-    e.preventDefault();
-    routeY(e.deltaY);
-  }
-  if(e.deltaX){
-    e.preventDefault();
-    $dayWrap.scrollLeft += e.deltaX;
-  }
-}, { passive:false });
-
-/* touch on the timeline area:
-   - native panning is disabled (touch-action:none) so we can route both axes ourselves
-   - horizontal delta → dayWrap.scrollLeft (which syncs back to tlWrap)
-   - vertical delta → dayWrap.scrollTop (timeline area itself doesn't move vertically) */
-$tlWrap.style.touchAction = "none";
-let _tlT = null;
-$tlWrap.addEventListener("touchstart", e=>{
-  if(e.touches.length === 1) _tlT = { x:e.touches[0].clientX, y:e.touches[0].clientY };
-}, { passive:true });
-$tlWrap.addEventListener("touchmove", e=>{
-  if(!_tlT || e.touches.length !== 1 || UI.dragLive) return;
-  const t = e.touches[0];
-  const dx = _tlT.x - t.clientX, dy = _tlT.y - t.clientY;
-  if(Math.abs(dx) >= 1 || Math.abs(dy) >= 1){
-    $dayWrap.scrollLeft += dx;
-    routeY(dy);
-    _tlT.x = t.clientX; _tlT.y = t.clientY;
-    if(e.cancelable) e.preventDefault();
-  }
-}, { passive:false });
-$tlWrap.addEventListener("touchend",    ()=>{ _tlT = null; }, { passive:true });
-$tlWrap.addEventListener("touchcancel", ()=>{ _tlT = null; }, { passive:true });
-
-/* wheel over the daily view: route vertically so the timeline collapses first */
-$dayWrap.addEventListener("wheel", e=>{
-  if(e.ctrlKey || !e.deltaY) return;        /* keep pinch-zoom + pure-horizontal native */
-  e.preventDefault();
-  routeY(e.deltaY);
-}, { passive:false });
-
-/* touch over the daily view: manual routing only while the timeline is still
-   (partially) visible at gesture start; otherwise fully native inner scroll.
-   Pulling the timeline back down from the collapsed state chains natively
-   (dayWrap at scrollTop 0 → overscroll propagates to #app). */
-let _dwT = null;
-$dayWrap.addEventListener("touchstart", e=>{
-  const room = $appEl.scrollHeight - $appEl.clientHeight - $appEl.scrollTop;
-  const inHandoff = (e.touches.length === 1 && room > 0.5);
-  /* declare intent up-front: JS owns the gesture in the handoff zone, native pan-y once collapsed */
-  $dayWrap.style.touchAction = inHandoff ? "none" : "pan-y";
-  _dwT = inHandoff ? { x:e.touches[0].clientX, y:e.touches[0].clientY } : null;
-}, { passive:true });
-$dayWrap.addEventListener("touchmove", e=>{
-  if(!_dwT || e.touches.length !== 1 || UI.dragLive) return;
-  const t = e.touches[0];
-  const dx = _dwT.x - t.clientX, dy = _dwT.y - t.clientY;
-  if(Math.abs(dx) >= 1 || Math.abs(dy) >= 1){
-    $dayWrap.scrollLeft += dx;
-    routeY(dy);
-    _dwT.x = t.clientX; _dwT.y = t.clientY;
-    if(e.cancelable) e.preventDefault();
-  }
-}, { passive:false });
-$dayWrap.addEventListener("touchend",    ()=>{ _dwT = null; }, { passive:true });
-$dayWrap.addEventListener("touchcancel", ()=>{ _dwT = null; }, { passive:true });
-
-/* dynamic range extension when scrolling near either edge */
+/* dynamic range extension when scrolling near either horizontal edge */
 let _extendT = null;
 function scheduleExtend(){
   clearTimeout(_extendT);
   _extendT = setTimeout(()=>{ if(!UI.dragLive) maybeExtendRange(); }, 80);
 }
+$scene.addEventListener("scroll", scheduleExtend, { passive:true });
+
 function maybeExtendRange(){
-  const w = $dayWrap.scrollLeft, max = $dayWrap.scrollWidth - $dayWrap.clientWidth;
+  const w = $scene.scrollLeft, max = $scene.scrollWidth - $scene.clientWidth;
   if(w < EDGE_BUFFER_PX){
-    /* prepend EXTEND_DAYS — preserve visual scroll position */
+    /* prepend EXTEND_DAYS — re-anchor scrollLeft so the view doesn't jump */
     UI.range.start = isoDate(addDays(parseISO(UI.range.start), -EXTEND_DAYS));
     UI.range.days += EXTEND_DAYS;
     renderAll();
-    const delta = EXTEND_DAYS * TL_PPD;
-    UI.syncing = true; $dayWrap.scrollLeft = w + delta;
-    UI.syncing = true; $tlWrap.scrollLeft  = w + delta;
+    $scene.scrollLeft = w + EXTEND_DAYS * TL_PPD;
     return true;
   }
   if(max - w < EDGE_BUFFER_PX){
@@ -1151,14 +1075,18 @@ function maybeExtendRange(){
   return false;
 }
 
-/* auto-landing: open on today, near current hour */
+/* auto-landing: today, around the current hour.
+   With one scroller the timeline and the day-grid can't both pin at once, so we
+   land in the execution layer (the original behaviour) with the planning band
+   one short scroll up. $dayWrap.offsetTop is the timeline band's height, i.e.
+   the scrollTop at which #dayHead becomes pinned. */
 function scrollToToday(animated){
   const i = dayIdx(todayISO());
-  const x = Math.max(0, i*UI.dayPPD - 0);
-  $dayWrap.scrollTo({ left:x, behavior:animated?"smooth":"auto" });
+  const x = Math.max(0, i*UI.dayPPD);
   const nowMin = new Date().getHours()*60 + new Date().getMinutes();
-  const y = clamp((nowMin - HOUR_START*60 - 90)/60*HOUR_PX, 0, GRID_H);
-  $dayWrap.scrollTop = y;
+  const yHour  = clamp((nowMin - HOUR_START*60 - 90)/60*HOUR_PX, 0, GRID_H);
+  const y = $dayWrap.offsetTop + yHour;       // past the timeline band, into the grid
+  $scene.scrollTo({ left:x, top:y, behavior:animated?"smooth":"auto" });
 }
 </script>
 <script>
@@ -1191,6 +1119,7 @@ function setAddMode(on){
   UI.addMode = on;
   $fab.classList.toggle("on", on);
   $fab.title = on ? "Hinzufügen beenden (Esc)" : "Hinzufügen (A)";
+  document.getElementById("scene")?.classList.toggle("addmode", on);
   document.getElementById("dayGrid")?.classList.toggle("addmode", on);
   if(!on){ hideHover(); }
 }
