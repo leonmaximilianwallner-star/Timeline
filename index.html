@@ -925,7 +925,12 @@ function renderDays(){
 
   /* sticky day-of-week bar */
   const head = document.createElement("div"); head.id="dayHead";
-  head.appendChild(Object.assign(document.createElement("div"),{id:"dayHeadCorner"}));
+  const corner = document.createElement("div");
+  corner.id = "dayHeadCorner";
+  const anchorDate = parseISO(idxDate(0));
+  const kw = isoWeek(anchorDate);
+  corner.innerHTML = `<span class="dw">KW</span><span class="dn">${kw}</span>`;
+  head.appendChild(corner);
   for(let i=0;i<days;i++){
     const dIso = idxDate(i), d = parseISO(dIso);
     const el = document.createElement("div");
@@ -998,6 +1003,21 @@ function renderDays(){
   body.appendChild(grid);
   inner.appendChild(body);
   $dayInner.replaceChildren(inner);
+}
+function isoWeek(d) {
+  const jan4 = new Date(d.getFullYear(), 0, 4);
+  const startOfW1 = new Date(jan4);
+  startOfW1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7));
+  const daysDiff = Math.floor((d - startOfW1) / 86400000);
+  const week = Math.floor(daysDiff / 7) + 1;
+  if (week < 1) return isoWeek(new Date(d.getFullYear() - 1, 11, 28));
+  if (week > 52) {
+    const jan4next = new Date(d.getFullYear() + 1, 0, 4);
+    const startOfW1next = new Date(jan4next);
+    startOfW1next.setDate(jan4next.getDate() - ((jan4next.getDay() + 6) % 7));
+    if (d >= startOfW1next) return 1;
+  }
+  return week;
 }
 
 function eventCard(ev, dIso, x, w){
