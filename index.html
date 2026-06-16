@@ -390,6 +390,7 @@ input[type="color"]{padding:2px; height:34px; cursor:pointer}
 .todoAdd input:focus{border-color:var(--c-blue)}
 .thint{font-size:10.5px; color:var(--text-faint)}
 
+
 /* todo popover on event card click */
 #pop{
   position:fixed; z-index:55; width:300px;
@@ -397,9 +398,34 @@ input[type="color"]{padding:2px; height:34px; cursor:pointer}
   box-shadow:var(--shadow); padding:12px 12px 12px;
   animation:pop .22s var(--spring);
 }
-#pop .pt{font-size:14px; font-weight:700; margin-bottom:1px; padding-right:30px}
+#pop .phead{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px}
+#pop .phead-actions{display:flex; gap:6px}
+#pop .ppill{font-size:11px; font-weight:600; padding:3px 10px; border-radius:9999px; line-height:1.3}
+#pop .pt{font-size:14px; font-weight:700; margin-bottom:1px}
 #pop .pm{font-size:11px; color:var(--text-dim); margin-bottom:9px}
-#pop .pclose{position:absolute; right:8px; top:8px}
+
+/* ---------- completion celebration ---------- */
+.evcard.complete{ opacity:.45; transition:opacity .2s ease; }
+#pop.complete::after{
+  content:""; position:absolute; inset:0; border-radius:inherit;
+  background:var(--cat-fill, var(--success)); opacity:.14; pointer-events:none;
+}
+#washLayer{
+  position:fixed; inset:0;
+  overflow:clip; pointer-events:none; z-index:40;
+}
+.wash{
+  position:absolute; border-radius:var(--r-card);
+  background:var(--cat-fill, var(--success));
+  transform:translate(-50%,-50%) scale(1); opacity:0;
+  will-change:transform,opacity;
+}
+.wash.go{ animation:wash 800ms cubic-bezier(1,1,0.5,1) forwards; }
+@keyframes wash{
+  0%  { transform:translate(-50%,-50%) scale(1);   opacity:.95; }
+  55% { transform:translate(-50%,-50%) scale(6); opacity:.85; }
+  100% { transform:translate(-50%,-50%) scale(6); opacity:0; }
+  }
 
 /* ---------- settings panel ---------- */
 #setPanel{
@@ -1033,8 +1059,10 @@ function eventCard(ev, dIso, x, w){
   const top = (ev.startMin - HOUR_START*60)/60*HOUR_PX;
   const h   = Math.max((ev.endMin - ev.startMin)/60*HOUR_PX - 2, 18);
   const el = document.createElement("div");
-  el.className = "evcard";
-  el.style.cssText = `left:${x}px;top:${top}px;width:${w}px;height:${h}px;background:${cat(ev.categoryId).color}d0`;
+  const allDone = ev.todos.length>0 && ev.todos.every(t=>t.state==="done");
+  el.className = "evcard" + (allDone ? " complete" : "");
+  const col = cat(ev.categoryId).color;
+  el.style.cssText = `left:${x}px;top:${top}px;width:${w}px;height:${h}px;background:${col}d0;--cat-fill:${col}`;
   el.dataset.ev = ev.id; el.dataset.date = dIso;
   const open = ev.todos.filter(t=>t.state==="open"||t.state==="postponed").length;
   const done = ev.todos.filter(t=>t.state==="done").length;
@@ -1751,21 +1779,31 @@ function openTodoPop(ev, dateISO, anchorEl){
   const x = clamp(r.right+10 <= window.innerWidth-310 ? r.right+10 : r.left-310, 8, window.innerWidth-308);
   const y = clamp(r.top, 8, window.innerHeight-300);
   pop.style.left=x+"px"; pop.style.top=y+"px";
-  pop.innerHTML = `<button class="cbtn small pclose" title="Schließen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  const c = cat(ev.categoryId);
+  pop.innerHTML = `<div class="phead">
+      <span class="ppill" style="background:${c.color}1a; color:${c.color}; border:1px solid ${c.color}38">${esc(c.name)}</span>
+      <div class="phead-actions">
+        <button class="cbtn small" id="popEdit" title="Bearbeiten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+        <button class="cbtn small pclose" title="Schließen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+    </div>
     <div class="pt">${esc(ev.title)}</div>
     <div class="pm">${fmtDateLong(dateISO)} · ${fmtMin(ev.startMin)}–${fmtMin(ev.endMin)}${ev.repeat&&ev.repeat!=="none"?" · ↻":""}</div>
     <div class="todoList" id="popTodos">${ev.todos.map(todoRowHTML).join("")}</div>
     <div class="todoAdd" style="margin-top:8px"><input id="popNew" placeholder="Todo hinzufügen…">
-      <button class="cbtn small" id="popAdd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
-    <div class="thint" style="margin-top:7px">Klick: offen → erledigt → abgebrochen · Rechtsklick: verschoben (wandert weiter)</div>
-    <div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="btn" id="popEdit">Bearbeiten</button></div>`;
+      <button class="cbtn small" id="popAdd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>`;
   document.body.appendChild(pop);
+  pop.classList.toggle("complete", ev.todos.length>0 && ev.todos.every(t=>t.state==="done"));
+  pop.style.setProperty("--cat-fill", c.color);
   UI.pop = { evId:ev.id, date:dateISO };
 
   const sync = mutFn => {                       // mutate without tearing the popover down
     mutate(s=>{ const e2 = s.events.find(x=>x.id===ev.id); if(e2) mutFn(e2); }, { skipRender:true });
     renderAll();
-    document.getElementById("popTodos").innerHTML = S.events.find(x=>x.id===ev.id).todos.map(todoRowHTML).join("");
+    const e2 = S.events.find(x=>x.id===ev.id);
+    document.getElementById("popTodos").innerHTML = e2.todos.map(todoRowHTML).join("");
+    pop.classList.toggle("complete", e2.todos.length>0 && e2.todos.every(t=>t.state==="done"));
+    pop.style.setProperty("--cat-fill", cat(e2.categoryId).color);
   };
   pop.querySelector(".pclose").onclick = closePop;
   pop.querySelector("#popEdit").onclick = ()=>{ const e2=S.events.find(x=>x.id===ev.id); closePop(); if(e2) openModal({ type:"event", edit:e2 }); };
@@ -1776,7 +1814,13 @@ function openTodoPop(ev, dateISO, anchorEl){
   pop.addEventListener("click", e=>{
     const row = e.target.closest(".todoRow"); if(!row) return;
     if(e.target.closest(".tdel")) sync(e2=>{ e2.todos = e2.todos.filter(t=>t.id!==row.dataset.tid); });
-    else if(e.target.closest(".tcheck")) sync(e2=>{ const t=e2.todos.find(t=>t.id===row.dataset.tid); if(t) cycleTodo(t); });
+    else if(e.target.closest(".tcheck")){
+      const before = S.events.find(x=>x.id===ev.id).todos.every(t=>t.state==="done");
+      sync(e2=>{ const t=e2.todos.find(t=>t.id===row.dataset.tid); if(t) cycleTodo(t); });
+      const e2 = S.events.find(x=>x.id===ev.id);
+      const after = e2.todos.length>0 && e2.todos.every(t=>t.state==="done");
+      if(after && !before) celebrate(e2, ev.id);
+    }
   });
   pop.addEventListener("contextmenu", e=>{
     const row = e.target.closest(".todoRow"); if(!row) return;
@@ -1785,6 +1829,26 @@ function openTodoPop(ev, dateISO, anchorEl){
   });
 }
 function closePop(){ const p=document.getElementById("pop"); if(p) p.remove(); UI.pop=null; }
+function celebrate(ev, evId){
+  const card = document.getElementById("pop");
+  const layer = document.getElementById("washLayer");
+  if(!card || !layer) return;
+  
+  const color = cat(ev.categoryId).color;
+  const cr = card.getBoundingClientRect();
+
+  const w = document.createElement("div");
+  w.className = "wash go";
+  w.style.setProperty("--cat-fill", color);
+  w.style.width  = cr.width+"px";
+  w.style.height = cr.height+"px";
+  w.style.left = (cr.left + cr.width/2)+"px";
+  w.style.top  = (cr.top + cr.height/2)+"px";
+  layer.appendChild(w);
+  
+  w.classList.add("go");
+  w.addEventListener("animationend", ()=> {w.remove(); closePop();}, { once:true });
+}
 document.addEventListener("pointerdown", e=>{
   if(UI.pop && !e.target.closest("#pop") && !e.target.closest(".evcard")) closePop();
   if(UI.settingsOpen && !e.target.closest("#setPanel") && !e.target.closest("#btnSettings")) toggleSettings(false);
@@ -2074,6 +2138,7 @@ document.getElementById("btnRedo").onclick    = redo;
 let rzT = null;
 window.addEventListener("resize", ()=>{ clearTimeout(rzT); rzT = setTimeout(renderAll, 150); });
 
+(function(){ const wl=document.createElement("div"); wl.id="washLayer"; document.body.appendChild(wl); })();
 renderAll();
 updateUndoButtons();
 scrollToToday(false);          // auto-landing: today, around the current hour
