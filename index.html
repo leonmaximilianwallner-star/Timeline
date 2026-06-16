@@ -260,8 +260,13 @@ input,select,textarea{font-family:inherit; font-size:14px; color:var(--text)}
   position:absolute; border:1.5px dashed var(--text-dim); border-radius:var(--r-small);
   background:rgba(127,127,140,.08); z-index:12; pointer-events:none;
 }
-.dragPrev::before,.dragPrev::after{content:""; position:absolute; left:-12px; right:-12px; height:0; border-top:1px solid var(--text-dim)}
-.dragPrev::before{top:-1px}.dragPrev::after{bottom:-1px}
+/* floating solid duplicate shown during Ctrl/Cmd + drag — sits above the dashed ghost */
+.floatCopy{
+  position:absolute; pointer-events:none; z-index:13;
+  box-shadow:0 8px 20px rgba(0,0,0,.45);
+  opacity:.96;
+}
+.floatCopy .rezH{display:none}
 .snapLab{position:absolute; z-index:16; right:6px; transform:translateY(-50%);
   font-family:"DM Mono",monospace; font-size:10px; color:var(--text); background:var(--base); padding:0 3px; pointer-events:none}
 
@@ -420,12 +425,19 @@ input[type="color"]{padding:2px; height:34px; cursor:pointer}
   transform:translate(-50%,-50%) scale(1); opacity:0;
   will-change:transform,opacity;
 }
-.wash.go{ animation:wash 800ms cubic-bezier(1,1,0.5,1) forwards; }
+.wash.go{ animation:wash 1100ms cubic-bezier(1, 0.64, 0.5, 0.64) forwards; }
 @keyframes wash{
-  0%  { transform:translate(-50%,-50%) scale(1);   opacity:.95; }
-  55% { transform:translate(-50%,-50%) scale(6); opacity:.85; }
-  100% { transform:translate(-50%,-50%) scale(6); opacity:0; }
-  }
+  0%   { transform:translate(-50%,-50%) scale(1);   opacity:.95; }
+  55%  { transform:translate(-50%,-50%) scale(6.5); opacity:.85; }
+  75%  { transform:translate(-50%,-50%) scale(6.5); opacity:.85; }
+  100% { transform:translate(-50%,-50%) scale(6.5); opacity:0; }
+}
+#pop.celebrating{ animation:pop-pulse 1100ms var(--spring); }
+@keyframes pop-pulse{
+  0%   { transform:scale(1); }
+  18%  { transform:scale(1.04); }
+  100% { transform:scale(1); }
+}
 
 /* ---------- settings panel ---------- */
 #setPanel{
@@ -1114,11 +1126,29 @@ function scheduleExtend(){
   _extendT = setTimeout(()=>{ if(!UI.dragLive) maybeExtendRange(); }, 80);
 }
 $scene.addEventListener("scroll", () => { updateKW(); scheduleExtend();} , { passive:true });
+
+/* day-snap on scrollend.
+   The smooth scrollTo issued below is itself a scroll; if the user starts a
+   new gesture mid-animation, the two fight and stutter. We track _snapping
+   and abort the in-flight smooth scroll on the next user-initiated input
+   (pointerdown or wheel). Re-issuing scrollTo at the current position is the
+   standard way to cancel a smooth scroll. */
+let _snapping = false;
+const _cancelSnap = () => {
+  if(!_snapping) return;
+  _snapping = false;
+  $scene.scrollTo({ left: $scene.scrollLeft, top: $scene.scrollTop });
+};
+$scene.addEventListener("pointerdown", _cancelSnap, { passive:true });
+$scene.addEventListener("wheel",       _cancelSnap, { passive:true });
+
 $scene.addEventListener("scrollend", () => {
+  _snapping = false;                                  // any prior snap is now resolved
   if(UI.dragLive) return;
   const ppd = UI.dayPPD; if(!ppd) return;
   const target = Math.round($scene.scrollLeft / ppd) * ppd;
   if(Math.abs(target - $scene.scrollLeft) < 1) return;
+  _snapping = true;
   $scene.scrollTo({ left: target, behavior: "smooth" });
 }, { passive:true });
 
@@ -1303,10 +1333,20 @@ function drawCreatePreview(grid, d){
     d.prev = document.createElement("div"); d.prev.className="dragPrev"; grid.appendChild(d.prev);
     const rail = document.getElementById("hourRail");
     d.labs = [0,1].map(()=>{ const s=document.createElement("span"); s.className="snapLab"; rail.appendChild(s); return s; });
+    /* optional category tint — set once on creation; falls back to the neutral default */
+    if(d.color){
+      d.prev.style.borderColor = d.color;
+      d.prev.style.background  = d.color + "24";   // ~14% alpha — enough to read, not muddy
+    }
   }
   const s = Math.min(d.a,d.b), e = Math.max(d.a,d.b);
   const y1 = (s-HOUR_START*60)/60*HOUR_PX, y2 = (e-HOUR_START*60)/60*HOUR_PX;
   d.prev.style.cssText += `;left:${d.day*UI.dayPPD+4}px;width:${UI.dayPPD-8}px;top:${y1}px;height:${Math.max(y2-y1,4)}px`;
+  /* cssText reset wipes inline border/background — re-apply if colored */
+  if(d.color){
+    d.prev.style.borderColor = d.color;
+    d.prev.style.background  = d.color + "24";
+  }
   d.labs[0].style.top=y1+"px"; d.labs[0].textContent=fmtMin(s);
   d.labs[1].style.top=y2+"px"; d.labs[1].textContent=fmtMin(e);
 }
@@ -1333,7 +1373,18 @@ function cardPointerDown(e, cardEl){
   cardEl.setPointerCapture(e.pointerId);
   const st = { moved:false, day:startP.day,
                s:ev.startMin, en:ev.endMin, grabOff: startP.min - ev.startMin };
-  const pv = { day:startP.day, a:ev.startMin, b:ev.endMin, prev:null, labs:[] };
+  const evColor = ev.categoryId ? cat(ev.categoryId).color : null;
+  const pv = { day:startP.day, a:ev.startMin, b:ev.endMin, prev:null, labs:[], color: evColor };
+  /* copy-mode: a solid duplicate of the card floats above the dashed ghost */
+  let floatEl = null;
+  const positionFloat = ()=>{
+    if(!floatEl || !pv.prev) return;
+    const r = pv.prev;
+    floatEl.style.left   = (parseFloat(r.style.left) + 6) + "px";   // offset right
+    floatEl.style.top    = (parseFloat(r.style.top)  - 6) + "px";   // offset up
+    floatEl.style.width  = r.style.width;
+    floatEl.style.height = r.style.height;
+  };
 
   const move = mv=>{
     const q = gridPos(mv);
@@ -1351,6 +1402,16 @@ function cardPointerDown(e, cardEl){
     else { st.en = Math.max(snapMin(q.min), ev.startMin + SNAP); }
     pv.day = st.day; pv.a = st.s; pv.b = st.en;
     drawCreatePreview(document.getElementById("dayGrid"), pv);
+    /* copy-mode: lazily build the floating duplicate, then track the ghost */
+    if(copy){
+      if(!floatEl){
+        floatEl = cardEl.cloneNode(true);
+        floatEl.classList.add("floatCopy");
+        floatEl.removeAttribute("data-ev");
+        document.getElementById("dayGrid").appendChild(floatEl);
+      }
+      positionFloat();
+    }
   };
   const up = ()=>{
     clearTimeout(armTimer);
@@ -1359,6 +1420,7 @@ function cardPointerDown(e, cardEl){
     cardEl.classList.remove("dragging");
     UI.dragLive = false;
     clearPreview(pv);
+    if(floatEl){ floatEl.remove(); floatEl = null; }
     if(!st.moved){ openTodoPop(ev, dateISO, cardEl); return; }   // plain click → todo panel
     const dayDelta = st.day - dayIdx(dateISO);
     if(copy){
@@ -1401,13 +1463,25 @@ $tlWrap.addEventListener("pointerdown", e=>{
     if(armed){ UI.dragLive = true; }
     else { armTimer = setTimeout(()=>{ armed = true; UI.dragLive = true; vibrate(12); }, RESIZE_HOLD); }
     let ns = ph.start, ne = ph.end;
+    /* dashed ghost in the same lane row; original bar stays put visually until commit */
+    const lane = phEl.parentElement;
+    const phColor = ph.categoryId ? cat(ph.categoryId).color : null;
+    let ghost = null;
+    const drawGhost = ()=>{
+      if(!ghost){
+        ghost = document.createElement("div"); ghost.className="tlCreate";
+        if(phColor){ ghost.style.borderColor = phColor; ghost.style.background = phColor + "24"; }
+        lane.appendChild(ghost);
+      }
+      const x = dayIdx(ns)*TL_PPD, w = Math.max((diffDays(ns,ne)+1)*TL_PPD, 26);
+      ghost.style.left = x+"px"; ghost.style.width = w+"px";
+    };
     const move = mv=>{
       panTrack(mv.clientX, mv.clientY);
       if(!armed){ if(Math.hypot(mv.clientX-sx, mv.clientY-sy) > MOVE_THRESHOLD) clearTimeout(armTimer); return; }
       const d = idxDate(tlPos(mv));
       if(side==="l") ns = d <= ph.end ? d : ph.end; else ne = d >= ph.start ? d : ph.start;
-      const x = dayIdx(ns)*TL_PPD, w = Math.max((diffDays(ns,ne)+1)*TL_PPD, 26);
-      phEl.style.left = x+"px"; phEl.style.width = w+"px";
+      drawGhost();
     };
     const up = ()=>{
       clearTimeout(armTimer);
@@ -1415,6 +1489,7 @@ $tlWrap.addEventListener("pointerdown", e=>{
       window.removeEventListener("pointermove",move); window.removeEventListener("pointerup",up); window.removeEventListener("pointercancel",up);
       panRelease();
       UI.dragLive = false;
+      if(ghost) ghost.remove();
       if(ns!==ph.start || ne!==ph.end) mutate(s=>{ const t=s.phases.find(p=>p.id===ph.id); t.start=ns; t.end=ne; });
     };
     panBind(move, "x", e.clientX, e.clientY); 
@@ -1442,15 +1517,18 @@ $tlWrap.addEventListener("pointerdown", e=>{
 /* phase / point creation drag on the empty timeline (shared by add-mode + long-press) */
 function startPhaseCreate(e, fromHold=false){
   const a = tlPos(e);
+  /* anchor the ghost in the lane row the user pressed in — gives it the same
+     coordinate system as real phase bars (top:4px inside a 34px lane) and lets
+     it pan with the content instead of drifting against the viewport */
+  const lane = e.target.closest(".laneRow") || e.target.closest(".tlRow") || $tlInner.firstChild;
   $tlWrap.setPointerCapture(e.pointerId); UI.dragLive = true;
   let b = a, ghost = null, moved = false;
   const move = mv=>{
     panTrack(mv.clientX, mv.clientY);
     b = tlPos(mv); if(b!==a) moved = true;
-    if(!ghost){ ghost = document.createElement("div"); ghost.className="tlCreate"; ghost.style.top="4px"; $tlInner.firstChild.appendChild(ghost); }
+    if(!ghost){ ghost = document.createElement("div"); ghost.className="tlCreate"; lane.appendChild(ghost); }
     const lo = Math.min(a,b), hi = Math.max(a,b);
     ghost.style.left = lo*TL_PPD+"px"; ghost.style.width = (hi-lo+1)*TL_PPD+"px";
-    ghost.style.top = (e.clientY - $tlInner.getBoundingClientRect().top - 12)+"px";
   };
   const up = ()=>{
     try{ $tlWrap.releasePointerCapture(e.pointerId); }catch(_){}
@@ -1833,6 +1911,10 @@ function celebrate(ev, evId){
   const card = document.getElementById("pop");
   const layer = document.getElementById("washLayer");
   if(!card || !layer) return;
+
+  card.classList.remove("celebrating");
+  void card.offsetWidth;
+  card.classList.add("celebrating");
   
   const color = cat(ev.categoryId).color;
   const cr = card.getBoundingClientRect();
