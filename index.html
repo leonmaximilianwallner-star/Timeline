@@ -222,10 +222,10 @@ input,select,textarea{font-family:inherit; font-size:14px; color:var(--text)}
 #hourRail{
   position:sticky; left:0; z-index:15; flex:0 0 var(--rail-w); width:var(--rail-w);
   background:var(--base); border-right:1px solid var(--line-soft);
-  font-family:"DM Mono",monospace; font-size:10px; color:var(--text-faint);
+  font-family:"DM Sans",sans-serif; font-size:10px; color:var(--text-faint);
   position:sticky;
 }
-.hr-lab{position:absolute; right:8px; transform:translateY(-50%)}
+.hr-lab{position:absolute; right:4px; transform:translateY(-50%)}
 #dayGrid{
   position:relative; flex:0 0 auto; touch-action:pan-x pan-y;
   background-image: var(--gridline);
@@ -432,6 +432,36 @@ input[type="color"]{padding:2px; height:34px; cursor:pointer}
   75%  { transform:translate(-50%,-50%) scale(6.5); opacity:.85; }
   100% { transform:translate(-50%,-50%) scale(6.5); opacity:0; }
 }
+.celeb-text {
+  position: relative;
+  z-index: 41;
+  text-align: center;
+  color: #ffffff;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translate(-50%, 12px);
+  opacity: 0;
+}
+.celeb-text .ct-title {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 0;
+}
+.celeb-text .ct-sub {
+  font-size: 13px;
+  font-weight: 400;
+  opacity: 0.82;
+  margin-top: 8px;
+  letter-spacing: 0.04em;
+}
+.celeb-text.go { animation: celeb-in 850ms cubic-bezier(0.22, 1, 0.36, 1) 250ms forwards; }
+@keyframes celeb-in {
+  0%   { opacity: 0; transform: translate(-50%, 12px); }
+  30%  { opacity: 1; transform: translate(-50%, 0); }
+  65%  { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, -6px); }
+}
 #pop.celebrating{ animation:pop-pulse 1100ms var(--spring); }
 @keyframes pop-pulse{
   0%   { transform:scale(1); }
@@ -499,6 +529,105 @@ input[type="color"]{padding:2px; height:34px; cursor:pointer}
 </style>
 </head>
 <body>
+<!-- Timeline loading wordmark -->
+<style>
+  #tl-loader {
+    --speed: 1.3;
+    --curve: cubic-bezier(0.22, 1, 0.36, 1);
+    position: fixed; inset: 0; z-index: 9999;
+    background: #111118;
+    display: flex; align-items: center; justify-content: center;
+    transition: opacity 1600ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  #tl-loader.fade-out { opacity: 0; pointer-events: none; }
+  #tl-loader svg { width: 72%; max-width: 480px; height: auto; display: block; }
+  #tl-loader .mp { stroke-dasharray: 1; stroke-dashoffset: 1; }
+  #tl-loader .mp-ttop  { animation: tl-draw calc(0.25s / var(--speed)) var(--curve) calc(0.00s / var(--speed)) forwards; }
+  #tl-loader .mp-tstem { animation: tl-draw calc(0.35s / var(--speed)) var(--curve) calc(0.20s / var(--speed)) forwards; }
+  #tl-loader .mp-i1    { animation: tl-draw calc(0.40s / var(--speed)) var(--curve) calc(0.32s / var(--speed)) forwards; }
+  #tl-loader .mp-m     { animation: tl-draw calc(0.80s / var(--speed)) var(--curve) calc(0.60s / var(--speed)) forwards; }
+  #tl-loader .mp-e1s   { animation: tl-draw calc(0.22s / var(--speed)) var(--curve) calc(1.00s / var(--speed)) forwards; }
+  #tl-loader .mp-e1b   { animation: tl-draw calc(0.55s / var(--speed)) var(--curve) calc(1.10s / var(--speed)) forwards; }
+  #tl-loader .mp-l     { animation: tl-draw calc(0.55s / var(--speed)) var(--curve) calc(1.45s / var(--speed)) forwards; }
+  #tl-loader .mp-i2    { animation: tl-draw calc(0.40s / var(--speed)) var(--curve) calc(1.68s / var(--speed)) forwards; }
+  #tl-loader .mp-n     { animation: tl-draw calc(0.60s / var(--speed)) var(--curve) calc(2.00s / var(--speed)) forwards; }
+  #tl-loader .mp-e2s   { animation: tl-draw calc(0.22s / var(--speed)) var(--curve) calc(2.25s / var(--speed)) forwards; }
+  #tl-loader .mp-e2b   { animation: tl-draw calc(0.55s / var(--speed)) var(--curve) calc(2.35s / var(--speed)) forwards; }
+  @keyframes tl-draw { to { stroke-dashoffset: 0; } }
+  #tl-loader .lg-dot { opacity: 0; }
+  #tl-loader .dot1 { animation: tl-fade calc(0.15s / var(--speed)) ease-out calc(0.48s / var(--speed)) forwards; }
+  #tl-loader .dot2 { animation: tl-fade calc(0.15s / var(--speed)) ease-out calc(1.84s / var(--speed)) forwards; }
+  @keyframes tl-fade { to { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) {
+    #tl-loader { opacity: 0; pointer-events: none; transition: none; }
+  }
+</style>
+<div id="tl-loader">
+  <svg viewBox="0 0 975.83 197.79" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <mask id="tl-m-t" maskUnits="userSpaceOnUse" x="-30" y="-30" width="1040" height="260">
+        <rect x="-30" y="-30" width="1040" height="260" fill="black"/>
+        <path d="M 0 12.4 L 119.07 12.4" stroke="white" stroke-width="25" fill="none" stroke-linecap="round" pathLength="1" class="mp mp-ttop"/>
+        <path d="M 59.475 12.4 L 59.475 193.56" stroke="white" stroke-width="40" fill="none" stroke-linecap="round" pathLength="1" class="mp mp-tstem"/>
+      </mask>
+      <mask id="tl-m-i1" maskUnits="userSpaceOnUse" x="-30" y="-30" width="1040" height="260">
+        <rect x="-30" y="-30" width="1040" height="260" fill="black"/>
+        <path d="M 149.565 193.56 L 149.565 59.17" stroke="white" stroke-width="40" fill="none" stroke-linecap="round" pathLength="1" class="mp mp-i1"/>
+      </mask>
+      <mask id="tl-m-m" maskUnits="userSpaceOnUse" x="-30" y="-30" width="1040" height="260">
+        <rect x="-30" y="-30" width="1040" height="260" fill="black"/>
+        <path d="M 199.45 193.56 L 199.45 95 Q 236.45 65 273.45 95 L 273.45 193.56 L 273.45 95 Q 310.45 65 347.45 95 L 347.45 193.56" stroke="white" stroke-width="40" fill="none" stroke-linecap="round" stroke-linejoin="round" pathLength="1" class="mp mp-m"/>
+      </mask>
+      <mask id="tl-m-e1" maskUnits="userSpaceOnUse" x="-30" y="-30" width="1040" height="260">
+        <rect x="-30" y="-30" width="1040" height="260" fill="black"/>
+        <path d="M 425.4 134.1 L 496 102" stroke="white" stroke-width="30" fill="none" stroke-linecap="round" pathLength="1" class="mp mp-e1s"/>
+        <path d="M 494.9 93.3 A 57 57 0 1 0 505.8 140.3" stroke="white" stroke-width="46" fill="none" stroke-linecap="round" pathLength="1" class="mp mp-e1b"/>
+      </mask>
+      <mask id="tl-m-l" maskUnits="userSpaceOnUse" x="-30" y="-30" width="1040" height="260">
+        <rect x="-30" y="-30" width="1040" height="260" fill="black"/>
+        <path d="M 565 13 L 565 163 Q 565 190 597 190 L 620 190" stroke="white" stroke-width="52" fill="none" stroke-linecap="round" stroke-linejoin="round" pathLength="1" class="mp mp-l"/>
+      </mask>
+      <mask id="tl-m-i2" maskUnits="userSpaceOnUse" x="-30" y="-30" width="1040" height="260">
+        <rect x="-30" y="-30" width="1040" height="260" fill="black"/>
+        <path d="M 663.35 193.56 L 663.35 59.17" stroke="white" stroke-width="40" fill="none" stroke-linecap="round" pathLength="1" class="mp mp-i2"/>
+      </mask>
+      <mask id="tl-m-n" maskUnits="userSpaceOnUse" x="-30" y="-30" width="1040" height="260">
+        <rect x="-30" y="-30" width="1040" height="260" fill="black"/>
+        <path d="M 714.78 193.56 L 714.78 103 Q 759.18 80 803.62 103 L 803.62 193.56" stroke="white" stroke-width="62" fill="none" stroke-linecap="round" stroke-linejoin="round" pathLength="1" class="mp mp-n"/>
+      </mask>
+      <mask id="tl-m-e2" maskUnits="userSpaceOnUse" x="-30" y="-30" width="1040" height="260">
+        <rect x="-30" y="-30" width="1040" height="260" fill="black"/>
+        <path d="M 881.9 134.1 L 952.5 102" stroke="white" stroke-width="30" fill="none" stroke-linecap="round" pathLength="1" class="mp mp-e2s"/>
+        <path d="M 951.4 93.3 A 57 57 0 1 0 962.3 140.3" stroke="white" stroke-width="46" fill="none" stroke-linecap="round" pathLength="1" class="mp mp-e2b"/>
+      </mask>
+    </defs>
+    <g mask="url(#tl-m-t)"><polygon points="47.06 193.56 71.89 193.56 71.89 24.83 119.07 24.83 119.07 0 0 0 0 24.94 47.06 24.94 47.06 193.56" fill="#ededec"/></g>
+    <g mask="url(#tl-m-i1)"><polygon points="161.98 59.06 161.98 193.56 137.15 193.56 137.15 59.17 161.98 59.06" fill="#ededec"/></g>
+    <path class="lg-dot dot1" d="M149.55,0h0c7.98,0,14.45,6.47,14.45,14.45h0c0,7.98-6.47,14.45-14.45,14.45h0c-7.98,0-14.45-6.47-14.45-14.45h0C135.11,6.47,141.57,0,149.55,0Z" fill="#ededec"/>
+    <g mask="url(#tl-m-m)"><path d="m359.5,108.42v85.14h-24.83v-85.14c0-13.55-10.98-24.53-24.53-24.53s-24.53,10.98-24.53,24.53v85.14h-24.83v-85.14c0-13.55-10.98-24.53-24.53-24.53s-24.53,10.98-24.53,24.53v85.14h-24.83v-85.14c0-18.33,9.98-34.32,24.83-42.8,7.22-4.18,15.6-6.55,24.53-6.55s17.31,2.38,24.53,6.55c4.7,2.65,8.88,6.08,12.42,10.12,3.54-4.04,7.71-7.47,12.42-10.12,7.22-4.18,15.6-6.55,24.53-6.55s17.31,2.38,24.53,6.55c14.85,8.49,24.83,24.47,24.83,42.8h0Z" fill="#ededec"/></g>
+    <g mask="url(#tl-m-e1)"><path d="m519.3,132.67c-2.18,36.33-32.32,65.12-69.24,65.12s-69.35-31.05-69.35-69.35,31.05-69.38,69.35-69.38c20.71,0,39.29,9.07,51.99,23.45,2.96,3.32,5.59,6.94,7.85,10.81,1.96,3.32,3.65,6.83,5.03,10.48l-22.12,11.78-10.09,5.39-52.07,27.76c-5.36-5.09-8.71-12.31-8.71-20.32,0-1.11.06-2.21.19-3.29l57.13-30.44c-7.83-6.8-18.03-10.89-29.2-10.89-24.64,0-44.63,19.99-44.63,44.66s19.99,44.63,44.63,44.63c23.23,0,42.33-17.75,44.46-40.4h24.78Z" fill="#ededec"/></g>
+    <g mask="url(#tl-m-l)"><path d="m630.16,168.73v24.83h-31.99c-.75,0-1.49-.03-2.21-.06-.66,0-1.3-.06-1.96-.11-.17,0-.33,0-.5-.03-.64-.06-1.27-.11-1.91-.19-.72-.08-1.44-.17-2.16-.28-.86-.14-1.71-.28-2.54-.44-.55-.14-1.11-.25-1.66-.39-.5-.11-.94-.22-1.41-.33-.5-.14-.97-.28-1.47-.41-2.24-.64-4.42-1.41-6.53-2.32-.53-.22-1.05-.47-1.55-.69-1.05-.5-2.07-1-3.07-1.55-.97-.53-1.94-1.08-2.88-1.66-.17-.08-.3-.19-.44-.28-.77-.47-1.52-.97-2.24-1.49-.83-.58-1.66-1.19-2.46-1.83-.58-.44-1.16-.91-1.74-1.41-.3-.25-.61-.53-.91-.77-.55-.47-1.05-.97-1.58-1.49-.61-.55-1.22-1.13-1.77-1.74-.64-.64-1.24-1.3-1.83-1.99-.75-.86-1.47-1.71-2.16-2.63-.69-.88-1.35-1.8-1.99-2.74-.77-1.13-1.52-2.32-2.21-3.51-1.02-1.8-1.99-3.65-2.85-5.56-1.11-2.54-2.05-5.2-2.82-7.94-1.33-4.78-2.02-9.79-2.02-14.99V0h24.83v136.74c0,.55.03,1.11.06,1.63.08,1.63.3,3.24.61,4.78.11.53.25,1.05.36,1.58.17.64.33,1.27.55,1.91.39,1.24.86,2.43,1.41,3.59.28.58.58,1.16.88,1.74.53.91,1.05,1.8,1.6,2.65,1.16,1.71,2.49,3.29,3.93,4.73,5.78,5.78,13.77,9.37,22.62,9.37h31.99,0Z" fill="#ededec"/></g>
+    <g mask="url(#tl-m-i2)"><polygon points="675.75 59.06 675.75 193.56 650.92 193.56 650.92 59.17 675.75 59.06" fill="#ededec"/></g>
+    <path class="lg-dot dot2" d="M663.35,0h0c7.98,0,14.45,6.47,14.45,14.45h0c0,7.98-6.47,14.45-14.45,14.45h0c-7.98,0-14.45-6.47-14.45-14.45h0C648.9,6.47,655.37,0,663.35,0Z" fill="#ededec"/>
+    <g mask="url(#tl-m-n)"><path d="m816.03,115.89v77.67h-24.83v-77.67c0-17.67-14.35-31.99-32.02-31.99s-31.99,14.32-31.99,31.99v77.67h-24.83v-77.67c0-19.52,9.84-36.75,24.83-46.95,9.1-6.22,20.1-9.87,31.99-9.87s22.9,3.65,32.02,9.87c14.99,10.2,24.83,27.43,24.83,46.95Z" fill="#ededec"/></g>
+    <g mask="url(#tl-m-e2)"><path d="m975.83,132.67c-2.18,36.33-32.32,65.12-69.24,65.12s-69.35-31.05-69.35-69.35,31.05-69.38,69.35-69.38c20.71,0,39.29,9.07,51.99,23.45,2.96,3.32,5.59,6.94,7.85,10.81,1.96,3.32,3.65,6.83,5.03,10.48l-22.12,11.78-10.09,5.39-52.07,27.76c-5.36-5.09-8.71-12.31-8.71-20.32,0-1.11.06-2.21.19-3.29l57.13-30.44c-7.83-6.8-18.03-10.89-29.2-10.89-24.64,0-44.63,19.99-44.63,44.66s19.99,44.63,44.63,44.63c23.23,0,42.33-17.75,44.46-40.4h24.78Z" fill="#ededec"/></g>
+  </svg>
+</div>
+<script>
+  (function(){
+    var loader = document.getElementById('tl-loader');
+    var animDone = new Promise(function(r){ setTimeout(r, 1800); }); // 2.9s draw + 0.4s hold
+    var appReady = new Promise(function(r){
+      if (document.readyState === 'complete') r();
+      else window.addEventListener('load', r, { once: true });
+    });
+    Promise.all([animDone, appReady]).then(function(){
+      loader.classList.add('fade-out');
+      loader.addEventListener('transitionend', function(){ loader.remove(); }, { once: true });
+    });
+  })();
+</script>
+
 <div id="app">
   <div id="topbar">
     <svg id="wordmark" viewBox="0 0 975.83 197.79" aria-label="Timeline">
@@ -1085,7 +1214,14 @@ function eventCard(ev, dIso, x, w){
     `<span class="rezH t"></span><span class="rezH b"></span>`;
   return el;
 }
-
+function fmtDur(min) {
+  if (min < 60) return min + "min";
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  if (m === 0) return h + "h";
+  if (m === 30) return h + ".5h";
+  return h + "h " + m + "min";
+}
 function positionNowLine(){
   const nl = document.getElementById("nowLine");
   if(!nl) return;
@@ -1927,10 +2063,21 @@ function celebrate(ev, evId){
   w.style.left = (cr.left + cr.width/2)+"px";
   w.style.top  = (cr.top + cr.height/2)+"px";
   layer.appendChild(w);
-  
-  w.classList.add("go");
   w.addEventListener("animationend", ()=> {w.remove(); closePop();}, { once:true });
+
+  const t = document.createElement("div");
+  t.className = "celeb-text";
+  t.innerHTML = `<div class="ct-title">${esc(ev.title)}</div>`
+              + `<div class="ct-sub">${fmtDur(ev.endMin - ev.startMin)} · ${esc(cat(ev.categoryId).name)}</div>`;
+  const GAP_ABOVE_CARD = 30; // distance between text and card's top edge — increase to move text further up
+  t.style.left = (cr.left + cr.width/2) + "px";
+  t.style.top  = (cr.top - GAP_ABOVE_CARD) + "px";
+  layer.appendChild(t);
+  void t.offsetWidth;
+  t.classList.add("go");
+  t.addEventListener("animationend", () => t.remove(), { once: true });
 }
+
 document.addEventListener("pointerdown", e=>{
   if(UI.pop && !e.target.closest("#pop") && !e.target.closest(".evcard")) closePop();
   if(UI.settingsOpen && !e.target.closest("#setPanel") && !e.target.closest("#btnSettings")) toggleSettings(false);
