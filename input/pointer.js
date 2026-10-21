@@ -27,25 +27,29 @@ function vibrate(ms){ if(navigator.vibrate) try{ navigator.vibrate(ms); }catch(_
    #scene viewport, scroll the scene and re-apply the drag at the (stationary)
    pointer so the item keeps extending past the visible cutout. Gated on
    UI.dragLive, so it can NEVER pan unless an edit is actually in progress. */
-const PAN_ZONE = 48, PAN_MAX = 16, PAN_DWELL = 140;
+const PAN_ZONE = 48, PAN_MAX = 16, PAN_DWELL = 140, PAN_BOOST = 4, PAN_BOOST_MS = 3000;   // held longer at the edge, it speeds up to 4× (weeks, not days)
 let _pan = null, _panRAF = 0;
 
-function panSpeed(depth){ const r = clamp(depth/PAN_ZONE, 0, 1); return PAN_MAX * r * r; }
+function panSpeed(depth, heldMs){ const r = clamp(depth/PAN_ZONE, 0, 1); return PAN_MAX * r * r * (1 + (PAN_BOOST-1) * clamp(heldMs/PAN_BOOST_MS, 0, 1)); }
 function panBind(apply, axes, x0, y0){ _pan = { apply, axes, x:x0, y:y0, zoneSince:0 }; $scene.classList.add("panning"); if(!_panRAF) _panRAF = requestAnimationFrame(panFrame); }
 function panFollow(x, y){ if(_pan){ _pan.x = x; _pan.y = y; } }
-function panRelease(){ _pan = null; $scene.classList.remove("panning"); if(_panRAF){ cancelAnimationFrame(_panRAF); _panRAF = 0; } }   // snapping resumes: the view settles on a day
+function panRelease(){
+  const panned = !!_pan;
+  _pan = null; $scene.classList.remove("panning"); if(_panRAF){ cancelAnimationFrame(_panRAF); _panRAF = 0; }   // snapping resumes: the view settles on a day
+  if(panned) scheduleExtend();   // a pan may have reached the end of the loaded days: load more now that the drag is over
+}
 
 function panFrame(){
   if(!_pan){ _panRAF = 0; return; }
   _panRAF = requestAnimationFrame(panFrame);
   if(!UI.dragLive){ _pan.zoneSince = 0; return; }
   const p = _pan, r = $scene.getBoundingClientRect();
-  let dx = 0;
   const dl = PAN_ZONE - (p.x - r.left), dr = PAN_ZONE - (r.right - p.x);
-  if(dl > 0) dx = -panSpeed(dl); else if(dr > 0) dx = panSpeed(dr);
-  if(!dx){ p.zoneSince = 0; return; }
+  if(dl <= 0 && dr <= 0){ p.zoneSince = 0; return; }
   if(!p.zoneSince) p.zoneSince = performance.now();
-  if(performance.now() - p.zoneSince < PAN_DWELL) return;
+  const held = performance.now() - p.zoneSince - PAN_DWELL;
+  if(held < 0) return;
+  const dx = dl > 0 ? -panSpeed(dl, held) : panSpeed(dr, held);
   $scene.scrollLeft += dx;
   p.apply({ clientX: p.x, clientY: p.y });
 }
