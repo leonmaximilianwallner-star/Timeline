@@ -1,0 +1,11 @@
+/* styles/toast.css — toast message. Moved unchanged from index.html lines 511–520 on 21 Oct 2026. */
+/* ---------- toast ---------- */
+#toast{
+  position:fixed; left:50%; bottom:26px; transform:translate(-50%,80px); z-index:70;
+  background:var(--surface3); border:1px solid var(--line); color:var(--text);
+  padding:8px 18px; border-radius:9999px; font-size:12.5px; font-weight:500;
+  transition:transform .3s var(--spring), opacity .2s; opacity:0; pointer-events:none;
+  box-shadow:var(--shadow);
+}
+#toast.show{transform:translate(-50%,0); opacity:1}
+

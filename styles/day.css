@@ -1,0 +1,76 @@
+/* styles/day.css — day view. Moved unchanged from index.html lines 198–272 on 21 Oct 2026. */
+/* ---------- daily view (execution layer) ---------- */
+#dayWrap{position:relative; background:var(--base)}
+/* not a scroller — the execution band inside #scene. #dayHead pins via
+   sticky-top and #hourRail via sticky-left, both against #scene. */
+#dayInner{position:relative}
+#dayHead{
+  position:sticky; top:0; z-index:20; display:flex;
+  background:var(--base); border-bottom:1px solid var(--line);
+  height:52px;
+}
+#dayHeadCorner{
+  position:sticky; left:0; z-index:21; flex:0 0 var(--rail-w); width:var(--rail-w);
+  background:var(--base); border-right:1px solid var(--line-soft);
+}
+.dh{
+  flex:0 0 auto; display:flex; flex-direction:column; align-items:center; justify-content:center;
+}
+.dh .dw{font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--text-faint); font-weight:600}
+.dh .dn{font-size:14px; font-weight:600; color:var(--text-dim); width:26px; height:26px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center}
+.dh.today .dn{background:var(--accent); color:#fff}
+.dh.today .dw{color:var(--accent)}
+.dh.weekend .dw{opacity:.6}
+#dayBody{display:flex; position:relative}
+#hourRail{
+  position:sticky; left:0; z-index:15; flex:0 0 var(--rail-w); width:var(--rail-w);
+  background:var(--base); border-right:1px solid var(--line-soft);
+  font-family:"DM Sans",sans-serif; font-size:10px; color:var(--text-faint);
+  position:sticky;
+}
+.hr-lab{position:absolute; right:4px; transform:translateY(-50%)}
+#dayGrid{
+  position:relative; flex:0 0 auto; touch-action:pan-x pan-y;
+  background-image: var(--gridline);
+  background-size: var(--gridline-size);
+}
+#dayGrid.addmode{cursor:crosshair}
+.dayCol{position:absolute; top:0; bottom:0}
+.dayCol.weekend{background:rgba(127,127,140,.045)}
+.hline{position:absolute; left:0; right:0; height:1px; background:var(--line-soft); pointer-events:none}
+.hline.half{opacity:.4; background:transparent; border-top:1px dashed var(--line-soft)}
+#nowLine{position:absolute; height:0; border-top:2px solid var(--accent); z-index:9; pointer-events:none}
+#nowLine::before{content:""; position:absolute; left:-4px; top:-5px; width:8px; height:8px; border-radius:50%; background:var(--accent)}
+.evcard{
+  position:absolute; border-radius:var(--r-small);
+  color:#ededec; overflow:hidden; cursor:pointer; user-select:none;
+  padding:5px 8px; z-index:5;
+  transition:filter .12s, box-shadow .12s;
+  touch-action:none;
+}
+.evcard:hover{filter:brightness(1.1); z-index:6}
+.evcard.dragging{opacity:.35}
+.evcard .et{font-size:12px; font-weight:600; line-height:1.25; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.evcard .em{font-size:10px; opacity:.8; font-weight:500}
+.evcard .badges{position:absolute; right:6px; bottom:4px; display:flex; gap:4px; align-items:center}
+.evcard .badge{font-size:9px; background:rgba(0,0,0,.28); border-radius:9999px; padding:1px 6px; font-weight:600}
+.evcard .rezH{position:absolute; left:0; right:0; height:7px; cursor:ns-resize}
+.evcard .rezH.t{top:0}.evcard .rezH.b{bottom:0}
+#hoverLine{position:absolute; left:0; right:0; height:0; border-top:1px solid var(--add); z-index:8; pointer-events:none; display:none}
+#hoverLab{position:absolute; z-index:16; right:6px; transform:translateY(-50%); display:none;
+  font-family:"DM Mono",monospace; font-size:10px; color:var(--add); background:var(--base); padding:0 3px}
+.dragPrev{
+  position:absolute; border:1.5px dashed var(--text-dim); border-radius:var(--r-small);
+  background:rgba(127,127,140,.08); z-index:12; pointer-events:none;
+}
+/* floating solid duplicate shown during Ctrl/Cmd + drag — sits above the dashed ghost */
+.floatCopy{
+  position:absolute; pointer-events:none; z-index:13;
+  box-shadow:0 8px 20px rgba(0,0,0,.45);
+  opacity:.96;
+}
+.floatCopy .rezH{display:none}
+.snapLab{position:absolute; z-index:16; right:6px; transform:translateY(-50%);
+  font-family:"DM Mono",monospace; font-size:10px; color:var(--text); background:var(--base); padding:0 3px; pointer-events:none}
+

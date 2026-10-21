@@ -1,0 +1,28 @@
+/* styles/settings.css — settings. Moved unchanged from index.html lines 472–498 on 21 Oct 2026. */
+/* ---------- settings panel ---------- */
+#setPanel{
+  position:fixed; top:0; right:0; bottom:0; z-index:50; width:min(330px,92vw);
+  background:var(--surface); border-left:1px solid var(--line);
+  box-shadow:var(--shadow); padding:18px 18px 30px; overflow:auto;
+  transform:translateX(105%); transition:transform .3s var(--soft);
+  display:flex; flex-direction:column; gap:18px;
+}
+#setPanel.open{transform:translateX(0)}
+#setPanel h2{font-size:18px}
+#setPanel section h3{font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--text-faint); margin-bottom:8px; font-weight:600}
+.catRow{display:flex; align-items:center; gap:8px; margin-bottom:6px; flex-wrap:wrap}
+.catRow input[type="color"]{width:34px; flex:0 0 34px; background:var(--surface2); border:1px solid var(--line); border-radius:50%; height:34px; overflow:hidden}
+.catRow input[type="text"]{flex:1; min-width:120px; background:var(--surface2); border:1px solid var(--line); border-radius:var(--r-small); padding:7px 10px; outline:none}
+.catRow input[type="date"]{flex:0 0 auto; background:var(--surface2); border:1px solid var(--line); border-radius:var(--r-small); padding:6px 8px; color:var(--text); font-size:12px; outline:none}
+.catRow .colDot{width:26px; height:26px; flex:0 0 26px; border-radius:50%; border:1px solid var(--line)}
+.cpicker{display:flex; flex-wrap:wrap; gap:8px; margin:6px 0}
+.cpicker .csw{width:30px; height:30px; border-radius:50%; border:2px solid transparent; cursor:pointer; transition:transform .15s var(--spring), opacity .15s; padding:0}
+.cpicker .csw.on{ border-color:var(--text); transform:scale(1.12) }
+.cpicker .csw.taken{ opacity:.25; cursor:not-allowed; transform:scale(.85) }
+.add-form{ background:var(--surface2); border:1px solid var(--line); border-radius:var(--r-small); padding:10px; margin-top:6px; display:flex; flex-direction:column; gap:8px }
+.add-form input[type="text"], .add-form input[type="date"]{ background:var(--base); border:1px solid var(--line); border-radius:var(--r-small); padding:7px 10px; color:var(--text); outline:none; font-size:13px }
+.add-form .af-dates{ display:flex; gap:8px }
+.add-form .af-dates input{ flex:1; min-width:0 }
+.add-form .af-actions{ display:flex; gap:8px; justify-content:flex-end }
+.note{font-size:11.5px; color:var(--text-faint); line-height:1.5}
+

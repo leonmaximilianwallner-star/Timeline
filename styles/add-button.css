@@ -1,0 +1,14 @@
+/* styles/add-button.css — the + button. Moved unchanged from index.html lines 273–285 on 21 Oct 2026. */
+/* ---------- FAB ---------- */
+#fab{
+  position:fixed; right:22px; bottom:24px; z-index:40;
+  width:54px; height:54px; border-radius:50%;
+  background:var(--add); color:#fff; box-shadow:0 8px 24px rgba(100,152,192,.4);
+  display:flex; align-items:center; justify-content:center;
+  transition:transform .22s var(--spring), background .2s;
+}
+#fab svg{width:22px; height:22px; transition:transform .22s var(--spring)}
+#fab.on{background:var(--accent); box-shadow:0 8px 24px rgba(233,71,58,.4)}
+#fab.on svg{transform:rotate(45deg)}
+#fab:active{transform:scale(.92)}
+

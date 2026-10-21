@@ -1,0 +1,64 @@
+/* styles/base.css — reset, hidden scrollbars, app frame, header. Moved unchanged from index.html lines 38–100 on 21 Oct 2026. */
+*{box-sizing:border-box; margin:0; padding:0}
+html,body{height:100%}
+body{
+  background:var(--base); color:var(--text);
+  font-family:"DM Sans",system-ui,-apple-system,sans-serif;
+  font-size:14px; overflow:hidden;
+  -webkit-tap-highlight-color:transparent;
+}
+::selection{background:rgba(233,71,58,.35)}
+button{font-family:inherit; color:inherit; background:none; border:none; cursor:pointer}
+input,select,textarea{font-family:inherit; font-size:14px; color:var(--text)}
+/* Global: no visible scrollbars anywhere. Scrolling still works on every
+   scrollable element — we just hide the chrome (same strategy that makes
+   the day-grid vertical scroll feel clean). */
+*{ scrollbar-width:none; -ms-overflow-style:none; }
+*::-webkit-scrollbar,
+*::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-corner{
+  width:0 !important; height:0 !important; display:none !important; background:transparent !important;
+}
+
+/* ---------- app frame ---------- */
+#app{display:flex; flex-direction:column; height:100dvh; overflow:clip}
+/* ── single scroll viewport ──────────────────────────────────────────
+   #scene owns BOTH axes natively (compositor-driven). The timeline band and
+   the daily band stack inside it; every pinned element is position:sticky and
+   resolves against #scene. This replaces the former three-scroller stack
+   (#app vertical + #tlWrap horizontal + #dayWrap both) and all the JS scroll
+   routing that kept them in sync on the main thread. */
+#scene{
+  flex:1 1 auto; min-height:0;        /* min-height:0 lets a flex child actually scroll */
+  position:relative; overflow:auto;
+  overscroll-behavior:contain; touch-action:pan-x pan-y;
+  background:var(--base);
+}
+#scene.addmode{touch-action:none}     /* in add-mode every gesture is JS creation, not a pan */
+
+/* ---------- top bar ---------- */
+#topbar{
+  display:flex; align-items:center; gap:10px;
+  padding:10px 16px 8px; flex:0 0 auto;
+  z-index:30; background:var(--base);
+}
+#wordmark{height:16px; display:block; opacity:.95}
+#wordmark .wm{fill:var(--text)}
+#topdate{font-size:12px; color:var(--text-dim); margin-left:4px; white-space:nowrap}
+#topbar .spacer{flex:1}
+.cbtn{
+  width:34px; height:34px; border-radius:50%;
+  display:inline-flex; align-items:center; justify-content:center;
+  background:var(--surface); border:1px solid var(--line);
+  color:var(--text-dim); flex:0 0 auto;
+  transition:background .15s, color .15s, transform .15s var(--spring);
+}
+.cbtn:hover{background:var(--surface2); color:var(--text)}
+.cbtn:active{transform:scale(.92)}
+.cbtn svg{width:16px; height:16px; display:block}
+.cbtn.small{width:26px; height:26px}
+.cbtn.small svg{width:13px;height:13px}
+.cbtn:focus-visible,button:focus-visible{outline:2px solid var(--c-blue); outline-offset:2px}
+.cbtn[disabled]{opacity:.35; pointer-events:none}
+
