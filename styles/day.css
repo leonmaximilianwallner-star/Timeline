@@ -59,7 +59,7 @@
 .event .rezH.t{top:0}.event .rezH.b{bottom:0}
 #hoverLine{position:absolute; left:0; right:0; height:0; border-top:1px solid var(--add); z-index:8; pointer-events:none; display:none}
 #hoverLab{position:absolute; z-index:16; right:6px; transform:translateY(-50%); display:none;
-  font-family:"DM Mono",monospace; font-size:10px; color:var(--add); background:var(--base); padding:0 3px}
+  font-size:10px; font-variant-numeric:tabular-nums; color:var(--add); background:var(--base); padding:0 3px}
 .dragPrev{
   position:absolute; border:1.5px dashed var(--text-dim); border-radius:var(--r-small);
   background:rgba(127,127,140,.08); z-index:12; pointer-events:none;
@@ -72,5 +72,5 @@
 }
 .floatCopy .rezH{display:none}
 .snapLab{position:absolute; z-index:16; right:6px; transform:translateY(-50%);
-  font-family:"DM Mono",monospace; font-size:10px; color:var(--text); background:var(--base); padding:0 3px; pointer-events:none}
+  font-size:10px; font-variant-numeric:tabular-nums; color:var(--text); background:var(--base); padding:0 3px; pointer-events:none}
 

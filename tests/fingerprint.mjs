@@ -89,7 +89,8 @@ async function record(browser, root, screen) {
   // Compare settled states only: no transitions, animations or blinking text cursor (timing noise, not design).
   await page.addInitScript(() => document.addEventListener('DOMContentLoaded', () => {
     const st = document.createElement('style');
-    st.textContent = '*,*::before,*::after{transition:none!important;animation-duration:0s!important;animation-delay:0s!important;caret-color:transparent!important}';
+    // (not animation-delay: zeroing it together with reduced motion turned every screenshot black — found 21 Oct)
+    st.textContent = '*,*::before,*::after{transition:none!important;animation-duration:0s!important;caret-color:transparent!important}';
     document.head.appendChild(st);
   }));
   await page.addInitScript(() => { Math.random = (() => { let s = 1; return () => (s = (s * 16807) % 2147483647) / 2147483647; })(); });
@@ -129,6 +130,14 @@ function layoutOf(page) {
   }).filter(Boolean));
 }
 
+// A screenshot of one flat colour means the test saw nothing; comparing two of them proves nothing.
+function isBlank(png) {
+  const { data } = PNG.sync.read(png);
+  for (let i = 4; i < data.length; i += 4)
+    if (data[i] !== data[0] || data[i + 1] !== data[1] || data[i + 2] !== data[2]) return false;
+  return true;
+}
+
 function pixelDiff(a, b) {
   const A = PNG.sync.read(a), B = PNG.sync.read(b);
   if (A.width !== B.width || A.height !== B.height) return Infinity;
@@ -156,6 +165,11 @@ for (const [screenName, screen] of Object.entries(SCREENS)) {
   }
   for (let i = 0; i < STEPS.length; i++) {
     const a = ref.frames[i], b = now.frames[i];
+    if (isBlank(a.png) || isBlank(b.png)) {
+      failed = true;
+      console.error(`✗ ${screenName} · ${a.name}: screenshot is blank (${isBlank(a.png) ? 'reference' : 'new'} build) — the test saw nothing`);
+      continue;
+    }
     const px = pixelDiff(a.png, b.png);
     // Positions are compared without names, so renaming an ID or class doesn't count as a change.
     const geo = l => l.slice(l.lastIndexOf(' ', l.lastIndexOf(' ') - 1) + 1);

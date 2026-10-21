@@ -54,7 +54,7 @@ function renderSettings(){
         <span class="colDot" style="background:${p.color}"></span>
         <input type="text" value="${esc(p.name)}" data-f="name">
         <input type="date" value="${p.start}" data-f="start">
-        <input type="date" value="${p.end}" data-f="end">
+        <input type="date" value="${lastDay(p.end)}" data-f="end">
         <button class="cbtn small" data-del title="Löschen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button></div>`).join("")}</div>
       <button class="btn" id="sAddProj" style="margin-top:4px">+ Projekt</button>
       ${UI.settingsForm==="proj" ? projForm : ""}</section>
@@ -93,15 +93,16 @@ function renderSettings(){
     }));
     row.querySelector('[data-f="start"]').addEventListener("change", e=>mutate(s=>{
       const p = s.categories.find(c=>c.id===pid); if(!p) return;
-      p.start = e.target.value; if(p.end < p.start) p.end = p.start;
+      p.start = e.target.value; if(p.end <= p.start) p.end = dayAfter(p.start);   // stored end: the day after the last day
     }));
     row.querySelector('[data-f="end"]').addEventListener("change", e=>mutate(s=>{
       const p = s.categories.find(c=>c.id===pid); if(!p) return;
-      p.end = e.target.value; if(p.end < p.start) p.end = p.start;
+      p.end = dayAfter(e.target.value); if(p.end <= p.start) p.end = dayAfter(p.start);
     }));
     row.querySelector("[data-del]").onclick = ()=>{
       mutate(s=>{
         s.categories = s.categories.filter(c=>c.id!==pid);
+        s.milestones = s.milestones.filter(m=>m.categoryId!==pid);   // a project's milestones go with it, as before
         s.phases.forEach(p=>{ if(p.categoryId===pid) p.categoryId=null; });
         s.events.forEach(e2=>{ if(e2.categoryId===pid) e2.categoryId=null; });
       });
@@ -117,6 +118,7 @@ function renderSettings(){
     row.querySelector("[data-del]").onclick = ()=>{
       mutate(s=>{
         s.categories = s.categories.filter(c=>c.id!==cid);
+        s.milestones.forEach(m=>{ if(m.categoryId===cid) m.categoryId=null; });
         s.phases.forEach(p=>{ if(p.categoryId===cid) p.categoryId=null; });
         s.events.forEach(e2=>{ if(e2.categoryId===cid) e2.categoryId=null; });
       });
@@ -140,7 +142,7 @@ function renderSettings(){
         let start = openForm.querySelector("#sNewProjStart").value || todayISO();
         let end   = openForm.querySelector("#sNewProjEnd").value   || start;
         if(end < start) [start, end] = [end, start];
-        mutate(s=>s.categories.push({ id:uid(), name, color:sw.dataset.col, start, end, milestones:[] }));
+        mutate(s=>s.categories.push({ id:uid(), name, color:sw.dataset.col, start, end:dayAfter(end) }));   // end field shows the last day
         UI.settingsForm = null; renderSettings();
       };
     }

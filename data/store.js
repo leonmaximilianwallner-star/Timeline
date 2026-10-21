@@ -40,8 +40,22 @@ function toCurrentShape(d, takeDeviceState){
   }
   delete d.settings;                                       // device state, not plan
   (d.phases||[]).forEach(p=>{ delete p.expanded; delete p._lane; });
-  d.version = 3;
-  const now = new Date().toISOString();                    // records without a stamp get one; others keep theirs
+  const now = new Date().toISOString();
+  if(!(d.version >= 4)){                                    // version 4 (21 Oct): stored names follow the dictionary
+    /* exams and project milestones become one list of milestones */
+    const milestones = (d.exams||[]).map(x=>({ id:x.id, title:x.title, date:x.date, categoryId:null, final:false, note:x.points||"" }));
+    (d.categories||[]).forEach(c=>{
+      (c.milestones||[]).forEach(m=>milestones.push({ id:m.id, title:m.label, date:m.date, categoryId:c.id, final:!!m.end, note:"" }));
+      delete c.milestones;
+      if(c.end) c.end = dayAfter(c.end);                     // ends become exclusive: the day after the last day
+    });
+    (d.phases||[]).forEach(p=>{ if(p.end) p.end = dayAfter(p.end); });
+    d.milestones = milestones;
+    delete d.exams;
+    Object.values(d.deleted||{}).forEach(x=>{ if(x.in === "exams") x.in = "milestones"; });
+    RECORD_LISTS.forEach(list => (d[list]||[]).forEach(r => { r.updatedAt = now; }));   // all reshaped: all changed
+    d.version = 4;
+  }
   RECORD_LISTS.forEach(list => (d[list]||[]).forEach(r => { if(!r.updatedAt) r.updatedAt = now; }));
   d.deleted = d.deleted || {};
   return d;

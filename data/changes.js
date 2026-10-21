@@ -1,7 +1,7 @@
 // data/changes.js — notices what changed, so sync can send only that (ARCHITECTURE.md §5, step 3).
 "use strict";
 /* ════════════════════════════════════════════════════════════
-   Every record (one category, phase, exam or event) carries `updatedAt`:
+   Every record (one category, phase, milestone or event) carries `updatedAt`:
    when it last changed. After each change, stampChanges() compares the data
    before and after, record by record, and stamps what differs.
    A record that disappears is remembered in `deleted` (id → { in, at }),
@@ -9,7 +9,7 @@
    back (undo) is stamped again and leaves `deleted`.
    Pure: no screen, no storage. Tested in tests/changes.test.mjs.
    ════════════════════════════════════════════════════════════ */
-const RECORD_LISTS = ["categories", "phases", "exams", "events"];
+const RECORD_LISTS = ["categories", "phases", "milestones", "events"];
 
 /* a record's content, without its stamp — two records are "the same" when this matches */
 function recordContent(record){

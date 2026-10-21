@@ -8,6 +8,9 @@ function isoDate(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(
 function parseISO(s){ const [y,m,dd]=s.split("-").map(Number); return new Date(y,m-1,dd); }
 function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
 function diffDays(a,b){ return Math.round((parseISO(b)-parseISO(a))/DAY_MS); }
+/* stored ends are exclusive: the day AFTER a span's last day (RULEBOOK A.6). Screens show the last day. */
+function lastDay(endISO){ return isoDate(addDays(parseISO(endISO), -1)); }
+function dayAfter(dateISO){ return isoDate(addDays(parseISO(dateISO), 1)); }
 function todayISO(){ const t=new Date(); return isoDate(t); }
 function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
 function fmtMin(m){ return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0"); }

@@ -5,7 +5,7 @@
 function packLanes(items){
   const lanes = [], laneOf = new Map();
   items.slice().sort((a,b)=> a.start<b.start?-1:1).forEach(it=>{
-    let lane = lanes.find(l => l[l.length-1].end < it.start);
+    let lane = lanes.find(l => l[l.length-1].end <= it.start);   // ends are exclusive: ending the day another starts is no overlap
     if(!lane){ lane = []; lanes.push(lane); }
     lane.push(it); laneOf.set(it, lanes.indexOf(lane));
   });

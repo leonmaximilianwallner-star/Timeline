@@ -15,33 +15,33 @@ const PALETTE    = ["#f4971f","#e9473a","#40838b","#6498c0","#8fc14e","#90909a",
 
 const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-3);
 
+/* starting data, in today's shape (version 4): ends exclusive, milestones in one list */
 function seedData(){
   const t = new Date(); t.setHours(0,0,0,0);
   const d = n => isoDate(addDays(t, n));
   return {
+    version: 4,
     /* unified categories: entries with start&end are projects (get a spine); dateless entries are categories. Grey is reserved for "frei". */
     categories: [
       { id:"seminar", name:"Seminararbeit", color:"#40838b",
-        start:d(-14), end:d(28),
-        milestones:[
-          { id:uid(), date:d(4),  label:"Entwurf fertig", end:false },
-          { id:uid(), date:d(11), label:"Review",         end:false },
-          { id:uid(), date:d(18), label:"Abgabe + Präsentation", end:true },
-        ] },
+        start:d(-14), end:d(29) },
       { id:"work",    name:"Arbeit",     color:"#f4971f" },
-      { id:"exam",    name:"Prüfung",    color:"#e9473a" },
+      { id:"tests",   name:"Prüfung",    color:"#e9473a" },
       { id:"meeting", name:"Meeting",    color:"#6498c0" },
       { id:"done",    name:"Bestätigt",  color:"#8fc14e" },
       { id:"misc",    name:"Sonstiges",  color:"#a060c8" },
       { id:"personal",name:"Persönlich", color:"#d86e9a" },
     ],
     phases: [
-      { id:uid(), title:"Schreiben §2–§3", categoryId:"seminar", start:d(-3), end:d(4),  details:"" },
-      { id:uid(), title:"Folien & Probevortrag", categoryId:"seminar", start:d(5), end:d(17), details:"<b>Fokus:</b> LOS als Brückenvariable sauber erzählen.<ul><li>Evidenzstärke pro Variable kennzeichnen</li><li>max. 12 Folien</li></ul>" },
-      { id:uid(), title:"Viewer: Cache & Kompression", categoryId:"work", start:d(1), end:d(14), details:"" },
+      { id:uid(), title:"Schreiben §2–§3", categoryId:"seminar", start:d(-3), end:d(5),  details:"" },
+      { id:uid(), title:"Folien & Probevortrag", categoryId:"seminar", start:d(5), end:d(18), details:"<b>Fokus:</b> LOS als Brückenvariable sauber erzählen.<ul><li>Evidenzstärke pro Variable kennzeichnen</li><li>max. 12 Folien</li></ul>" },
+      { id:uid(), title:"Viewer: Cache & Kompression", categoryId:"work", start:d(1), end:d(15), details:"" },
     ],
-    exams: [
-      { id:uid(), title:"Präsentation", date:d(18), points:"30 Punkte" },
+    milestones: [
+      { id:uid(), title:"Entwurf fertig",        date:d(4),  categoryId:"seminar", final:false, note:"" },
+      { id:uid(), title:"Review",                date:d(11), categoryId:"seminar", final:false, note:"" },
+      { id:uid(), title:"Abgabe + Präsentation", date:d(18), categoryId:"seminar", final:true,  note:"" },
+      { id:uid(), title:"Präsentation",          date:d(18), categoryId:null,      final:false, note:"30 Punkte" },
     ],
     events: [
       { id:uid(), title:"Tutorium", categoryId:"work", date:d(0), startMin:9*60,  endMin:11*60, repeat:"weekly", reminderMin:null, todos:[] },

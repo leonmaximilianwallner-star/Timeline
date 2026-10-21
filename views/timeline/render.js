@@ -25,7 +25,7 @@ function renderTimeline(){
   S.categories.filter(c=>c.start && c.end).forEach(p=>{
     const row = document.createElement("div"); row.className = "tlRow projRow";
     const x = dayIdx(p.start)*TL_PPD;
-    const w = Math.max((diffDays(p.start, p.end)+1)*TL_PPD, 26);
+    const w = Math.max(diffDays(p.start, p.end)*TL_PPD, 26);
     const spine = document.createElement("div"); spine.className = "projSpine colored";
     spine.style.left = x+"px"; spine.style.width = w+"px"; spine.style.background = p.color;
     row.appendChild(spine);
@@ -33,14 +33,14 @@ function renderTimeline(){
     lw.style.left = x+"px"; lw.style.width = w+"px";
     lw.innerHTML = `<span class="projLabel" data-edit-project="${p.id}" style="color:${p.color}">${esc(p.name)}</span>`;
     row.appendChild(lw);
-    (p.milestones||[]).slice().sort((a,b)=>a.date<b.date?-1:1).forEach(m=>{
+    S.milestones.filter(m=>m.categoryId===p.id).sort((a,b)=>a.date<b.date?-1:1).forEach(m=>{
       const mx = (dayIdx(m.date)+.5)*TL_PPD;
       const dot = document.createElement("div");
-      dot.className = "ms"+(m.end?" end":"");
+      dot.className = "milestone-dot"+(m.final?" final":"");
       dot.style.left = mx+"px";
-      dot.dataset.editMilestone = p.id+"/"+m.id;
-      dot.title = m.label;
-      dot.innerHTML = `<span class="msLabel">${m.end?"★ ":""}${esc(m.label)}</span>`;
+      dot.dataset.editMilestone = m.id;
+      dot.title = m.title;
+      dot.innerHTML = `<span class="milestone-label">${m.final?"★ ":""}${esc(m.title)}</span>`;
       row.appendChild(dot);
     });
     frag.appendChild(row);
@@ -51,14 +51,15 @@ function renderTimeline(){
   const datedIds = new Set(S.categories.filter(c=>c.start && c.end).map(c=>c.id));
   appendPhaseLanes(frag, S.phases.filter(ph=>!ph.categoryId || !datedIds.has(ph.categoryId)), W);
 
-  /* exam chips */
-  const xr = document.createElement("div"); xr.className="tlRow"; xr.id="examRow";
-  S.exams.forEach(x=>{
+  /* milestone chips: every milestone not on a project's spine.
+     Colour: its category's; without one, red as before, until colour/category is decided (RULEBOOK B.8). */
+  const xr = document.createElement("div"); xr.className="tlRow"; xr.id="milestoneRow";
+  S.milestones.filter(m=>!datedIds.has(m.categoryId)).forEach(m=>{
     const el = document.createElement("div");
-    el.className = "exam"; el.style.left = (dayIdx(x.date)+.5)*TL_PPD+"px";
-    el.style.background = "var(--c-red)";
-    el.dataset.editExam = x.id;
-    el.innerHTML = `<span class="xt">${esc(x.title)}</span><span class="xp">${esc(x.points||"")}</span>`;
+    el.className = "milestone-chip"; el.style.left = (dayIdx(m.date)+.5)*TL_PPD+"px";
+    el.style.background = m.categoryId ? cat(m.categoryId).color : "var(--c-red)";
+    el.dataset.editMilestone = m.id;
+    el.innerHTML = `<span class="chip-title">${esc(m.title)}</span><span class="chip-note">${esc(m.note||"")}</span>`;
     xr.appendChild(el);
   });
   frag.appendChild(xr);
@@ -88,7 +89,7 @@ function appendPhaseLanes(frag, phases, W){
     frag.appendChild(r);
 
     byLane[l].forEach(ph => {
-      const x = dayIdx(ph.start)*TL_PPD, w = Math.max((diffDays(ph.start, ph.end)+1)*TL_PPD, 26);
+      const x = dayIdx(ph.start)*TL_PPD, w = Math.max(diffDays(ph.start, ph.end)*TL_PPD, 26);
       const el = document.createElement("div");
       el.className="phase"; el.style.left=x+"px"; el.style.width=w+"px";
       el.style.background = cat(ph.categoryId).color;
@@ -104,7 +105,7 @@ function appendPhaseLanes(frag, phases, W){
        after the lane row so the dropdown always sits under its phase */
     byLane[l].forEach(ph => {
       if(!device.openPhases.includes(ph.id)) return;
-      const x = dayIdx(ph.start)*TL_PPD, w = Math.max((diffDays(ph.start, ph.end)+1)*TL_PPD, 26);
+      const x = dayIdx(ph.start)*TL_PPD, w = Math.max(diffDays(ph.start, ph.end)*TL_PPD, 26);
       const br = document.createElement("div"); br.className="tlRow dropdown-row";
       const anchor = document.createElement("div"); anchor.className="dropdown-anchor";
       anchor.style.marginLeft = x+"px"; anchor.style.width = Math.max(w, 340)+"px";

@@ -42,7 +42,6 @@ function openEditor(ctx){
   closeEditor();
   UI.editor = ctx;
   const ed = ctx.edit;
-  if(ctx.type==="point") ctx.pointKind = ctx.pointKind || "exam";
   if(ctx.type==="event"){
     /* the editor works on its own copy of the todos: saving hands it over, cancelling drops it */
     ctx.todos = ed ? JSON.parse(JSON.stringify(ed.todos)) : getCarryover(ctx.initial.categoryId, ctx.initial.date, null);
@@ -95,12 +94,7 @@ function renderEditorBody(){
       </div></div>`;
   };
 
-  if(ctx.type==="point"){
-    h += `<div class="seg" id="pointSeg">
-      <button data-k="exam" class="${ctx.pointKind==="exam"?"on":""}">Prüfung</button>
-      <button data-k="milestone" class="${ctx.pointKind==="milestone"?"on":""}" ${S.categories.some(c=>c.start&&c.end)?"":"disabled"}>Meilenstein</button></div>`;
-  }
-  const kind = ctx.type==="point" ? ctx.pointKind : ctx.type;
+  const kind = ctx.type;
 
   if(kind==="event"){
     h += titleField(ed ? "Termin bearbeiten" : "Neuer Termin", v.title);
@@ -120,7 +114,7 @@ function renderEditorBody(){
   else if(kind==="phase"){
     h += titleField(ed ? "Phase bearbeiten" : "Neue Phase", v.title);
     h += categoryPicker(v.categoryId);
-    h += `<div class="frow">${dateField("fStart2","Beginn",v.start)}${dateField("fEnd2","Ende",v.end)}</div>`;
+    h += `<div class="frow">${dateField("fStart2","Beginn",v.start)}${dateField("fEnd2","Ende",v.end && lastDay(v.end))}</div>`;
     h += `<div class="field desc-field"><label>Beschreibung</label>
       <div class="rte-tools">
         <button class="cbtn small" data-cmd="bold" title="Fett"><b style="font-size:12px">B</b></button>
@@ -129,19 +123,13 @@ function renderEditorBody(){
       </div>
       <div class="rte" id="fDetails" contenteditable="true">${sanitize(v.details||"")}</div></div>`;
   }
-  else if(kind==="exam"){
-    h += titleField(ed ? "Prüfung bearbeiten" : "Neue Prüfung", v.title);
-    h += `<div class="frow">${dateField("fDate","Datum",v.date)}
-      <div class="field"><label>Punkte / Notiz</label><input id="fPoints" value="${esc(v.points||"")}" placeholder="z. B. 30 Punkte"></div></div>`;
-  }
   else if(kind==="milestone"){
-    const projs = S.categories.filter(c=>c.start && c.end);
-    h += titleField(ed ? "Meilenstein bearbeiten" : "Neuer Meilenstein", v.label);
-    h += `<div class="field"><label>Projekt</label><select id="fProj" ${ed?"disabled":""}>
-      ${projs.map(p=>`<option value="${p.id}" ${(ctx.project&&ctx.project.id===p.id)?"selected":""}>${esc(p.name)}</option>`).join("")}</select></div>`;
+    h += titleField(ed ? "Meilenstein bearbeiten" : "Neuer Meilenstein", v.title);
+    h += categoryPicker(v.categoryId);
     h += `<div class="frow">${dateField("fDate","Datum",v.date)}
-      <div class="field"><label>&nbsp;</label><label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:13px;color:var(--text);letter-spacing:0;cursor:pointer">
-      <input id="fEndFlag" type="checkbox" ${v.end?"checked":""} style="width:auto"> Abschluss ★</label></div></div>`;
+      <div class="field"><label>Notiz</label><input id="fNote" value="${esc(v.note||"")}" placeholder="z. B. 30 Punkte"></div></div>`;
+    h += `<div class="field"><label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:13px;color:var(--text);letter-spacing:0;cursor:pointer">
+      <input id="fFinal" type="checkbox" ${v.final?"checked":""} style="width:auto"> Abschluss ★ <span class="note">(auf der Projektlinie)</span></label></div>`;
   }
   else if(kind==="project"){
     h += titleField(ed ? "Projekt bearbeiten" : "Neues Projekt", v.name);
@@ -150,8 +138,6 @@ function renderEditorBody(){
   B.innerHTML = h;
 
   /* wiring */
-  const seg = B.querySelector("#pointSeg");
-  if(seg) seg.querySelectorAll("button").forEach(b=>b.onclick=()=>{ ctx.pointKind = b.dataset.k; renderEditorBody(); });
   B.querySelectorAll(".rte-tools .cbtn").forEach(b=>b.onclick=e=>{
     e.preventDefault(); document.getElementById("fDetails").focus();
     document.execCommand(b.dataset.cmd, false, null);            // deprecated, fine for this scope
@@ -202,12 +188,11 @@ function renderEditorBody(){
   const del = document.getElementById("editorDelete");
   del.style.display = ed ? "" : "none";
   del.onclick = ()=>{
-    const k = ctx.type==="point" ? ctx.pointKind : ctx.type;
+    const k = ctx.type;
     mutate(s=>{
       if(k==="event") s.events = s.events.filter(x=>x.id!==ed.id);
       else if(k==="phase") s.phases = s.phases.filter(x=>x.id!==ed.id);
-      else if(k==="exam") s.exams = s.exams.filter(x=>x.id!==ed.id);
-      else if(k==="milestone"){ const p=s.categories.find(c=>c.id===ctx.project.id); if(p && p.milestones) p.milestones=p.milestones.filter(m=>m.id!==ed.id); }
+      else if(k==="milestone") s.milestones = s.milestones.filter(x=>x.id!==ed.id);
     });
     toast(k==="event" && ed.repeat && ed.repeat!=="none" ? "Serie gelöscht" : "Gelöscht");
     closeEditor();
@@ -225,7 +210,7 @@ function renderEditorBody(){
 
 function saveEditor(){
   const ctx = UI.editor, ed = ctx.edit, B = document.getElementById("editorBody");
-  const kind = ctx.type==="point" ? ctx.pointKind : ctx.type;
+  const kind = ctx.type;
   const val = id => { const el=document.getElementById(id); return el?el.value:undefined; };
   const mins = id => { const t=val(id); if(!t) return null; const [h,m]=t.split(":").map(Number); return h*60+m; };
 
@@ -248,27 +233,17 @@ function saveEditor(){
     let a = val("fStart2")||todayISO(), b = val("fEnd2")||a;
     if(b<a) [a,b]=[b,a];
     const data = { title:(val("fTitle")||"").trim()||"Phase",
-      categoryId: val("fProj")||null, start:a, end:b,
+      categoryId: val("fProj")||null, start:a, end:dayAfter(b),           // the field shows the last day; stored end is the day after
       details: sanitize(B.querySelector("#fDetails").innerHTML) };
     mutate(st=>{ if(ed) Object.assign(st.phases.find(x=>x.id===ed.id), data);
                  else st.phases.push({ id:uid(), ...data }); });
     if(UI.addMode) setAddMode(false);
   }
-  else if(kind==="exam"){
-    const data = { title:(val("fTitle")||"").trim()||"Prüfung", date:val("fDate")||todayISO(), points:(val("fPoints")||"").trim() };
-    mutate(st=>{ if(ed) Object.assign(st.exams.find(x=>x.id===ed.id), data);
-                 else st.exams.push({ id:uid(), ...data }); });
-    if(UI.addMode) setAddMode(false);
-  }
   else if(kind==="milestone"){
-    const data = { label:(val("fTitle")||"").trim()||"Meilenstein", date:val("fDate")||todayISO(), end:B.querySelector("#fEndFlag").checked };
-    mutate(st=>{
-      const p = st.categories.find(c=>c.id===(ed?ctx.project.id:val("fProj")) && c.start && c.end);
-      if(!p) return;
-      if(!p.milestones) p.milestones = [];
-      if(ed) Object.assign(p.milestones.find(m=>m.id===ed.id), data);
-      else p.milestones.push({ id:uid(), ...data });
-    });
+    const data = { title:(val("fTitle")||"").trim()||"Meilenstein", date:val("fDate")||todayISO(),
+      categoryId: val("fProj")||null, final: B.querySelector("#fFinal").checked, note:(val("fNote")||"").trim() };
+    mutate(st=>{ if(ed) Object.assign(st.milestones.find(x=>x.id===ed.id), data);
+                 else st.milestones.push({ id:uid(), ...data }); });
     if(UI.addMode) setAddMode(false);
   }
   /* kind==="project" handled in settings panel, not here */
