@@ -1,114 +1,26 @@
 {
-  "app.js": {
-    "modal": 3,
-    "popover": 1,
-    "pop": 2
-  },
   "core/model.js": {
     "exam": 1,
     "prüfung": 1,
     "details": 3,
     "expanded": 3
   },
-  "data/store.js": {
-    "modal": 2,
-    "draft": 1,
-    "pop": 3,
-    "popover": 1
-  },
-  "index.html": {
-    "topbar": 1
-  },
-  "input/day-drag.js": {
-    "card": 18,
-    "evcard": 1,
-    "modal": 3,
-    "draft": 2,
-    "track": 1,
-    "pop": 1
-  },
-  "input/pointer.js": {
-    "track": 1
-  },
   "input/timeline-drag.js": {
-    "bar": 1,
-    "track": 2,
     "exam": 4,
-    "modal": 7,
-    "draft": 3,
     "expanded": 2
   },
-  "styles/base.css": {
-    "track": 1,
-    "bar": 1,
-    "topbar": 2
-  },
-  "styles/day.css": {
-    "evcard": 10
-  },
-  "styles/device.css": {
-    "bubble": 1
-  },
-  "styles/editor.css": {
-    "modal": 1,
-    "pop": 2,
-    "mcard": 1,
-    "card": 1
-  },
-  "styles/time-budget.css": {
-    "mcard": 1
-  },
   "styles/timeline.css": {
-    "bubble": 9,
-    "bar": 1,
-    "card": 1,
-    "pop": 1,
     "exam": 6
   },
-  "styles/todos.css": {
-    "popover": 1,
-    "card": 3,
-    "pop": 11,
-    "evcard": 1
-  },
-  "styles/tokens.css": {
-    "card": 1
-  },
   "ui/editor.js": {
-    "modal": 27,
-    "draft": 13,
     "exam": 6,
-    "mcard": 1,
-    "track": 4,
     "prüfung": 4,
     "details": 5,
     "expanded": 1
   },
-  "ui/time-budget.js": {
-    "mcard": 1
-  },
-  "ui/todo-panel.js": {
-    "popover": 2,
-    "card": 10,
-    "pop": 40,
-    "modal": 1,
-    "evcard": 1
-  },
-  "views/day/render.js": {
-    "bar": 1,
-    "cluster": 13,
-    "card": 2,
-    "evcard": 1
-  },
   "views/timeline/render.js": {
     "exam": 4,
-    "bubble": 5,
     "details": 2,
-    "expanded": 3,
-    "popup": 1,
-    "bar": 3
-  },
-  "views/viewport.js": {
-    "track": 1
+    "expanded": 2
   }
 }

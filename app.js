@@ -1,15 +1,15 @@
-// app.js — keyboard shortcuts and start-up. Moved unchanged from index.html lines 2337–2374 on 21 Oct 2026.
+// app.js — keyboard shortcuts and start-up. Moved from index.html lines 2337–2374 on 21 Oct 2026; names updated to the dictionary the same day.
 "use strict";
 /* ════════════════════════════════════════════════════════════
    keyboard + escape hatches — the "never stuck" principle
-   layer order: budget > modal > popover > settings > add-mode
+   layer order: time budget > editor > todo panel > settings > add mode
    ════════════════════════════════════════════════════════════ */
 document.addEventListener("keydown", e=>{
   const typing = /INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName) || document.activeElement?.isContentEditable;
   if(e.key==="Escape"){
     if(UI.budgetOpen) closeBudget();
-    else if(UI.modal) closeModal();
-    else if(UI.pop) closePop();
+    else if(UI.editor) closeEditor();
+    else if(UI.todoPanel) closeTodoPanel();
     else if(UI.settingsOpen) toggleSettings(false);
     else if(UI.addMode) setAddMode(false);
     return;

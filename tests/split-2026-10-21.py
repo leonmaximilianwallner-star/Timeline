@@ -1,6 +1,7 @@
 """The split of 21 Oct 2026 (ARCHITECTURE.md §11, step 2): cuts index.html into files, changing no code.
 
 Kept in the repo as the record of exactly how each file came out of the old index.html.
+The proof applies to the split commit itself; later changes (starting with the rename pass) change the files on purpose.
 Run once, from the repo root, on the old single-file index.html:  python3 tests/split-2026-10-21.py
 Then prove the result:                                            python3 tests/split-2026-10-21.py --prove <old index.html>
 

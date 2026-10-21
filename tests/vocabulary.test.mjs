@@ -12,7 +12,7 @@ const RULEBOOK   = join(ROOT, 'docs/RULEBOOK.md');
 const ALLOW_FILE = join(ROOT, 'tests/vocabulary.allow.json');
 const SCAN_EXT   = new Set(['.js', '.mjs', '.html', '.css']);
 const SKIP_DIRS  = new Set(['.git', 'docs', 'tests', 'node_modules']);
-const EXEMPT     = new Set(['zoomlevel', 'scrollbar', 'scrollbars']);   // whole words the rulebook allows (§A.11)
+const EXEMPT     = new Set(['zoomlevel', 'scrollbar', 'scrollbars', 'webkit-scrollbar-track']);     // whole words the rulebook allows (§A.11)
 
 // 1. The banned words, read from the rulebook's never-say block.
 function bannedWords() {
@@ -30,6 +30,7 @@ function bannedWords() {
 // 2. Every word in a file. Identifiers are split, so `examRow` and `exam-chip` yield `exam`.
 function words(text) {
   const out = [];
+  text = text.replace(/\.pop\(/g, '.(');   // JavaScript's own list method, not the banned word (RULEBOOK A.11)
   for (const tok of text.match(/[A-Za-zÄÖÜäöüß_][A-Za-zÄÖÜäöüß0-9_-]*/g) || []) {
     const whole = tok.toLowerCase();
     if (EXEMPT.has(whole)) continue;

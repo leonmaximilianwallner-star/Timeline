@@ -1,6 +1,6 @@
-/* styles/time-budget.css — time budget. Moved unchanged from index.html lines 499–510 on 21 Oct 2026. */
-/* ---------- budget overlay ---------- */
-#budgetPage .mcard{width:min(480px,100%)}
+/* styles/time-budget.css — time budget. Moved from index.html lines 499–510 on 21 Oct 2026; names updated to the dictionary the same day. */
+/* ---------- time budget ---------- */
+#budgetPage .overlay-window{width:min(480px,100%)}
 .donutWrap{display:flex; gap:20px; align-items:center; padding:6px 0}
 .donutWrap svg{flex:0 0 auto}
 .legend{flex:1; display:flex; flex-direction:column; gap:6px; min-width:0}

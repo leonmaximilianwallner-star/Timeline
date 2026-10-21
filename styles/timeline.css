@@ -1,9 +1,9 @@
-/* styles/timeline.css — timeline view. Moved unchanged from index.html lines 101–197 on 21 Oct 2026. */
+/* styles/timeline.css — timeline view. Moved from index.html lines 101–197 on 21 Oct 2026; names updated to the dictionary the same day. */
 /* ---------- timeline (planning layer) ---------- */
 #tlWrap{
   position:relative; background:var(--base);
   /* not a scroller — the planning band inside #scene. sticky-left labels
-     (month / project / phase / bubble) resolve against #scene. */
+     (month / project / phase / dropdown) resolve against #scene. */
 }
 #tlInner{position:relative; min-width:100%}
 #tlGrid{
@@ -47,7 +47,7 @@
   touch-action:none;   /* taps/resize here are JS — never a compositor pan-steal */
   /* clip-path clips like overflow:hidden but does NOT create a scroll context,
      which is what lets position:sticky on .ph-stick inside use #scene as its
-     scroll ancestor. overflow:hidden would scope sticky to the bar (which
+     scroll ancestor. overflow:hidden would scope sticky to the pill (which
      doesn't scroll) and break it. */
   clip-path: inset(0 round 9999px);
 }
@@ -66,21 +66,21 @@
 .phase .ph-label{ font-size:12px; font-weight:600; }
 .phase .ph-handle{position:absolute; top:0; height:100%; width:10px; cursor:ew-resize}
 .phase .ph-handle.l{left:0}.phase .ph-handle.r{right:0}
-.bubbleRow{padding:2px 0 8px}
-.bubbleAnchor{display:flex}
-.bubble{
+.dropdown-row{padding:2px 0 8px}
+.dropdown-anchor{display:flex}
+.dropdown{
   position:sticky; left:var(--sticky-left);
   border-top:2px solid var(--line);
-  background:var(--surface); border:1px solid var(--line); border-radius:var(--r-card);
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r-panel);
   border-top-left-radius:4px;
   padding:10px 14px; max-width:380px; min-width:220px;
   font-size:12.5px; line-height:1.5; color:var(--text-dim);
   box-shadow:0 6px 20px rgba(0,0,0,.25);
-  animation:pop .22s var(--spring);
+  animation:appear .22s var(--spring);
 }
-.bubble b,.bubble strong{color:var(--text)}
-.bubble ul,.bubble ol{padding-left:18px; margin:4px 0}
-.bubble:empty::after{content:"Keine Beschreibung"; color:var(--text-faint); font-style:italic}
+.dropdown b,.dropdown strong{color:var(--text)}
+.dropdown ul,.dropdown ol{padding-left:18px; margin:4px 0}
+.dropdown:empty::after{content:"Keine Beschreibung"; color:var(--text-faint); font-style:italic}
 #examRow{height:52px}
 .exam{
   position:absolute; top:6px; transform:translateX(-50%);

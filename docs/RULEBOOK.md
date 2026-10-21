@@ -98,7 +98,7 @@ One concrete thing to get done inside a block, and the unit you schedule: dragge
 **Event** · *Termin* · `event` · `events` row
 ![Event](dictionary/event.svg)
 A slot of time on one day, with a start and end time, a category and its own todos. Drawn as a squircle in the day view. It may point at a step; without one it's an ordinary calendar entry (dentist, lunch). **Not:** a milestone (no hours) or a block. **Never say:** session, daily item, appointment, card, termin (in code).
-*Today in the app:* `S.events[]`, drawn by `eventCard` with class `.evcard`. The event editor still has a "point" type covering exams and milestones.
+*Today in the app:* `S.events[]`, drawn by `renderEvent` with class `.event`. The event editor still has a "point" type covering exams and milestones.
 
 **Todo** · *Todo* · `todo` · an entry in an event's `todos`
 The smallest action. Lives only in an event. Has a state (A.7). **Not:** a step. **Never say:** subtask, task, check item.
@@ -221,16 +221,17 @@ A part is always named **thing + part**. These are all the part words:
 | **count** | done/total, as "3/5" | phase count |
 | **fill** | the coloured share of a pill or ring that shows progress | phase fill |
 | **overlap** | events in one day column whose times overlap, drawn side by side | |
+| **window** | a squircle shown centred over a dimmed backdrop (the **overlay**); code: `.overlay-window` | the editor, the time budget |
 
 ![Editors and panels](dictionary/editor.svg)
 
 **Editor** · *(thing) bearbeiten* · `editor`
 All editors share one shell (**Max**, 2 Oct): a header in the thing's colour (overline, name, delete · close · done) over a raised body. Each is called after its thing: the event editor is `openEventEditor(event)`; the shared shell is `editor`. **Never say:** modal, dialog, draft, popup, sheet.
-*Today in the app:* `openModal`, `UI.modal`, `ctx.draft`, `.mcard`.
+The editor is a window (see Parts). Code: `openEditor(ctx)`, `UI.editor`, IDs `#editor…`. *(Renamed from `openModal`/`mcard` on 21 Oct.)*
 
 **Todo panel** · — · `todoPanel`
 The small panel on an event for ticking and adding todos. **Never say:** popover, pop, popup.
-*Today in the app:* `openTodoPop`, `UI.pop`.
+Code: `openTodoPanel`, `UI.todoPanel`, ID `#todoPanel`, classes `.panel-…`. *(Renamed from `openTodoPop`/`#pop` on 21 Oct.)*
 
 **Settings** · *Einstellungen* · `settings` — the drawer for colours, projects, data, display and reminders. Changes apply at once.
 
@@ -244,6 +245,7 @@ The small panel on an event for ticking and adding todos. **Never say:** popover
 
 **Item** · `item` — the one stored record for anything on the canvas or timeline view. Its `kind` is `idea`, `phase`, `milestone`, `table` or `pile`. **Never say:** card, node, element (for an item).
 **Kind** · `kind` — what an item is. **Never say:** type (`type` is for commands and links).
+**Initial values** · `initial` — the starting values of a thing being created in the editor; the counterpart of `edit`, the existing thing being edited. **Never say:** draft.
 **Body** · `body` — the text of an idea, block or phase: steps (`[ ]`), headings (`#`), points (`-`), plain lines. Written only through `setBody`. **Never say:** details, description, content.
 **Store** · `store` — the one holder of state (ARCHITECTURE §4).
 **Command** · `command` — a named change, sent to `store.dispatch`; named verb + thing (`movePhase`).
@@ -267,7 +269,7 @@ One verb per action, everywhere:
 
 ## A.11 Never say — the list the test reads
 
-The vocabulary test (`tests/vocabulary.test.mjs`) reads the block below: `banned word → the word to use`. It splits camelCase and kebab-case, so `examRow` and `.ev-card` both match. Exempt whole words: `scrollbar`, `zoomLevel`.
+The vocabulary test (`tests/vocabulary.test.mjs`) reads the block below: `banned word → the word to use`. It splits camelCase and kebab-case, so `examRow` and `.ev-card` both match. JavaScript's `.pop()` is never counted. Exempt whole words: `scrollbar`, `zoomLevel`.
 
 ```never-say
 session → event
@@ -284,7 +286,7 @@ kids → blocks
 cluster → group (canvas) / overlap (day view)
 album → pile
 connector → link
-card → idea / event / squircle
+card → idea / event / panel / overlay-window
 evcard → event
 mcard → editor
 bar → pill (the shape) / header (a strip)
@@ -292,10 +294,10 @@ topbar → header
 balken → pill
 fläche → idee
 popover → todoPanel
-pop → todoPanel
+pop → todoPanel (JavaScript's own list method .pop() is exempt)
 popup → editor / panel
 modal → editor
-draft → editor
+draft → editor (the window) / initial (a new thing's starting values)
 details → body / dropdown
 bubble → dropdown
 expanded → open

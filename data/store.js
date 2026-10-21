@@ -1,4 +1,4 @@
-// data/store.js — state, loading, saving, undo/redo, category lookup. Moved unchanged from index.html lines 749–836 on 21 Oct 2026.
+// data/store.js — state, loading, saving, undo/redo, category lookup. Moved from index.html lines 749–836 on 21 Oct 2026; names updated to the dictionary the same day.
 "use strict";
 /* ════════════════════════════════════════════════════════════
    state — mutable state object, persist(), undo stack
@@ -8,8 +8,8 @@ const UI = {
   addMode:false, range:{ start:null, days:0 },
   undo:[], redo:[],
   settingsOpen:false, settingsForm:null, budgetOpen:false, budgetDays:7,
-  modal:null,           // current draft modal context
-  pop:null,             // todo popover context
+  editor:null,          // the open editor's context
+  todoPanel:null,       // the open todo panel's context
   dragLive:false,
 };
 
@@ -20,7 +20,7 @@ function loadFromStorage(){
   }catch(e){ console.warn("load failed", e); }
   return seedData();
 }
-/* migrate older shape (separate categories+projects, projectId on phases) to unified tracks */
+/* migrate older shape (separate categories+projects, projectId on phases) to unified categories (with a span: projects) */
 function migrateData(d){
   if(Array.isArray(d.projects) && d.projects.length){
     d.projects.forEach(p=>{
