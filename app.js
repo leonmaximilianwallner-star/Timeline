@@ -38,3 +38,4 @@ renderAll();
 updateUndoButtons();
 scrollToToday(false);          // auto-landing: today, around the current hour
 checkReminders();
+syncNow();                     // catch up with other devices (does nothing until signed in)

@@ -26,3 +26,6 @@
 .add-form .af-actions{ display:flex; gap:8px; justify-content:flex-end }
 .note{font-size:11.5px; color:var(--text-faint); line-height:1.5}
 
+/* sync: sign-in fields, same look as the category rows */
+.sync-login input{background:var(--surface2); border:1px solid var(--line); border-radius:var(--r-small); padding:7px 10px; color:var(--text); outline:none}
+.sync-login input:focus{border-color:var(--c-blue)}

@@ -255,6 +255,8 @@ Code: `openTodoPanel`, `UI.todoPanel`, ID `#todoPanel`, classes `.panel-…`. *(
 **Record** · `record` — one stored thing that syncs on its own: a category, a phase, a milestone or an event.
 **Stamp** · `updatedAt` — when a record last changed; set only by the gate.
 **Deleted** · `deleted` — records removed from the plan: id → the list it was in and when. Keeps a deleted record from coming back.
+**Login** · *Anmeldung* · `login` — who is signed in on this device: email, and the tokens that let it sync. Lives on the device. **Never say:** session (that word is banned: it was once used for events).
+**Sync** · *Sync* · `sync` — bringing this device and the server in step: pull, merge, push (ARCHITECTURE §5). A record's server copy is a **row**.
 **Device state** · `device` — what belongs to this screen, not the plan: theme, number of days, open dropdowns. Saved per device, never synced, not undoable.
 **The gate** · `mutate(fn)` — the one way to change the plan; stamps what changed (ARCHITECTURE §4).
 **Progress** · `progress` — a number from 0 to 1, shown as a fill or a count.

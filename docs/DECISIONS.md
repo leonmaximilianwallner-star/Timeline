@@ -64,3 +64,13 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 ## 21 Oct 2026 — day snapping (pull request #6)
 
 - **Days snap by the browser's own scroll snapping**, not a timer. Before, a timer started a smooth scroll after scrolling stopped; moving again during that scroll made the two fight (the stutter Max felt). Native snapping settles momentum and gives way the moment a new gesture starts. Paused while a drag auto-pans at the screen edge; the view settles on a day at the drop. *Claude (cause and fix); Max (to judge the feel on the phone, revert on its own if wrong)*
+
+## 21 Oct 2026 — step 4, Supabase sync (pull request #8)
+
+- **One `records` table, the record as JSON**, not a table per kind: new or renamed fields never need a database change. *Claude*
+- **The server decides two things**: when a row arrived (its own clock, so no device's clock can make it miss something) and that an older version never overwrites a newer one. *Claude*
+- **Login: email and password, one account made in the dashboard, sign-ups off.** No email links (they open the browser, not the installed app). *Max (set up); Claude (method)*
+- **First device uploads; later devices take the server's plan**, keeping their own as a backup on the device. Max signs in on the phone first. *Claude*
+- **Changes from another device clear undo.** Undoing across them would bring back what the other device changed. *Claude*
+- **Tested against a simulated Supabase** (two devices, offline, conflicts, deletions, expired login); this environment can't reach supabase.co, so the first real sync is on Max's phone. *Claude*
+- **Found while looking into the missing app icon:** sync didn't stop when the token leaked. The V2 rewrite of 12 June dropped the old Gist sync, along with the manifest link (pull request #7). *Claude*
