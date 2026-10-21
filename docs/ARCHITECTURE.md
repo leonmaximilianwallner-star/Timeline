@@ -237,7 +237,7 @@ v2_7 has no steps: they come from the canvas's blocks. The question of where the
    - If something is wrong, the pull request's **Revert** button undoes it in one click.
    - **Revisit** when the app holds data Max relies on: then a change should be tried somewhere other than the live app first (preview links or a second site), with its own storage.
 2. **Tests, run by Claude Code before every merge.**
-   - **Fingerprints** (`tests/fingerprint.mjs`, built 21 Oct): the old and the new build are opened side by side at a fixed date, on a phone and a desktop screen, and go through the same 16 steps (scrolling, opening the editors, the todo panel, settings, the time budget, ticking, undo). Every step is compared pixel by pixel, and every element's position. This is how "nothing visible changed" gets proven.
+   - **Fingerprints** (`tests/fingerprint.mjs`, built 21 Oct): the old and the new build are opened side by side at a fixed date, on a phone and a desktop screen, and go through the same 16 steps (scrolling, opening the editors, the todo panel, settings, the time budget, ticking, undo). Every step is compared pixel by pixel, and every element's position. This is how "nothing visible changed" gets proven. *A screenshot of one flat colour fails the test:* from the split until 21 Oct the screenshots were silently black (a freeze rule clashing with reduced motion), so only positions were compared. Rechecked afterwards: the only visible change in that period was the undo button's state (§4).
    - `core/` rules: dates, carry-over, repeats, progress, migrations.
    - Sync: two simulated devices, offline edits, deletes. Nothing may be lost or come back.
    - Vocabulary (§9).
@@ -266,7 +266,7 @@ v2_7 has no steps: they come from the canvas's blocks. The question of where the
    *Original plan:* v2_7 moves into the file layout (§12): core, data, input, views/timeline, views/day, styles. Fingerprint tests prove it looks and behaves exactly as before. Old names may survive this step (allow-listed).
    **Rename pass. Built 21 Oct:** the names that survive the restructure now follow the dictionary (old words 276 → 45); the rest go with step 3. See `DECISIONS.md`.
 3. **Data layer. Built 21 Oct** (§4), simpler than planned: one gate stamps every change; deletions are remembered; device state is separate; the editor's cancel really cancels. The plan is now stored under `timeline.data.v3`; the V2 data is copied over on first start and stays untouched under its old key.
-   **3b. Stored names** *(next, separate)*: exclusive end dates, exams → milestones, plain-line descriptions instead of HTML, categories keyed by colour. Each changes behaviour, so each gets its own check. Best done before Supabase, so the server never sees the old names.
+   **3b. Stored names. Built 21 Oct:** exams and project milestones are one `milestones` list (one editor); end dates are stored exclusive (`lastDay`/`dayAfter` in `core/dates.js`); the mono font is gone. Data version 4; older data converts on load. *Deferred on purpose:* phase descriptions as plain lines (with the canvas), categories keyed by colour (open question, RULEBOOK B.8).
 4. **Supabase.** Login, tables with Row Level Security, sync by stamps, export/import. Two devices in sync again.
 5. **Notifications.** Reminders from a scheduled Supabase function by web push; a native wrapper only if Android web push proves insufficient.
 6. **Then features, one at a time**: the viewport prototype → the canvas → blocks and steps → step → event drag → the single-day view → agents.

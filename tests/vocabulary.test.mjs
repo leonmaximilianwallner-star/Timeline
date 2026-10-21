@@ -39,7 +39,8 @@ function words(text) {
       .split(/[\s_-]+/)
       .map(p => p.toLowerCase())
       .filter(Boolean);
-    out.push(...new Set([whole.replace(/[_-]/g, ''), ...parts]));
+    const all = [whole.replace(/[_-]/g, ''), ...parts];
+    out.push(...new Set([...all, ...all.filter(w => w.length > 3 && w.endsWith('s')).map(w => w.slice(0, -1))]));   // plurals count too (exams → exam)
   }
   return out;
 }

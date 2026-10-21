@@ -1,28 +1,16 @@
 {
   "core/model.js": {
-    "exam": 1,
     "prüfung": 1,
     "details": 3
   },
-  "data/changes.js": {
-    "exam": 1
-  },
   "data/store.js": {
-    "expanded": 2
-  },
-  "input/timeline-drag.js": {
+    "expanded": 2,
     "exam": 4
   },
-  "styles/timeline.css": {
-    "exam": 6
-  },
   "ui/editor.js": {
-    "exam": 6,
-    "prüfung": 4,
     "details": 5
   },
   "views/timeline/render.js": {
-    "exam": 4,
     "details": 2
   }
 }

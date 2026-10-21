@@ -12,9 +12,8 @@ function recomputeRange(){
   let min = todayISO(), max = todayISO();
   const see = d => { if(d){ if(d<min) min=d; if(d>max) max=d; } };
   S.phases.forEach(p=>{ see(p.start); see(p.end); });
-  S.exams.forEach(x=>see(x.date));
+  S.milestones.forEach(m=>see(m.date));
   S.events.forEach(e=>see(e.date));
-  S.categories.forEach(c=>(c.milestones||[]).forEach(m=>see(m.date)));
   S.categories.forEach(c=>{ if(c.start && c.end){ see(c.start); see(c.end); } });
 
   /* never shrink an existing range — only widen it */

@@ -30,15 +30,15 @@
   color:var(--text-dim); background:var(--base); padding:2px 8px; border-radius:9999px;
   pointer-events:auto; white-space:nowrap; letter-spacing:.02em;
 }
-.ms{position:absolute; top:50%; transform:translate(-50%,-50%); width:10px; height:10px; border-radius:50%;
+.milestone-dot{position:absolute; top:50%; transform:translate(-50%,-50%); width:10px; height:10px; border-radius:50%;
   background:var(--text-dim); border:2px solid var(--base); cursor:pointer; z-index:2}
-.ms::after{content:""; position:absolute; left:50%; top:100%; width:1.5px; height:7px; background:var(--line); transform:translateX(-50%)}
-.ms.end{background:var(--success); box-shadow:0 0 0 3px rgba(143,193,78,.22)}
-.msLabel{
+.milestone-dot::after{content:""; position:absolute; left:50%; top:100%; width:1.5px; height:7px; background:var(--line); transform:translateX(-50%)}
+.milestone-dot.final{background:var(--success); box-shadow:0 0 0 3px rgba(143,193,78,.22)}
+.milestone-label{
   position:absolute; top:-15px; left:50%; transform:translateX(-50%);
   font-size:10px; color:var(--text-dim); white-space:nowrap; pointer-events:none;
 }
-.ms.end .msLabel{color:var(--success); font-weight:600}
+.milestone-dot.final .milestone-label{color:var(--success); font-weight:600}
 .laneRow{height:34px}
 .phase{
   position:absolute; top:4px; height:24px; border-radius:9999px;
@@ -81,16 +81,16 @@
 .dropdown b,.dropdown strong{color:var(--text)}
 .dropdown ul,.dropdown ol{padding-left:18px; margin:4px 0}
 .dropdown:empty::after{content:"Keine Beschreibung"; color:var(--text-faint); font-style:italic}
-#examRow{height:52px}
-.exam{
+#milestoneRow{height:52px}
+.milestone-chip{
   position:absolute; top:6px; transform:translateX(-50%);
   border-radius:9999px; padding:3px 14px 4px; text-align:center;
   color:#ededec; cursor:pointer; white-space:nowrap; line-height:1.15;
 }
-.exam:hover{filter:brightness(1.12)}
-.exam .xt{font-size:12px; font-weight:700; display:block}
-.exam .xp{font-size:10px; opacity:.85; display:block}
-.exam::after{content:""; position:absolute; left:50%; top:100%; width:1.5px; height:9px; background:var(--line); transform:translateX(-50%)}
+.milestone-chip:hover{filter:brightness(1.12)}
+.milestone-chip .chip-title{font-size:12px; font-weight:700; display:block}
+.milestone-chip .chip-note{font-size:10px; opacity:.85; display:block}
+.milestone-chip::after{content:""; position:absolute; left:50%; top:100%; width:1.5px; height:9px; background:var(--line); transform:translateX(-50%)}
 .todayLine{position:absolute; top:0; bottom:0; width:2px; background:var(--accent); z-index:3; pointer-events:none; opacity:.85}
 .todayLine::before{content:""; position:absolute; top:0; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color:var(--accent)}
 .tlHover{position:absolute; top:0; bottom:0; width:1.5px; background:var(--add); z-index:4; pointer-events:none; display:none}

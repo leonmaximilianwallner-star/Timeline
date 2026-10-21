@@ -37,3 +37,13 @@
 - **The editor works on a copy of an event's todos.** Before, todos added to an existing event went straight into the plan, even when cancelled, and would never have reached sync. *Claude (bug found)*
 - **The phone's V2 data comes along.** On first start the new version copies it into the new shape (`timeline.data.v3`); the V2 copy stays untouched. Supersedes "no migration" from 20 Oct: copying turned out simpler than starting empty. *Claude*
 - **Stored names change in a separate step (3b)**, before Supabase. *Claude*
+
+## 21 Oct 2026 — step 3b, stored names
+
+- **Exams and project milestones are one list.** `milestones`: `{ title, date, categoryId, final, note }`; an exam's points became its `note`. One editor; the "Prüfung | Meilenstein" switch is gone. With a project's category a milestone sits on the spine, otherwise it is a chip. *Max (30 Sept, "exams are milestones"); Claude (the shape)*
+- **A chip without a category stays red**, as exams were, until colour and category are aligned. *Claude*
+- **Deleting a project still deletes its milestones** (before, they were stored inside it); deleting a plain category frees them, like its phases and events. *Claude (kept old behaviour)*
+- **End dates are stored as the day after the last day.** Screens still show the last day. Helpers `lastDay`/`dayAfter`. *Max (rulebook, Sept)*
+- **No mono font, ever.** The font download and all four rules are gone (the drag/hover time labels in the day view and the time-budget numbers); numbers that change while you watch use DM Sans with tabular figures. The vocabulary test bans "mono". *Max*
+- **Deferred:** phase descriptions as plain lines (with the canvas), categories keyed by colour (open). *Claude*
+- **A flaw in the fingerprint test, found and fixed.** Since the split's last commit, every screenshot was black, so pull requests #2 and #3 were compared by positions only, not pixels as claimed. Fixed, and a blank screenshot now fails the test. Rechecked afterwards: #2 and #3 changed nothing visible except the undo button's state when opening a dropdown (intended, step 3). *Claude*

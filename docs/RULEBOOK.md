@@ -74,17 +74,17 @@ A shape word never names a thing. "The teal pill" describes a look; "the phase" 
 
 **Project** · *Projekt* · `project` · stored as a `category` with `start`/`end`
 An ongoing workload with a start and a final deadline: a category that has a span. Drawn as a **spine** in the timeline view, carrying its milestones, with its phases in lanes below. **Not:** a group on the canvas (a group *may* become a project later; **Max**, 30 Sept). **Never say:** track.
-*Today in the app:* a `categories[]` entry with `start`/`end` and its own `milestones[]`; spans stored with an inclusive end.
+In the app: a `categories` record with `start`/`end` (end exclusive). Its milestones are those whose `categoryId` is the project's.
 
 **Milestone** · *Meilenstein* · `milestone` · item `kind: 'milestone'`
 ![Milestone](dictionary/milestone.svg)
 A distinct point in time: a deadline, an exam, a hand-in, a birthday. Not above or below a phase — different. With a project's colour it's a dot on that project's spine; otherwise a chip. A project's closing milestone is `final` (★). **Not:** an event (no hours) or a phase (no span). **Never say:** exam, point (for the item), goalpost.
-*Today in the app:* two things, project milestones (`{date, label, end}`, where `end` is the ★ flag) and exams (`S.exams`). Both become milestones (**Max**, 30 Sept); an exam's points note becomes the first line of its body.
+In the app: `milestones` records `{ title, date, categoryId, final, note }`. Exams and project milestones became this one list on 21 Oct (**Max**, 30 Sept); an exam's points became its `note`. A chip without a category is drawn red, as exams were, until colour and category are aligned (B.8).
 
 **Phase** · *Phase* · `phase` · item `kind: 'phase'`
 ![Phase](dictionary/phase.svg)
 A span of weeks or months. Drawn as a pill on the timeline view; on the canvas a closed phase is a pill and an open phase is a squircle holding its blocks. **Not:** every pill on the timeline — a dated idea is a pill too, and stays an idea. **Never say:** bar, balken, pill, track (as the thing's name).
-*Today in the app:* `S.phases[]`; end stored **inclusive**; description stored as HTML in `details`.
+In the app: `phases` records; end exclusive since 21 Oct. *Today in the app:* the description is still HTML in `details` (becomes `body` with the canvas).
 
 **Block** · *Arbeitsblock* · `block` (a role) · an idea listed in a phase's `blocks`
 ![Block](dictionary/block.svg)
@@ -98,7 +98,7 @@ One concrete thing to get done inside a block, and the unit you schedule: dragge
 **Event** · *Termin* · `event` · `events` row
 ![Event](dictionary/event.svg)
 A slot of time on one day, with a start and end time, a category and its own todos. Drawn as a squircle in the day view. It may point at a step; without one it's an ordinary calendar entry (dentist, lunch). **Not:** a milestone (no hours) or a block. **Never say:** session, daily item, appointment, card, termin (in code).
-*Today in the app:* `S.events[]`, drawn by `renderEvent` with class `.event`. The event editor still has a "point" type covering exams and milestones.
+In the app: `events` records, drawn by `renderEvent` with class `.event`.
 
 **Todo** · *Todo* · `todo` · an entry in an event's `todos`
 The smallest action. Lives only in an event. Has a state (A.7). **Not:** a step. **Never say:** subtask, task, check item.
@@ -151,7 +151,7 @@ A day, without a time.
 
 **Start / end** · *Beginn / Ende* · `start`, `end`
 A span's first day, and the day **after** its last day. **Stored ends are always exclusive.** Every field that shows an end shows the **last day** (*bis*). **Never say:** `to`, `until`, `endDate` for the exclusive value.
-*Today in the app:* phase and project ends are stored inclusive.
+Code: `lastDay(end)` gives the shown last day, `dayAfter(day)` the stored end (`core/dates.js`).
 
 **Minutes** · — · `startMin`, `endMin`
 An event's times, as minutes since local midnight (540 = 09:00).
@@ -248,7 +248,7 @@ Code: `openTodoPanel`, `UI.todoPanel`, ID `#todoPanel`, classes `.panel-…`. *(
 **Initial values** · `initial` — the starting values of a thing being created in the editor; the counterpart of `edit`, the existing thing being edited. **Never say:** draft.
 **Body** · `body` — the text of an idea, block or phase: steps (`[ ]`), headings (`#`), points (`-`), plain lines. Written only through `setBody`. **Never say:** details, description, content.
 **Store** · `store` — the one holder of state (ARCHITECTURE §4).
-**Record** · `record` — one stored thing that syncs on its own: a category (with its milestones), a phase, an exam or an event.
+**Record** · `record` — one stored thing that syncs on its own: a category, a phase, a milestone or an event.
 **Stamp** · `updatedAt` — when a record last changed; set only by the gate.
 **Deleted** · `deleted` — records removed from the plan: id → the list it was in and when. Keeps a deleted record from coming back.
 **Device state** · `device` — what belongs to this screen, not the plan: theme, number of days, open dropdowns. Saved per device, never synced, not undoable.
@@ -273,7 +273,7 @@ One verb per action, everywhere:
 
 ## A.11 Never say — the list the test reads
 
-The vocabulary test (`tests/vocabulary.test.mjs`) reads the block below: `banned word → the word to use`. It splits camelCase and kebab-case, so `examRow` and `.ev-card` both match. JavaScript's `.pop()` is never counted. Exempt whole words: `scrollbar`, `zoomLevel`.
+The vocabulary test (`tests/vocabulary.test.mjs`) reads the block below: `banned word → the word to use`. It splits camelCase and kebab-case, so `examRow` and `.ev-card` both match. **No mono font, ever** (**Max**): numbers that change while you watch use DM Sans with tabular figures. JavaScript's `.pop()` is never counted. Exempt whole words: `scrollbar`, `zoomLevel`.
 
 ```never-say
 session → event
@@ -307,6 +307,8 @@ bubble → dropdown
 expanded → open
 fold → open
 level → view
+mono → DM Sans with tabular figures (font-variant-numeric: tabular-nums)
+monospace → DM Sans with tabular figures
 ```
 
 ---

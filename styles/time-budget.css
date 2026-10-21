@@ -7,7 +7,7 @@
 .legRow{display:flex; align-items:center; gap:8px; font-size:12.5px}
 .legRow .dot{width:10px; height:10px; border-radius:50%; flex:0 0 auto}
 .legRow .nm{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--text-dim)}
-.legRow .hrs{font-family:"DM Mono",monospace; font-size:11px}
-.donutCenter{font-family:"DM Mono",monospace; fill:var(--text); font-size:17px; font-weight:500}
+.legRow .hrs{font-size:11px; font-variant-numeric:tabular-nums}
+.donutCenter{fill:var(--text); font-size:17px; font-weight:500; font-variant-numeric:tabular-nums}
 .donutSub{fill:var(--text-faint); font-size:9.5px; letter-spacing:.08em; text-transform:uppercase; font-family:"DM Sans",sans-serif}
 
