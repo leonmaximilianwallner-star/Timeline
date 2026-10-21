@@ -1,0 +1,98 @@
+/* styles/todos.css — todo rows, todo panel, completion celebration. Moved unchanged from index.html lines 375–471 on 21 Oct 2026. */
+/* ---------- todos ---------- */
+.todoList{display:flex; flex-direction:column; gap:2px}
+.todoRow{display:flex; align-items:center; gap:9px; padding:5px 6px; border-radius:var(--r-small)}
+.todoRow:hover{background:var(--surface2)}
+.tcheck{width:20px; height:20px; flex:0 0 20px; border-radius:50%; border:2px solid var(--text-faint);
+  display:flex; align-items:center; justify-content:center; font-size:11px; color:#fff;
+  transition:background .15s, border-color .15s, transform .15s var(--spring)}
+.tcheck:active{transform:scale(.85)}
+.todoRow[data-state="done"] .tcheck{background:var(--success); border-color:var(--success)}
+.todoRow[data-state="cancelled"] .tcheck{background:var(--text-faint); border-color:var(--text-faint)}
+.todoRow[data-state="postponed"] .tcheck{background:var(--c-amber); border-color:var(--c-amber)}
+.todoRow .tx{flex:1; font-size:13px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.todoRow[data-state="done"] .tx{color:var(--text-dim); text-decoration:line-through}
+.todoRow[data-state="cancelled"] .tx{color:var(--text-faint); text-decoration:line-through}
+.todoRow[data-state="postponed"] .tx{color:var(--c-amber)}
+.todoRow .tdel{opacity:0; color:var(--text-faint)}
+.todoRow:hover .tdel{opacity:1}
+.todoRow .carry{font-size:9px; color:var(--c-amber); border:1px solid var(--c-amber); border-radius:9999px; padding:0 6px; font-weight:600}
+.todoAdd{display:flex; gap:8px}
+.todoAdd input{flex:1; background:var(--surface2); border:1px solid var(--line); border-radius:var(--r-small); padding:7px 10px; outline:none}
+.todoAdd input:focus{border-color:var(--c-blue)}
+.thint{font-size:10.5px; color:var(--text-faint)}
+
+
+/* todo popover on event card click */
+#pop{
+  position:fixed; z-index:55; width:300px;
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r-card);
+  box-shadow:var(--shadow); padding:12px 12px 12px;
+  animation:pop .22s var(--spring);
+}
+#pop .phead{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px}
+#pop .phead-actions{display:flex; gap:6px}
+#pop .ppill{font-size:11px; font-weight:600; padding:3px 10px; border-radius:9999px; line-height:1.3}
+#pop .pt{font-size:14px; font-weight:700; margin-bottom:1px}
+#pop .pm{font-size:11px; color:var(--text-dim); margin-bottom:9px}
+
+/* ---------- completion celebration ---------- */
+.evcard.complete{ opacity:.45; transition:opacity .2s ease; }
+#pop.complete::after{
+  content:""; position:absolute; inset:0; border-radius:inherit;
+  background:var(--cat-fill, var(--success)); opacity:.14; pointer-events:none;
+}
+#washLayer{
+  position:fixed; inset:0;
+  overflow:clip; pointer-events:none; z-index:40;
+}
+.wash{
+  position:absolute; border-radius:var(--r-card);
+  background:var(--cat-fill, var(--success));
+  transform:translate(-50%,-50%) scale(1); opacity:0;
+  will-change:transform,opacity;
+}
+.wash.go{ animation:wash 1100ms cubic-bezier(1, 0.64, 0.5, 0.64) forwards; }
+@keyframes wash{
+  0%   { transform:translate(-50%,-50%) scale(1);   opacity:.95; }
+  55%  { transform:translate(-50%,-50%) scale(6.5); opacity:.85; }
+  75%  { transform:translate(-50%,-50%) scale(6.5); opacity:.85; }
+  100% { transform:translate(-50%,-50%) scale(6.5); opacity:0; }
+}
+.celeb-text {
+  position: relative;
+  z-index: 41;
+  text-align: center;
+  color: #ffffff;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translate(-50%, 12px);
+  opacity: 0;
+}
+.celeb-text .ct-title {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 0;
+}
+.celeb-text .ct-sub {
+  font-size: 13px;
+  font-weight: 400;
+  opacity: 0.82;
+  margin-top: 8px;
+  letter-spacing: 0.04em;
+}
+.celeb-text.go { animation: celeb-in 850ms cubic-bezier(0.22, 1, 0.36, 1) 250ms forwards; }
+@keyframes celeb-in {
+  0%   { opacity: 0; transform: translate(-50%, 12px); }
+  30%  { opacity: 1; transform: translate(-50%, 0); }
+  65%  { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, -6px); }
+}
+#pop.celebrating{ animation:pop-pulse 1100ms var(--spring); }
+@keyframes pop-pulse{
+  0%   { transform:scale(1); }
+  18%  { transform:scale(1.04); }
+  100% { transform:scale(1); }
+}
+
