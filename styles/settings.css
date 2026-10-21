@@ -4,7 +4,6 @@
   display:flex; flex-direction:column; overflow:auto; overscroll-behavior:contain;
   background:var(--raised); color:var(--text);
   border:1px solid var(--hairline); border-right:0; border-radius:var(--r-float) 0 0 var(--r-float);
-  box-shadow:var(--shadow-float);
   transform:translateX(105%); visibility:hidden;                 /* closed: no shadow on screen, nothing to tab into */
   transition:transform .3s var(--soft), background .2s, visibility 0s .3s;
 }

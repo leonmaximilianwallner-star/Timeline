@@ -1,35 +1,23 @@
 /* styles/editor.css — the editor (RULEBOOK Part C), and the window and buttons the time budget and others still use. */
 /* ---------- the window: the time budget's shell ---------- */
 .overlay{
-  position:fixed; inset:0; z-index:60; background:rgba(8,8,12,.55);
+  position:fixed; inset:0; z-index:60; background:var(--scrim);        /* the one dim layer: solid, no blur */
   display:flex; align-items:center; justify-content:center; padding:18px;
-  backdrop-filter:blur(2px);
   animation:fade .18s ease;
 }
 @keyframes fade{from{opacity:0}}
 @keyframes appear{from{opacity:0; transform:scale(.94) translateY(8px)}}
 .overlay-window{
-  background:var(--surface); border:1px solid var(--line); border-radius:var(--r-panel);
-  width:min(440px,100%); max-height:86vh; overflow:auto;
-  box-shadow:var(--shadow); animation:appear .22s var(--spring);
+  background:var(--raised); border:1px solid var(--hairline); border-radius:var(--r-float);
+  width:min(480px,100%); max-height:86vh; overflow:auto;
+  animation:appear .22s var(--spring);
 }
-.overlay-window-header{display:flex; align-items:center; gap:10px; padding:14px 16px 0}
-.overlay-window-header h2{font-size:18px; font-weight:700; flex:1}
-.overlay-window-body{padding:12px 16px 16px; display:flex; flex-direction:column; gap:12px}
-.seg{display:flex; background:var(--surface2); border:1px solid var(--line); border-radius:9999px; padding:3px; gap:2px}
-.seg button{flex:1; border-radius:9999px; padding:5px 10px; font-size:12px; font-weight:600; color:var(--text-dim); white-space:nowrap}
-.seg button.on{background:var(--surface3); color:var(--text)}
-.btn{
-  border-radius:9999px; padding:9px 18px; font-weight:600; font-size:13px;
-  background:var(--surface2); border:1px solid var(--line); color:var(--text-dim);
-  transition:transform .15s var(--spring), background .15s;
-}
-.btn:hover{color:var(--text)}
-.btn:active{transform:scale(.95)}
-.btn.primary{background:var(--add); border-color:transparent; color:#fff}
-.btn.danger{color:var(--c-red)}
-.btn[disabled]{opacity:.35; pointer-events:none}   /* as .cbtn[disabled] */
-.overlay-window-header{gap:8px; padding:12px 16px 6px; align-items:flex-start}   /* the time budget's header (was shared with the old editor) */
+.overlay-window-header{display:flex; align-items:center; gap:8px; padding:16px 16px 12px 20px}
+.overlay-window-header h2{margin:0; font-size:var(--fs-title); line-height:26px; font-weight:600; flex:1}
+.overlay-window-body{padding:4px 16px 20px; display:flex; flex-direction:column; gap:16px}
+.seg{display:flex; gap:4px; padding:4px; background:var(--surface); border-radius:var(--r-row)}          /* = .choice (styles/lists.css) */
+.seg button{flex:1; height:36px; border-radius:12px; font-size:var(--fs-body); font-weight:600; color:var(--fg-muted); white-space:nowrap}
+.seg button.on{background:var(--raised); color:var(--text)}
 
 
 /* ---------- the editor: a header in the thing's colour over a raised body ---------- */
@@ -38,7 +26,7 @@
   --ink:#ededec;                                   /* text on a colour is always #ededec (RULEBOOK B.3) */
   width:min(480px,100%); max-height:min(720px, calc(100vh - 36px)); display:flex; flex-direction:column;
   background:var(--ed-colour, var(--c-gray)); border:1px solid var(--ed-colour, var(--c-gray));
-  border-radius:var(--r-float); box-shadow:var(--shadow-float); overflow:hidden;
+  border-radius:var(--r-float); overflow:hidden;
   animation:appear .22s var(--spring); transition:background .2s, border-color .2s;
 }
 .editor-header{display:flex; align-items:center; gap:8px; padding:16px 16px 20px 20px; color:var(--ink)}
@@ -74,27 +62,15 @@ html[data-theme="light"] .when input{color-scheme:light}
 .rte{min-height:84px; max-height:220px; overflow:auto; padding:8px 16px 12px; font-size:14px; line-height:20px; outline:none}
 .rte ul,.rte ol{padding-left:18px}
 
-/* todos in the editor: a 20px circle, achromatic; the glyph tells the state */
-.editor .todoRow{min-height:var(--row-h); padding:0 0 0 16px; gap:12px; border-radius:0}
-.editor .todoRow:hover{background:color-mix(in srgb, var(--text) 4%, transparent)}
-.editor .todoRow .tx-wrap{flex:1; min-width:0; min-height:var(--row-h); display:flex; align-items:center; gap:8px; padding-right:8px; border-top:1px solid var(--hairline)}
-.editor .todoRow:first-child .tx-wrap{border-top:0}
-.editor .todoRow .tx{font-size:14px; line-height:20px}
-.editor .tcheck{border:1.5px solid var(--border-control); background:transparent; color:var(--on-primary); font-size:12px; font-weight:700}
-.editor .todoRow[data-state="done"] .tcheck{background:var(--text); border-color:var(--text)}
-.editor .todoRow[data-state="cancelled"] .tcheck{background:var(--border-control); border-color:var(--border-control)}
-.editor .todoRow[data-state="postponed"] .tcheck{background:transparent; border-color:var(--fg-muted); color:var(--fg-muted)}
-.editor .todoRow[data-state="cancelled"] .tx{color:var(--fg-muted); text-decoration:line-through}
-.editor .tdel{width:32px; height:32px; border:0; background:transparent; color:var(--fg-muted); border-radius:9999px; cursor:pointer; opacity:0}
-.editor .todoRow:hover .tdel, .editor .tdel:focus-visible{opacity:1}
-@media (hover:none){ .editor .tdel{opacity:1} }
-.editor .carry{color:var(--fg-muted); font-size:12px}
-
 /* phone: the editor rises from the bottom, full width */
+.editor{position:relative}
+.editor-grip{display:none}
 @media (max-width:600px){
   .overlay.editor-overlay{align-items:flex-end; padding:0}
   .editor{width:100%; max-height:92vh; border-radius:var(--r-float) var(--r-float) 0 0}
+  .editor-header{touch-action:none; padding-top:20px}                      /* pulled down, it closes (ui/editor.js slideToClose) */
+  .editor-grip{display:block; position:absolute; left:50%; top:8px; width:36px; height:4px; margin-left:-18px;
+    border-radius:9999px; background:var(--ink); opacity:.45; pointer-events:none}
 }
 /* on a colour the buttons stay light in both themes */
 .editor-header .rbtn.fill, #setPanel.tinted .rbtn.fill{background:#ededec; color:#111118}
-.todoList:empty + .row > .row-main{border-top:0}

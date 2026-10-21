@@ -1,14 +1,14 @@
-/* styles/add-button.css — the + button. Moved unchanged from index.html lines 273–285 on 21 Oct 2026. */
-/* ---------- FAB ---------- */
+/* styles/add-button.css — the add button: the one floating button (RULEBOOK C.3). */
 #fab{
-  position:fixed; right:22px; bottom:24px; z-index:40;
-  width:54px; height:54px; border-radius:50%;
-  background:var(--add); color:#fff; box-shadow:0 8px 24px rgba(100,152,192,.4);
+  position:fixed; right:20px; bottom:24px; z-index:40;
+  width:var(--float-btn); height:var(--float-btn); border-radius:9999px; padding:0;
+  background:var(--text); color:var(--on-primary); border:0;
+  outline:2px solid var(--base); outline-offset:0;          /* a hard ring, not a shadow: it stays crisp over events */
   display:flex; align-items:center; justify-content:center;
-  transition:transform .22s var(--spring), background .2s;
+  transition:transform .22s var(--spring), background .2s, color .2s;
 }
-#fab svg{width:22px; height:22px; transition:transform .22s var(--spring)}
-#fab.on{background:var(--accent); box-shadow:0 8px 24px rgba(233,71,58,.4)}
+#fab svg{width:20px; height:20px; stroke-width:1.5; transition:transform .22s var(--spring)}
+#fab.on{background:var(--base); color:var(--text); box-shadow:inset 0 0 0 1px var(--text)}   /* add mode: outlined, like cancel */
 #fab.on svg{transform:rotate(45deg)}
 #fab:active{transform:scale(.92)}
-
+#fab:focus-visible{outline:2px solid var(--text); outline-offset:2px}

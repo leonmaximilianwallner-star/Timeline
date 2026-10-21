@@ -334,11 +334,10 @@ ui/
   loader.js                 loading screen
   toast.js                  toast message
   editor.js                 editor and its todo list
-  todo-panel.js             todo panel and completion celebration
   time-budget.js            time budget
   settings.js               settings: one panel, four pages (main, a colour, new, sync)
 
-styles/   tokens · base · timeline · day · add-button · lists (rows, overlines, switches: shared by editor and settings) · editor · todos · settings · time-budget · toast · device · loader
+styles/   tokens · base · timeline · day · add-button · lists (rows, overlines, switches: shared by editor and settings) · editor · todos (todo rows, the celebration) · settings · time-budget · toast · device · loader
 
 supabase/
   schema.sql                the plan's table (records): who may read it, the server's two rules

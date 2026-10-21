@@ -80,22 +80,27 @@ const tests = {
     assert.equal(await stored(page, 'timeline.data.v3'), first);
     await page.keyboard.press('Escape');                       // close settings: the dim layer covers the app while they are open
   },
-  async 'cancelling the editor drops todo changes'(page) {
-    const before = (await data(page)).events;
+  async 'a click on an event opens its editor; cancelling drops the event changes, todos apply at once'(page) {
     await page.locator('.event').nth(1).click();
-    await page.click('#todoPanelEdit');
-    await page.fill('#fNewTodo', 'nur ein Versuch');
+    assert.ok(await page.locator('#editorOverlay').count(), 'the editor, directly');
+    const id = await page.evaluate(() => UI.editor.edit.id);
+    const title = await page.evaluate(i => S.events.find(e => e.id === i).title, id);
+    assert.equal(await page.evaluate(() => document.activeElement.id), '', 'no typing mode by itself');   // (editing an existing event)
+    await page.fill('#fTitle', 'nur ein Versuch');
+    await page.fill('#fNewTodo', 'bleibt');
     await page.press('#fNewTodo', 'Enter');
     await page.click('#editorClose');
     await page.waitForTimeout(200);
-    assert.deepEqual((await data(page)).events, before);
-    assert.equal(await page.evaluate(() => S.events.some(e => Object.values(e.todosByDate).flat().some(t => t.text === 'nur ein Versuch'))), false);
+    const ev = (await data(page)).events.find(e => e.id === id);
+    assert.equal(ev.title, title, 'the title change is dropped');
+    assert.ok(Object.values(ev.todosByDate).flat().some(t => t.text === 'bleibt'), 'the todo stays');
+    await page.click('#btnUndo'); await page.waitForTimeout(200);      // undo takes the todo back
+    assert.equal(await page.evaluate(i => Object.values(S.events.find(e => e.id === i).todosByDate).flat().some(t => t.text === 'bleibt'), id), false);
   },
   async 'saving the editor keeps todo changes and stamps only that event'(page) {
     const before = (await data(page)).events;
     await page.locator('.event').nth(1).click();
-    const id = await page.evaluate(() => UI.todoPanel.evId);
-    await page.click('#todoPanelEdit');
+    const id = await page.evaluate(() => UI.editor.edit.id);
     await page.fill('#fNewTodo', 'Folien hochladen');
     await page.press('#fNewTodo', 'Enter');
     await page.click('#editorSave');
@@ -154,27 +159,27 @@ const tests = {
   async "a repeating event's occurrences each have their own todos"(page) {
     const id = await page.evaluate(() => S.events.find(e => e.title === 'Tutorium').id);
     await page.locator(`.event[data-ev="${id}"][data-date="2026-10-21"]`).click();
-    await page.fill('#todoPanelNew', 'Folien'); await page.press('#todoPanelNew', 'Enter');
-    await page.locator('#todoPanel .todoRow .tcheck').first().click();
+    await page.fill('#fNewTodo', 'Folien'); await page.press('#fNewTodo', 'Enter');
+    await page.locator('#editorTodos .todoRow .tcheck').first().click();
     const ev = (await data(page)).events.find(e => e.id === id);
     assert.equal(ev.todosByDate['2026-10-21'][0].state, 'done');
     assert.equal(ev.todosByDate['2026-10-28'], undefined);
     await page.keyboard.press('Escape');
     await page.locator(`.event[data-ev="${id}"][data-date="2026-10-28"]`).click();
-    assert.equal(await page.locator('#todoPanel .todoRow').count(), 0);      // next week starts empty
+    assert.equal(await page.locator('#editorTodos .todoRow').count(), 0);      // next week starts empty
     await page.keyboard.press('Escape');
   },
   async 'a postponed todo shows up in the next occurrence, and is stored there once changed'(page) {
     const id = await page.evaluate(() => S.events.find(e => e.title === 'Tutorium').id);
     await page.locator(`.event[data-ev="${id}"][data-date="2026-10-21"]`).click();
-    await page.fill('#todoPanelNew', 'Frage stellen'); await page.press('#todoPanelNew', 'Enter');
-    await page.locator('#todoPanel .todoRow', { hasText: 'Frage stellen' }).click({ button: 'right' });
+    await page.fill('#fNewTodo', 'Frage stellen'); await page.press('#fNewTodo', 'Enter');
+    await page.locator('#editorTodos .todoRow', { hasText: 'Frage stellen' }).click({ button: 'right' });
     await page.keyboard.press('Escape');
     let ev = (await data(page)).events.find(e => e.id === id);
     assert.equal(ev.todosByDate['2026-10-28'], undefined);                     // shown, not yet stored
     await page.locator(`.event[data-ev="${id}"][data-date="2026-10-28"]`).click();
-    assert.equal(await page.locator('#todoPanel .todoRow', { hasText: 'Frage stellen' }).count(), 1);
-    await page.locator('#todoPanel .todoRow', { hasText: 'Frage stellen' }).locator('.tcheck').click();
+    assert.equal(await page.locator('#editorTodos .todoRow', { hasText: 'Frage stellen' }).count(), 1);
+    await page.locator('#editorTodos .todoRow', { hasText: 'Frage stellen' }).locator('.tcheck').click();
     await page.keyboard.press('Escape');
     ev = (await data(page)).events.find(e => e.id === id);
     assert.equal(ev.todosByDate['2026-10-28'].find(t => t.text === 'Frage stellen').state, 'done');
@@ -252,8 +257,7 @@ const tests = {
   },
   async 'deleting is remembered; undo brings the event back and forgets the deletion'(page) {
     await page.locator('.event').nth(1).click();
-    const id = await page.evaluate(() => UI.todoPanel.evId);
-    await page.click('#todoPanelEdit');
+    const id = await page.evaluate(() => UI.editor.edit.id);
     await page.click('#editorDelete');
     await page.waitForTimeout(200);
     let d = await data(page);

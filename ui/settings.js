@@ -19,10 +19,14 @@ function toggleSettings(on, page){
   }
   $set.classList.toggle("open", UI.settingsOpen);
   $setScrim.classList.toggle("open", UI.settingsOpen);
+  document.getElementById("btnSettings").classList.toggle("open", UI.settingsOpen);   // its button fills while open (mockup)
 }
-/* the app below the header dims while settings are open; a tap on it closes them (ui/todo-panel.js) */
+/* the app below the header dims while settings are open; a tap on it closes them */
 const $setScrim = document.createElement("div");
 $setScrim.className = "set-scrim"; $set.before($setScrim);
+document.addEventListener("pointerdown", e=>{
+  if(UI.settingsOpen && !e.target.closest("#setPanel") && !e.target.closest("#btnSettings") && !e.target.closest("#editorOverlay")) toggleSettings(false);
+}, true);
 function goSettings(page){ UI.settingsPage = page; renderSettings(); $set.scrollTop = 0; }
 
 /* colours: grey is "frei" and never a category; each colour belongs to one project or category */

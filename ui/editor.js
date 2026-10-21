@@ -81,6 +81,7 @@ function openEditor(ctx){
   const ov = document.createElement("div");
   ov.className = "overlay editor-overlay"; ov.id = "editorOverlay";
   ov.innerHTML = `<div class="editor" role="dialog" aria-modal="true" aria-label="${KIND_WORD[ctx.type]} bearbeiten">
+    <span class="editor-grip" aria-hidden="true"></span>
     <div class="editor-header">
       <div class="editor-name">
         <label class="editor-kind"><span id="editorKind"></span>${icon("down")}
@@ -101,7 +102,35 @@ function openEditor(ctx){
   ov.addEventListener("pointerdown", e=>{ if(e.target===ov) saveEditor(); });   // a tap outside saves; ✕ and Escape cancel (Max, 21 Oct)
   ov.querySelector("#editorClose").onclick = closeEditor;
   ov.querySelector("#editorSave").onclick = saveEditor;
+  slideToClose(ov.querySelector(".editor"));
   renderEditorBody();
+}
+/* on a phone the editor sits at the bottom: pulling its header down closes it without saving, like ✕ (Max, 22 Oct).
+   Far enough (a third of the way) or fast enough, it goes; otherwise it springs back. */
+const SLIDE_CLOSE_PX = 120, SLIDE_FLICK = 0.4;       // px; px per ms (400 px/s: a deliberate fling, as bottom panels on phones)
+function slideToClose(box){
+  const header = box.querySelector(".editor-header");
+  header.addEventListener("pointerdown", e=>{
+    if(!matchMedia("(max-width:600px)").matches || e.target.closest("input, select, button, label")) return;
+    const y0 = e.clientY, recent = [[performance.now(), 0]];   // the last moves: speed is what a finger feels at release
+    let dy = 0;
+    header.setPointerCapture(e.pointerId);
+    box.style.transition = "none";
+    const move = m=>{
+      dy = Math.max(0, m.clientY - y0); box.style.transform = `translateY(${dy}px)`;
+      const now = performance.now(); recent.push([now, dy]); while(recent.length > 2 && now - recent[1][0] > 100) recent.shift();
+    };
+    const up = u=>{
+      header.removeEventListener("pointermove", move); header.removeEventListener("pointerup", up); header.removeEventListener("pointercancel", up);
+      const [t1, d1] = recent[0], speed = (dy - d1) / Math.max(1, performance.now() - t1);
+      box.style.transition = "transform .22s var(--soft)";
+      if(dy > Math.min(SLIDE_CLOSE_PX, box.offsetHeight/3) || (dy > 24 && speed > SLIDE_FLICK)){
+        box.style.transform = "translateY(100%)";
+        box.addEventListener("transitionend", ()=>closeEditor(), { once:true });
+      } else box.style.transform = "";
+    };
+    header.addEventListener("pointermove", move); header.addEventListener("pointerup", up); header.addEventListener("pointercancel", up);
+  });
 }
 function closeEditor(){
   const ov = document.getElementById("editorOverlay");
@@ -216,6 +245,16 @@ function renderEditorBody(){
     el.textContent = ctx.todos.length ? `${ctx.todos.filter(t=>t.state==="done").length}/${ctx.todos.length}` : "";
   }
   if(kind==="event") showTodos();
+  /* todos of a stored event apply at once, as ticking is doing, not planning (Max, 22 Oct): ✕ and sliding
+     down discard only the event's own changes. A new event's todos wait for ✓ with the rest. */
+  const allDone = list => list.length>0 && list.every(t=>t.state==="done");
+  function todosChanged(){
+    countTodos();
+    if(!ed) return;
+    const before = allDone(todosOf(S.events.find(x=>x.id===ed.id) || ed, ctx.occurrence));
+    mutate(st=>{ const e2 = st.events.find(x=>x.id===ed.id); if(e2) setTodosOf(e2, ctx.occurrence, JSON.parse(JSON.stringify(ctx.todos))); });
+    if(!before && allDone(ctx.todos)) celebrate(ed, document.querySelector(".editor").getBoundingClientRect());
+  }
   const newTodo = B.querySelector("#fNewTodo");
   if(newTodo) newTodo.addEventListener("keydown", e=>{
     if(e.key!=="Enter") return;
@@ -223,22 +262,22 @@ function renderEditorBody(){
     const txt = newTodo.value.trim(); if(!txt) return;
     ctx.todos.push({ id:uid(), text:txt, state:"open" }); newTodo.value="";
     B.querySelector("#editorTodos").insertAdjacentHTML("beforeend", todoRowHTML(ctx.todos[ctx.todos.length-1]));
-    countTodos();
+    todosChanged();
   });
   const tl = B.querySelector("#editorTodos");
   if(tl){
     tl.addEventListener("click", e=>{
       const row = e.target.closest(".todoRow"); if(!row) return;
       const t = ctx.todos.find(x=>x.id===row.dataset.tid); if(!t) return;
-      if(e.target.closest(".tdel")){ ctx.todos.splice(ctx.todos.indexOf(t),1); row.remove(); countTodos(); return; }
-      if(e.target.closest(".tcheck")){ cycleTodo(t); row.outerHTML = todoRowHTML(t); countTodos(); }
+      if(e.target.closest(".tdel")){ ctx.todos.splice(ctx.todos.indexOf(t),1); row.remove(); todosChanged(); return; }
+      if(e.target.closest(".tcheck")){ cycleTodo(t); row.outerHTML = todoRowHTML(t); todosChanged(); }
     });
     tl.addEventListener("contextmenu", e=>{
       const row = e.target.closest(".todoRow"); if(!row) return;
       e.preventDefault();
       const t = ctx.todos.find(x=>x.id===row.dataset.tid); if(!t) return;
       t.state = t.state==="postponed" ? "open" : "postponed";
-      row.outerHTML = todoRowHTML(t);
+      row.outerHTML = todoRowHTML(t); todosChanged();
     });
   }
 
@@ -255,7 +294,9 @@ function renderEditorBody(){
   };
   const f = document.getElementById("fTitle");
   f.addEventListener("keydown", ev=>{ if(ev.key==="Enter"){ ev.preventDefault(); if(ev.ctrlKey||ev.metaKey) saveEditor(); } });
-  f.focus();
+  /* never typing mode by itself on a phone: the keyboard would push the editor up for a guess (Max, 22 Oct).
+     With a mouse there is no keyboard to push; a new thing's name is then the likely first step */
+  if(!ed && matchMedia("(pointer:fine)").matches) f.focus();
 }
 
 function saveEditor(){
@@ -283,8 +324,12 @@ function saveEditor(){
     byDate[data.repeat === "none" ? data.date : day] = ctx.todos;
     data.todosByDate = JSON.parse(JSON.stringify(byDate));
     if(data.reminderMin!=null) requestNotifPermission();
+    const allDone = list => list.length>0 && list.every(t=>t.state==="done");
+    const finished = !ed && allDone(ctx.todos);       // a new event born finished; a stored one celebrated at the tick
+    const where = document.querySelector(".editor").getBoundingClientRect();
     mutate(st=>{ if(ed) Object.assign(st.events.find(x=>x.id===ed.id), data);
                  else st.events.push({ id:uid(), ...data }); });
+    if(finished) celebrate(data, where);
     if(UI.addMode) setAddMode(false);                 // add-mode auto-exits after one creation
   }
   else if(kind==="phase"){
@@ -307,3 +352,21 @@ function saveEditor(){
   closeEditor();
 }
 
+/* every todo of an event done: its colour washes over the screen from the editor, with its name */
+function celebrate(ev, r){
+  const layer = document.getElementById("washLayer"); if(!layer) return;
+  const c = cat(ev.categoryId);
+  const w = document.createElement("div");
+  w.className = "wash go";
+  w.style.setProperty("--cat-fill", c.color);
+  w.style.cssText += `;width:${r.width}px;height:${r.height}px;left:${r.left + r.width/2}px;top:${r.top + r.height/2}px`;
+  layer.appendChild(w);
+  w.addEventListener("animationend", ()=>w.remove(), { once:true });
+  const t = document.createElement("div");
+  t.className = "celeb-text";
+  t.innerHTML = `<div class="ct-title">${esc(ev.title)}</div><div class="ct-sub">${fmtDur(ev.endMin - ev.startMin)} · ${esc(c.name)}</div>`;
+  t.style.left = (r.left + r.width/2) + "px"; t.style.top = (r.top + r.height/2 - 40) + "px";
+  layer.appendChild(t);
+  void t.offsetWidth; t.classList.add("go");
+  t.addEventListener("animationend", ()=>t.remove(), { once:true });
+}

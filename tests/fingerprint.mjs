@@ -36,9 +36,9 @@ const STEPS = [
   ['dropdown-closed',  async p => { await p.locator('.ph-exp').first().click(); }],
   ['phase-editor',     async p => { await p.locator('[data-phase]').first().click(); }],
   ['closed',           async p => p.keyboard.press('Escape')],
-  ['todo-panel',       async p => { await p.locator('.event, .evcard').nth(1).click(); }],
-  ['todo-ticked',      async p => { await p.locator('#todoPanel .tcheck, #pop .tcheck').first().click(); }],
-  ['event-editor',     async p => { await p.locator('#todoPanelEdit, #popEdit').click(); }],
+  ['event-click',      async p => { await p.locator('.event, .evcard').nth(1).click(); }],   // until 22 Oct the todo panel, now the editor
+  ['todo-ticked',      async p => { await p.locator('#todoPanel .tcheck, #pop .tcheck, .editor .tcheck').first().click(); }],
+  ['event-editor',     async p => { const b = p.locator('#todoPanelEdit, #popEdit'); if (await b.count()) await b.click(); }],
   ['closed-2',         async p => p.keyboard.press('Escape')],
   ['undo',             async p => p.click('#btnUndo')],
   ['add-mode',         async p => p.click('#fab')],

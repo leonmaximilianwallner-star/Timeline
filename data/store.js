@@ -11,7 +11,6 @@ const UI = {
   undo:[], redo:[],
   settingsOpen:false, settingsForm:null, budgetOpen:false, budgetDays:7,
   editor:null,          // the open editor's context
-  todoPanel:null,       // the open todo panel's context
   dragLive:false,
 };
 
