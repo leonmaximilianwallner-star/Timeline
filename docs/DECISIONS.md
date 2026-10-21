@@ -90,3 +90,8 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **A reminder more than 10 minutes late is dropped**, not sent hours later after an outage. *Claude*
 - **Found on the way:** the in-app reminders used `new Notification(...)`, which Android Chrome refuses; the error was swallowed, so they probably never worked on the phone. They now go through the service worker. *Claude*
 - **Tested here:** due-time rules (clock changes, repeats, midnight), sending once, gone devices; real encryption and signature, decrypted independently as a phone would; the switch in a browser against a simulated Supabase. **Not testable here:** the real push services and the real Supabase. The first real push is on Max's phone. *Claude*
+
+## 22 Oct 2026 — dragging events across weeks (pull request #11)
+
+- **Moving an event to the screen edge slides the days by again**, as on the timeline. It was lost in the V2 rewrite: the day view's drag never used the edge pan. Only moving pans; resizing stays vertical. *Max (asked); Claude (cause)*
+- **Held longer at the edge, the pan speeds up to 4× within 3 s**, so weeks are reachable, not just days (at the old speed, two weeks took about 6 s). Applies to every drag, timeline included. *Claude (Max to judge the feel)*

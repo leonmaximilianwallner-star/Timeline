@@ -140,7 +140,11 @@ function eventPointerDown(e, eventEl){
       return;
     }
     if(!st.moved && Math.hypot(mv.clientX-e.clientX, mv.clientY-e.clientY) <= MOVE_THRESHOLD && zone==="move") return;
-    if(!st.moved){ st.moved=true; UI.dragLive=true; if(!copy) eventEl.classList.add("dragging"); }
+    if(!st.moved){
+      st.moved=true; UI.dragLive=true; if(!copy) eventEl.classList.add("dragging");
+      if(zone==="move") panBind(move, "x", mv.clientX, mv.clientY);   // at the screen edge, the days slide by (to other weeks)
+    }
+    panFollow(mv.clientX, mv.clientY);
     if(zone==="move"){
       const dur = ev.endMin - ev.startMin;
       st.s  = clamp(snapMin(q.min - st.grabOff), HOUR_START*60, HOUR_END*60 - dur);
@@ -165,6 +169,7 @@ function eventPointerDown(e, eventEl){
     try{ eventEl.releasePointerCapture(e.pointerId); }catch(_){}
     window.removeEventListener("pointermove",move); window.removeEventListener("pointerup",up); window.removeEventListener("pointercancel",up);
     eventEl.classList.remove("dragging");
+    panRelease();
     UI.dragLive = false;
     clearPreview(pv);
     if(floatEl){ floatEl.remove(); floatEl = null; }
