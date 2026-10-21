@@ -83,7 +83,9 @@ await step('the service worker is registered', async () => {
   assert.equal(await page.evaluate(async () => !!(await navigator.serviceWorker.getRegistration())), true);
 });
 await step('signed in: switching on registers this device with the server', async () => {
+  await page.click('#sSync');                                            // Daten → Sync
   await page.fill('#sEmail', 'max@example.com'); await page.fill('#sPassword', 'x'); await page.click('#sSignIn');
+  await page.waitForSelector('#sSignOut'); await page.click('#sBack');
   await page.waitForFunction(() => !document.getElementById('sPush').disabled);
   await page.click('#sPush');
   await page.waitForFunction(() => /^An:/.test(document.getElementById('pushStatus').textContent));
@@ -93,7 +95,7 @@ await step('signed in: switching on registers this device with the server', asyn
   assert.equal(row.user_id, 'u-max');
   assert.match(row.p256dh, /^[A-Za-z0-9_-]{87}$/);                       // 65 bytes, base64url without padding
   assert.match(row.auth, /^[A-Za-z0-9_-]{22}$/);
-  assert.equal(await page.locator('#sPush').textContent(), 'Ausschalten');
+  assert.equal(await page.locator('#sPush').isChecked(), true);
 });
 await step('after a restart it is still on, and the device is registered again (time zone may change)', async () => {
   calls.length = 0;
@@ -136,7 +138,7 @@ await step('with push off, the app reminds through the service worker', async ()
 await step('signing out with push on switches it off first', async () => {
   await page.click('#sPush');
   await page.waitForFunction(() => /^An:/.test(document.getElementById('pushStatus').textContent));
-  await page.click('#sSignOut');
+  await page.click('#sSync'); await page.click('#sSignOut');
   await page.waitForFunction(() => !login);
   assert.equal(devices.size, 0);
   assert.equal(await page.evaluate(() => pushState.on), false);

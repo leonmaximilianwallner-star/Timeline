@@ -95,3 +95,14 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 
 - **Moving an event to the screen edge slides the days by again**, as on the timeline. It was lost in the V2 rewrite: the day view's drag never used the edge pan. Only moving pans; resizing stays vertical. *Max (asked); Claude (cause)*
 - **Held longer at the edge, the pan speeds up to 4× within 3 s**, so weeks are reachable, not just days (at the old speed, two weeks took about 6 s). Applies to every drag, timeline included. *Claude (Max to judge the feel)*
+## 22 Oct 2026 — the editor and settings in the mockup's design (pull request #12)
+
+- **Part C of the rulebook: stack, don't scatter.** Options are rows in a few lists, the value at the end of the row, instead of a heading and a field each. The philosophy for the whole interface, applied view by view. *Max (the philosophy); Claude (written down)*
+- **White text on category colours stays**, even where it is below 4.5:1; revisited if the editor headers fail the eye test. *Max*
+- **No note on events for now.** The mockup shows one; it would be a new stored field. *Max*
+- **Settings: one panel with pages.** The main page lists projects and categories together; each has its own page in its colour (span, colour, its phases and milestones); Sync has its own page. Clicking a project's name on the timeline opens its page. *Max (mockup); Claude (Sync as a page)*
+- **Rows are changed in place with the phone's own pickers** (an invisible select over the row), not custom menus: less code, and the picker every phone user knows. *Claude*
+- **A typed todo is kept when saving**, even without pressing Enter: the "+" button is gone, and typed input is never lost (as with a tap outside). *Claude*
+- **The closed settings panel is hidden completely.** Its shadow showed at the right edge, and it could be reached with Tab while closed. *Claude (found by the fingerprint test)*
+- **The settings dim the app below the header**, and a tap there closes them, as in the mockup. *Max (mockup)*
+- **Kept as they were:** every input's id, so the existing behaviour tests prove nothing but the look changed; the editor's rules (a tap outside saves, ✕ and Escape cancel). *Claude*

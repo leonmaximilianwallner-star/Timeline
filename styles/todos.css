@@ -11,6 +11,7 @@
 .todoRow[data-state="cancelled"] .tcheck{background:var(--text-faint); border-color:var(--text-faint)}
 .todoRow[data-state="postponed"] .tcheck{background:var(--c-amber); border-color:var(--c-amber)}
 .todoRow .tx{flex:1; font-size:13px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.todoRow .tx-wrap{display:contents}   /* the editor gives it a layout (styles/editor.css); here it changes nothing */
 .todoRow[data-state="done"] .tx{color:var(--text-dim); text-decoration:line-through}
 .todoRow[data-state="cancelled"] .tx{color:var(--text-faint); text-decoration:line-through}
 .todoRow[data-state="postponed"] .tx{color:var(--c-amber)}

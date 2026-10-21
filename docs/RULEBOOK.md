@@ -8,6 +8,7 @@
 **How to read it.**
 - **Part A, the dictionary**, says what every word means. Read it before writing code, a prompt or a log.
 - **Part B, the rules**, says how the things behave: progress, time, views, data.
+- **Part C, the design**, says how the interface looks and is arranged. It applies to every panel, not only the ones already built that way.
 - **"Today in the app"** notes describe the live app (`index.html`, the V2 build of June 2026, "v2_7") as of 20 Oct. They show which old words still need to go. They disappear as the restructure removes them.
 
 ---
@@ -307,7 +308,7 @@ fläche → idee
 popover → todoPanel
 pop → todoPanel (JavaScript's own list method .pop() is exempt)
 popup → editor / panel
-modal → editor
+modal → editor (the HTML attribute `aria-modal` is exempt: it is the browser's word, for screen readers)
 draft → editor (the window) / initial (a new thing's starting values)
 details → body / dropdown
 bubble → dropdown
@@ -382,7 +383,7 @@ monospace → DM Sans with tabular figures
 - A dated block is drawn inside its phase's pill.
 - **Stored ends are exclusive** (A.5).
 - Defaults when placed in time: a phase gets 14 days; a milestone, a block or a step 1 day; an event from a step 1 hour.
-- Relative wording in editors and settings: Heute · Morgen · In n Tagen · Noch n Tage · Vor n Tagen.
+- Relative wording in editors and settings: Heute · Morgen · Gestern · In n Tagen · Noch n Tage · Vor n Tagen (`dayWords`, `spanWords` in `core/dates.js`).
 
 ## B.5 Zoom (canvas)
 
@@ -429,5 +430,43 @@ The gate, the store and sync are defined in `ARCHITECTURE.md` §4–5. The rules
 - **A deeper level** below todo — deferred. Todo stays the smallest action. *(Max)*
 - **Single day view** — not designed; no name yet.
 - **The rest of the design spec** (§1 global rules outside the reworked sections, §3–5, §8.1–8.3, §8.5–8.6, §8.9) — not yet done. **Claude**
-- **Contrast** — white text on amber, green, blue, pink and grey fills is below 4.5:1. *(Max to decide later)*
+- **Contrast** — white text on amber, green, blue, pink and grey fills is below 4.5:1. **Max, 22 Oct:** white stays (the whole design points to it, and events and phases already do it); if it fails the eye test in the editor headers, it is revisited.
 - **Deleting one occurrence** of a repeating event — today, deleting deletes the whole series ("Serie gelöscht"). Calendars usually ask "this one or all". **Claude** *(noted 21 Oct)*
+
+---
+
+# Part C — The design
+
+> Derived from Max's mockup ("Timeline v2 — Mockup", design system "Timeline v2 Blueprint", Oct 2026) and the design pass of 2 Oct. First built in the editor and settings (pull request #12); **Max, 22 Oct:** this is the philosophy for the whole interface, applied view by view.
+
+## C.1 The idea
+
+**Stack, don't scatter.** Settings and options are not each a heading with its own field. They are rows in a few lists, grouped by what belongs together, with the value at the end of the row. A panel reads top to bottom: the one thing that matters most, then the lists. It takes less space and looks calmer, because there are fewer edges and fewer kinds of thing on screen.
+
+## C.2 Colour
+
+- **The interface is colourless; colour belongs to categories** (B.3). Buttons, lists, switches, focus rings: light grey on dark (dark on light in the light theme). No blue "primary" button.
+- **The thing you edit wears its colour**: the editor's header, a project's or category's page in settings. The body below is the neutral raised surface. Text on a colour is #ededec (B.3).
+- **Three surfaces**: base (the page) → surface (a list) → raised (a floating panel). Only floating things have a shadow. Behind them, a solid dim layer; no blur.
+- The current time keeps its own colour; nothing else takes a hue that isn't a category.
+
+## C.3 Arrangement
+
+- **A panel**: a header (overline, name, actions at the right), then a body with parts 24px apart.
+- **A part**: an overline above (11px, uppercase, muted), a list, a hint below (12px, muted) when something needs saying.
+- **A list**: one rounded surface (radius 16) of rows. **A row** is 44px: an icon (20px, muted), the label, the value at the right (muted), a chevron if it opens a page. Dividers between rows start after the icon.
+- **A row's value is changed in the row**: tapping it opens the phone's own picker (a native select over the row), types into it, or flips a switch. A row with a chevron opens a page in the same panel; a back arrow returns.
+- **The one big number**: each panel may have one thing set large (20px, semibold, tabular figures): the time of an event, the days left of a project. Under it, the same in words (B.4).
+- **Header actions**, right to left: done (filled round button), close without saving (outlined), a gap, delete (plain). In settings, changes apply at once, so there is only close (or back); creating something new has a done.
+
+## C.4 Measures (tokens in `styles/tokens.css`)
+
+- Spacing 4 · 8 · 12 · 16 · 24. Radii nest: panel 24 → list 16 → controls round.
+- Row 44px (also the smallest touch target). Round buttons 36px. Editor 480px wide on a desktop; on a phone it rises from the bottom, full width. Settings 360px, below the app header.
+- Type: DM Sans only. Numbers in tabular figures, never a monospace font (**Max**). 20/26 semibold for names and the big number, 14/20 for rows, 12/16 for hints, 11/14 uppercase for overlines.
+
+## C.5 Not yet in this design *(the whole-app pass)*
+
+- The todo panel, the time budget, the timeline's dropdowns, the add button: still the older look.
+- The duration format ("1.5h") and the amber of postponed todos are shared with the todo panel and change with it.
+

@@ -98,6 +98,7 @@ const syncNow = dev => dev.page.evaluate(() => syncNow());
 const status = dev => dev.page.evaluate(() => syncStatusText());
 async function signInThroughSettings(dev, password) {
   await dev.page.click('#btnSettings');
+  await dev.page.click('#sSync');                            // Daten → Sync
   await dev.page.fill('#sEmail', 'max@example.com');
   await dev.page.fill('#sPassword', password);
   await dev.page.click('#sSignIn');

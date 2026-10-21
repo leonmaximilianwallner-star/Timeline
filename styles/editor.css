@@ -1,5 +1,5 @@
-/* styles/editor.css — editor. Moved from index.html lines 286–374 on 21 Oct 2026; names updated to the dictionary the same day. */
-/* ---------- editor (and the window shell it shares with the time budget) ---------- */
+/* styles/editor.css — the editor (RULEBOOK Part C), and the window and buttons the time budget and others still use. */
+/* ---------- the window: the time budget's shell ---------- */
 .overlay{
   position:fixed; inset:0; z-index:60; background:rgba(8,8,12,.55);
   display:flex; align-items:center; justify-content:center; padding:18px;
@@ -16,26 +16,9 @@
 .overlay-window-header{display:flex; align-items:center; gap:10px; padding:14px 16px 0}
 .overlay-window-header h2{font-size:18px; font-weight:700; flex:1}
 .overlay-window-body{padding:12px 16px 16px; display:flex; flex-direction:column; gap:12px}
-.frow{display:flex; gap:10px}
-.frow>*{flex:1}
-.field label{display:block; font-size:10px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--text-faint); margin-bottom:4px}
-.field input,.field select{
-  width:100%; background:var(--surface2); border:1px solid var(--line);
-  border-radius:var(--r-small); padding:8px 10px; outline:none;
-}
-.field input:focus,.field select:focus{border-color:var(--c-blue)}
-input[type="color"]{padding:2px; height:34px; cursor:pointer}
 .seg{display:flex; background:var(--surface2); border:1px solid var(--line); border-radius:9999px; padding:3px; gap:2px}
 .seg button{flex:1; border-radius:9999px; padding:5px 10px; font-size:12px; font-weight:600; color:var(--text-dim); white-space:nowrap}
 .seg button.on{background:var(--surface3); color:var(--text)}
-.rte-tools{display:flex; gap:6px; margin-bottom:6px}
-.rte{
-  min-height:84px; max-height:200px; overflow:auto; background:var(--surface2);
-  border:1px solid var(--line); border-radius:var(--r-small); padding:8px 10px;
-  font-size:13px; line-height:1.5; outline:none;
-}
-.rte:focus{border-color:var(--c-blue)}
-.rte ul,.rte ol{padding-left:18px}
 .btn{
   border-radius:9999px; padding:9px 18px; font-weight:600; font-size:13px;
   background:var(--surface2); border:1px solid var(--line); color:var(--text-dim);
@@ -46,41 +29,72 @@ input[type="color"]{padding:2px; height:34px; cursor:pointer}
 .btn.primary{background:var(--add); border-color:transparent; color:#fff}
 .btn.danger{color:var(--c-red)}
 .btn[disabled]{opacity:.35; pointer-events:none}   /* as .cbtn[disabled] */
+.overlay-window-header{gap:8px; padding:12px 16px 6px; align-items:flex-start}   /* the time budget's header (was shared with the old editor) */
 
-/* compact head with three circular action buttons; no footer */
-.overlay-window-header{ gap:8px; }
-.overlay-window-header .cbtn.small.danger{ color:var(--c-red); }
-.overlay-window-header .cbtn.small.primary{
-  background:var(--c-blue); color:#fff; border-color:transparent;
+
+/* ---------- the editor: a header in the thing's colour over a raised body ---------- */
+.overlay.editor-overlay{background:var(--scrim); backdrop-filter:none}
+.editor{
+  --ink:#ededec;                                   /* text on a colour is always #ededec (RULEBOOK B.3) */
+  width:min(480px,100%); max-height:min(720px, calc(100vh - 36px)); display:flex; flex-direction:column;
+  background:var(--ed-colour, var(--c-gray)); border:1px solid var(--ed-colour, var(--c-gray));
+  border-radius:var(--r-float); box-shadow:var(--shadow-float); overflow:hidden;
+  animation:appear .22s var(--spring); transition:background .2s, border-color .2s;
 }
-.overlay-window-header .cbtn.small.primary:hover{ background:var(--c-blue); filter:brightness(1.08); }
-
-/* inline borderless title — placeholder doubles as the section heading */
-.field.title-field{ margin-bottom:-2px; }
-.field.title-field > label{ display:none; }
-.field textarea.title-inline{
-  background:transparent; border:none; border-radius:0;
-  padding:2px 0; font-size:22px; font-weight:700; color:var(--text);
-  width:100%; display:block; resize:none; overflow:hidden;
-  font-family:inherit; line-height:1.2;
+.editor-header{display:flex; align-items:center; gap:8px; padding:16px 16px 20px 20px; color:var(--ink)}
+.editor-name{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px}
+.editor-kind{position:relative; align-self:flex-start; height:16px; display:flex; align-items:center; gap:2px;
+  font-size:11px; line-height:14px; font-weight:600; letter-spacing:.06em; text-transform:uppercase}
+.editor-kind svg{width:14px; height:14px}
+.editor-kind select{position:absolute; inset:-6px -4px; width:calc(100% + 8px); opacity:0; cursor:pointer; font-size:16px}
+#fTitle{min-width:0; height:26px; padding:0; border:0; outline:none; background:transparent; color:var(--ink);
+  font:inherit; font-size:20px; line-height:26px; font-weight:600}
+#fTitle::placeholder{color:var(--ink); opacity:.6}
+.editor-body{
+  flex:1; min-height:0; overflow:auto; padding:20px 16px; display:flex; flex-direction:column; gap:24px;
+  background:var(--raised); border-radius:var(--r-float) var(--r-float) 0 0; color:var(--text);
 }
-.field textarea.title-inline:focus{ border:none; outline:none; }
-.field textarea.title-inline::placeholder{ color:var(--text-faint); font-weight:700; }
-.field textarea.title-inline:focus::placeholder{ color:transparent; }
+/* the time: the one big number of the editor, then the day in words */
+.when{padding:0 4px; display:flex; flex-direction:column; gap:2px}
+.when-top{display:flex; align-items:baseline; justify-content:space-between; gap:12px}
+.when-big{display:flex; align-items:baseline; gap:6px; font-size:20px; line-height:26px; font-weight:600; font-variant-numeric:tabular-nums}
+.when-sub{display:flex; align-items:baseline; gap:6px; flex-wrap:wrap; font-size:14px; line-height:20px; color:var(--fg-muted)}
+.when-len{font-size:14px; line-height:20px; color:var(--fg-muted); font-variant-numeric:tabular-nums; white-space:nowrap}
+.when input{padding:0; border:0; outline:none; background:transparent; color:inherit; font:inherit; font-variant-numeric:tabular-nums;
+  field-sizing:content; min-width:2ch; color-scheme:dark}
+html[data-theme="light"] .when input{color-scheme:light}
+.when input:focus-visible{outline:2px solid var(--text); outline-offset:2px; border-radius:4px}
+.when input::-webkit-calendar-picker-indicator{opacity:.5; cursor:pointer; margin-left:2px}
+.when-big input::-webkit-calendar-picker-indicator{display:none}
+/* the phase's text, formatted */
+.text-tools{display:flex; gap:4px; padding:6px 8px 0}
+.text-tools button{width:32px; height:32px; border:0; border-radius:8px; background:transparent; color:var(--fg-muted); cursor:pointer; display:flex; align-items:center; justify-content:center}
+.text-tools button:hover{background:var(--hairline); color:var(--text)}
+.text-tools svg{width:16px; height:16px}
+.rte{min-height:84px; max-height:220px; overflow:auto; padding:8px 16px 12px; font-size:14px; line-height:20px; outline:none}
+.rte ul,.rte ol{padding-left:18px}
 
-/* description loses its uppercase label */
-.field.desc-field > label{ display:none; }
+/* todos in the editor: a 20px circle, achromatic; the glyph tells the state */
+.editor .todoRow{min-height:var(--row-h); padding:0 0 0 16px; gap:12px; border-radius:0}
+.editor .todoRow:hover{background:color-mix(in srgb, var(--text) 4%, transparent)}
+.editor .todoRow .tx-wrap{flex:1; min-width:0; min-height:var(--row-h); display:flex; align-items:center; gap:8px; padding-right:8px; border-top:1px solid var(--hairline)}
+.editor .todoRow:first-child .tx-wrap{border-top:0}
+.editor .todoRow .tx{font-size:14px; line-height:20px}
+.editor .tcheck{border:1.5px solid var(--border-control); background:transparent; color:var(--on-primary); font-size:12px; font-weight:700}
+.editor .todoRow[data-state="done"] .tcheck{background:var(--text); border-color:var(--text)}
+.editor .todoRow[data-state="cancelled"] .tcheck{background:var(--border-control); border-color:var(--border-control)}
+.editor .todoRow[data-state="postponed"] .tcheck{background:transparent; border-color:var(--fg-muted); color:var(--fg-muted)}
+.editor .todoRow[data-state="cancelled"] .tx{color:var(--fg-muted); text-decoration:line-through}
+.editor .tdel{width:32px; height:32px; border:0; background:transparent; color:var(--fg-muted); border-radius:9999px; cursor:pointer; opacity:0}
+.editor .todoRow:hover .tdel, .editor .tdel:focus-visible{opacity:1}
+@media (hover:none){ .editor .tdel{opacity:1} }
+.editor .carry{color:var(--fg-muted); font-size:12px}
 
-/* head merges title input + action buttons in one row */
-.overlay-window-header{ padding:12px 16px 6px; align-items:flex-start; }
-.overlay-window-header .field.title-field{ flex:1; margin:0; min-width:0; }
-
-/* project selector with live color indicator on the right */
-.proj-row{ display:flex; gap:8px; align-items:center; }
-.proj-row select{ flex:1; min-width:0; }
-.proj-col{
-  width:26px; height:26px; border-radius:50%; flex:0 0 26px;
-  background:var(--text-faint); border:1px solid var(--line);
-  transition:background .15s;
+/* phone: the editor rises from the bottom, full width */
+@media (max-width:600px){
+  .overlay.editor-overlay{align-items:flex-end; padding:0}
+  .editor{width:100%; max-height:92vh; border-radius:var(--r-float) var(--r-float) 0 0}
 }
-
+/* on a colour the buttons stay light in both themes */
+.editor-header .rbtn.fill, #setPanel.tinted .rbtn.fill{background:#ededec; color:#111118}
+.todoList:empty + .row > .row-main{border-top:0}
