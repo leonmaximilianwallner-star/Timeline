@@ -84,7 +84,9 @@ function renderSettings(){
       <input id="sFile" type="file" accept="application/json" style="display:none"></div>
       <p class="note" style="margin-top:8px">Alles liegt zuerst auf diesem Gerät; angemeldet wird es mit deinen anderen Geräten abgeglichen. Export = JSON-Sicherung.</p></section>
 
-    <section><h3>Erinnerungen</h3><p class="note">Benachrichtigungen funktionieren, solange die App offen oder (auf Android) kürzlich im Hintergrund ist. Es gibt keinen Server — bei geschlossener App kann kein Push zugestellt werden.</p></section>`;
+    <section><h3>Erinnerungen</h3>
+      ${pushState.supported ? `<button class="btn" id="sPush" ${pushState.busy || (!login && !pushState.on) ? "disabled" : ""}>${pushState.on ? "Ausschalten" : "Einschalten"}</button>` : ""}
+      <p class="note" id="pushStatus" style="margin-top:8px">${esc(pushStatusText())}</p></section>`;
 
   $set.querySelector("#sClose").onclick = ()=>toggleSettings(false);
   $set.querySelectorAll("#sTheme button").forEach(b=>b.onclick=()=>{ setDevice(dv=>{ dv.theme=b.dataset.t; }); renderSettings(); });
@@ -183,7 +185,8 @@ function renderSettings(){
     $set.querySelector("#sPassword").addEventListener("keydown", e=>{ if(e.key==="Enter") go(); });
   }
   const syncBtn = $set.querySelector("#sSyncNow"); if(syncBtn) syncBtn.onclick = ()=>syncNow();
-  const outBtn = $set.querySelector("#sSignOut"); if(outBtn) outBtn.onclick = ()=>signOut().then(()=>renderSettings());
+  const outBtn = $set.querySelector("#sSignOut"); if(outBtn) outBtn.onclick = ()=>disablePush().catch(()=>{}).then(signOut).then(()=>renderSettings());   // no reminders for a signed-out device
+  const pushBtn = $set.querySelector("#sPush"); if(pushBtn) pushBtn.onclick = togglePush;
 
   $set.querySelector("#sExport").onclick = ()=>{
     const a = document.createElement("a");

@@ -37,5 +37,5 @@ window.addEventListener("resize", ()=>{ clearTimeout(rzT); rzT = setTimeout(rend
 renderAll();
 updateUndoButtons();
 scrollToToday(false);          // auto-landing: today, around the current hour
-checkReminders();
+checkPush().then(checkReminders);   // push on here? then the server reminds, not the app
 syncNow();                     // catch up with other devices (does nothing until signed in)
