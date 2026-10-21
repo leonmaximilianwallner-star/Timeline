@@ -14,7 +14,6 @@ function renderDays(){
   const corner = document.createElement("div");
   corner.id = "dayHeadCorner";
   corner.className = "dh";
-  const anchorDate = parseISO(idxDate(0));
   corner.innerHTML = `<span class="dw">KW</span><span class="dn" id="kwNum"></span>`;
   head.appendChild(corner);
   for(let i=0;i<days;i++){
@@ -111,7 +110,7 @@ function isoWeek(d) {
 function updateKW(){
   const el = document.getElementById("kwNum");
   if(!el) return;
-  const idx = Math.floor(($scene.scrollLeft + railW() + UI.dayPPD) / UI.dayPPD);
+  const idx = Math.round($scene.scrollLeft / UI.dayPPD);        // the first day right of the hour rail
   const clamped = Math.max(0, Math.min(idx, UI.range.days - 1));
   el.textContent = isoWeek(parseISO(idxDate(clamped)));
 }
@@ -120,17 +119,18 @@ function renderEvent(ev, dIso, x, w){
   const top = (ev.startMin - HOUR_START*60)/60*HOUR_PX;
   const h   = Math.max((ev.endMin - ev.startMin)/60*HOUR_PX - 2, 18);
   const el = document.createElement("div");
-  const allDone = ev.todos.length>0 && ev.todos.every(t=>t.state==="done");
+  const todos = todosOf(ev, dIso);                 // this occurrence's todos only
+  const allDone = todos.length>0 && todos.every(t=>t.state==="done");
   el.className = "event" + (allDone ? " complete" : "");
   const col = cat(ev.categoryId).color;
   el.style.cssText = `left:${x}px;top:${top}px;width:${w}px;height:${h}px;background:${col}d0;--cat-fill:${col}`;
   el.dataset.ev = ev.id; el.dataset.date = dIso;
-  const open = ev.todos.filter(t=>t.state==="open"||t.state==="postponed").length;
-  const done = ev.todos.filter(t=>t.state==="done").length;
+  const open = todos.filter(t=>t.state==="open"||t.state==="postponed").length;
+  const done = todos.filter(t=>t.state==="done").length;
   el.innerHTML =
     `<span class="et">${esc(ev.title)}</span>`+
     (h>34?`<span class="em">${fmtMin(ev.startMin)}–${fmtMin(ev.endMin)}${ev.repeat&&ev.repeat!=="none"?" ↻":""}${ev.reminderMin!=null?" 🔔":""}</span>`:"")+
-    (ev.todos.length?`<span class="badges"><span class="badge">${done}/${ev.todos.length} ✓${open&&ev.todos.some(t=>t.state==="postponed")?" ·→":""}</span></span>`:"")+
+    (todos.length?`<span class="badges"><span class="badge">${done}/${todos.length} ✓${open&&todos.some(t=>t.state==="postponed")?" ·→":""}</span></span>`:"")+
     `<span class="rezH t"></span><span class="rezH b"></span>`;
   return el;
 }

@@ -100,8 +100,8 @@ One concrete thing to get done inside a block, and the unit you schedule: dragge
 A slot of time on one day, with a start and end time, a category and its own todos. Drawn as a squircle in the day view. It may point at a step; without one it's an ordinary calendar entry (dentist, lunch). **Not:** a milestone (no hours) or a block. **Never say:** session, daily item, appointment, card, termin (in code).
 In the app: `events` records, drawn by `renderEvent` with class `.event`.
 
-**Todo** · *Todo* · `todo` · an entry in an event's `todos`
-The smallest action. Lives only in an event. Has a state (A.7). **Not:** a step. **Never say:** subtask, task, check item.
+**Todo** · *Todo* · `todo` · an entry in one day's list of an event: `todosByDate[day]`
+The smallest action. Lives in **one occurrence** of an event, never in a whole series (**Max**, 21 Oct): a weekly crit's todos for this week are not next week's. A repeating event's later occurrences start empty. Has a state (A.7). Read with `todosOf(event, day)`, written with `setTodosOf` (`core/todos.js`). **Not:** a step. **Never say:** subtask, task, check item.
 
 ---
 
@@ -166,7 +166,10 @@ A rule that makes one event occur on many days. Each day it appears is an **occu
 Minutes before an event's start when a notification fires. **Never say:** alarm.
 
 **Carry-over** · *Übernahme* · `carryOver`
-When a new event is created, the postponed todos of the previous event of the same category (or, later, of the same step) come with it. **Never say:** carried, inherit.
+Postponed todos come along to the next time (**Max**, 21 Oct):
+- **a new event** takes the postponed todos of the latest event of its category (or, later, of its step);
+- **the next occurrence of a series** shows the postponed todos of the occurrence before it. They are only shown until something changes in that occurrence, then stored there. One step only: a todo carried into next week isn't carried further unless postponed again.
+A todo that came along has `carried: true` and shows ↻. The original stays postponed where it was. **Never say:** inherit.
 
 **Today** · *Heute* · `today` — the current day; the today line is red.
 
@@ -228,6 +231,7 @@ A part is always named **thing + part**. These are all the part words:
 **Editor** · *(thing) bearbeiten* · `editor`
 All editors share one shell (**Max**, 2 Oct): a header in the thing's colour (overline, name, delete · close · done) over a raised body. Each is called after its thing: the event editor is `openEventEditor(event)`; the shared shell is `editor`. **Never say:** modal, dialog, draft, popup, sheet.
 The editor is a window (see Parts). Code: `openEditor(ctx)`, `UI.editor`, IDs `#editor…`. *(Renamed from `openModal`/`mcard` on 21 Oct.)*
+**Closing** (**Max**, 21 Oct): a tap outside the editor **saves**, because it is usually an accident and the input shouldn't be lost. ✕ and Escape cancel. Changing one field never resets another.
 
 **Todo panel** · — · `todoPanel`
 The small panel on an event for ticking and adding todos. **Never say:** popover, pop, popup.
@@ -423,4 +427,4 @@ The gate, the store and sync are defined in `ARCHITECTURE.md` §4–5. The rules
 - **Single day view** — not designed; no name yet.
 - **The rest of the design spec** (§1 global rules outside the reworked sections, §3–5, §8.1–8.3, §8.5–8.6, §8.9) — not yet done. **Claude**
 - **Contrast** — white text on amber, green, blue, pink and grey fills is below 4.5:1. *(Max to decide later)*
-- **Repeating events' todos** — todos are stored on the event, so every occurrence of a weekly event shares one todo list. Decide before the day view is restructured. **Claude** *(found 20 Oct)*
+- **Deleting one occurrence** of a repeating event — today, deleting deletes the whole series ("Serie gelöscht"). Calendars usually ask "this one or all". **Claude** *(noted 21 Oct)*

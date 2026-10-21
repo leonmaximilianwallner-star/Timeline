@@ -77,6 +77,8 @@ function renderTimeline(){
   fitLabels(frag);
 }
 
+const DROPDOWN_MIN_W = 340;   // px: a dropdown is at least this wide, even under a short phase
+
 function appendPhaseLanes(frag, phases, W){
   if(!phases.length) return;
   const { count: nLanes, laneOf } = packLanes(phases);
@@ -101,20 +103,28 @@ function appendPhaseLanes(frag, phases, W){
       r.appendChild(el);
     });
 
-    /* phase dropdown rows for this lane's open phases — inserted immediately
-       after the lane row so the dropdown always sits under its phase */
-    byLane[l].forEach(ph => {
-      if(!device.openPhases.includes(ph.id)) return;
-      const x = dayIdx(ph.start)*TL_PPD, w = Math.max(diffDays(ph.start, ph.end)*TL_PPD, 26);
-      const br = document.createElement("div"); br.className="tlRow dropdown-row";
-      const anchor = document.createElement("div"); anchor.className="dropdown-anchor";
-      anchor.style.marginLeft = x+"px"; anchor.style.width = Math.max(w, 340)+"px";
-      const bb = document.createElement("div"); bb.className="dropdown";
-      bb.style.borderTopColor = cat(ph.categoryId).color;
-      bb.innerHTML = sanitize(ph.details||"");
-      anchor.appendChild(bb); br.appendChild(anchor);
-      frag.appendChild(br);
-    });
+    /* phase dropdowns of this lane, right under it. Dropdowns that don't overlap sideways
+       share a row; only overlapping ones need a row of their own (Max, 21 Oct) */
+    const rows = [];                                   // each row: the right edge of its last dropdown, and its element
+    byLane[l].filter(ph => device.openPhases.includes(ph.id))
+      .sort((a,b) => a.start < b.start ? -1 : 1)
+      .forEach(ph => {
+        const x = dayIdx(ph.start)*TL_PPD, w = Math.max(diffDays(ph.start, ph.end)*TL_PPD, 26);
+        const width = Math.max(w, DROPDOWN_MIN_W);
+        let row = rows.find(r => r.right <= x);
+        if(!row){
+          row = { right: 0, el: document.createElement("div") };
+          row.el.className = "tlRow dropdown-row";
+          rows.push(row); frag.appendChild(row.el);
+        }
+        row.right = x + width;
+        const anchor = document.createElement("div"); anchor.className="dropdown-anchor";
+        anchor.style.marginLeft = x+"px"; anchor.style.width = width+"px";
+        const bb = document.createElement("div"); bb.className="dropdown";
+        bb.style.borderTopColor = cat(ph.categoryId).color;
+        bb.innerHTML = sanitize(ph.details||"");
+        anchor.appendChild(bb); row.el.appendChild(anchor);
+      });
   }
 }
 

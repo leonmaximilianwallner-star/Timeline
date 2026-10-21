@@ -9,25 +9,20 @@ function getCarryover(catId, dateISO, excludeId){
   let best = null, bestKey = "";
   S.events.forEach(ev=>{
     if(ev.categoryId !== catId || ev.id === excludeId) return;
-    if(!ev.todos.some(t=>t.state === "postponed")) return;
     const occ = latestOccurrence(ev, dateISO);
-    if(!occ) return;
+    if(!occ || !todosOf(ev, occ).some(t=>t.state === "postponed")) return;
     const key = occ + "T" + String(ev.startMin).padStart(4,"0");   // date, then start time
     if(key > bestKey){ bestKey = key; best = ev; }
   });
   if(!best) return [];
   const seen = new Set();
-  return best.todos.filter(t=>{
+  return todosOf(best, latestOccurrence(best, dateISO)).filter(t=>{
     const k = t.text.trim();                                        // dedup key: trimmed text
     if(t.state !== "postponed" || seen.has(k)) return false;
     seen.add(k); return true;
   }).map(t=>({ id:uid(), text:t.text, state:"open", carried:true }));
 }
 
-function catDots(sel){
-  return `<div class="catdots">`+S.categories.map(c=>
-    `<button class="catdot${c.id===sel?" on":""}" data-cat="${c.id}" style="background:${c.color}" title="${esc(c.name)}"></button>`).join("")+`</div>`;
-}
 function todoRowHTML(t){
   return `<div class="todoRow" data-state="${t.state}" data-tid="${t.id}">
     <button class="tcheck" title="Klick: Status · Rechtsklick: verschoben">${t.state==="done"?"✓":t.state==="cancelled"?"✕":t.state==="postponed"?"→":""}</button>
@@ -43,8 +38,9 @@ function openEditor(ctx){
   UI.editor = ctx;
   const ed = ctx.edit;
   if(ctx.type==="event"){
-    /* the editor works on its own copy of the todos: saving hands it over, cancelling drops it */
-    ctx.todos = ed ? JSON.parse(JSON.stringify(ed.todos)) : getCarryover(ctx.initial.categoryId, ctx.initial.date, null);
+    /* the editor works on its own copy of one day's todos: saving hands it over, cancelling drops it */
+    if(ed) ctx.occurrence = ctx.occurrence || ed.date;
+    ctx.todos = ed ? JSON.parse(JSON.stringify(todosOf(ed, ctx.occurrence))) : getCarryover(ctx.initial.categoryId, ctx.initial.date, null);
   }
   const ov = document.createElement("div");
   ov.className = "overlay"; ov.id = "editorOverlay";
@@ -57,7 +53,7 @@ function openEditor(ctx){
     </div>
     <div class="overlay-window-body" id="editorBody"></div></div>`;
   document.body.appendChild(ov);
-  ov.addEventListener("pointerdown", e=>{ if(e.target===ov) closeEditor(); });
+  ov.addEventListener("pointerdown", e=>{ if(e.target===ov) saveEditor(); });   // a tap outside saves; ✕ and Escape cancel (Max, 21 Oct)
   ov.querySelector("#editorClose").onclick = closeEditor;
   ov.querySelector("#editorSave").onclick = saveEditor;
   renderEditorBody();
@@ -71,7 +67,6 @@ function closeEditor(){
 
 function renderEditorBody(){
   const ctx = UI.editor, ed = ctx.edit, B = document.getElementById("editorBody");
-  const T = document.getElementById("editorTitle");
   const v = (ed||ctx.initial||{});
   let h = "";
   const titleField = (placeholder,val)=>{
@@ -109,7 +104,7 @@ function renderEditorBody(){
     h += `<div class="field"><label>Todos</label><div class="todoList" id="editorTodos">${(ctx.todos||[]).map(todoRowHTML).join("")}</div>
       <div class="todoAdd" style="margin-top:6px"><input id="fNewTodo" placeholder="Todo hinzufügen…">
       <button class="cbtn small" id="fAddTodo" title="Hinzufügen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
-      ${(ctx.todos||[]).some(t=>t.carried)?`<div class="thint" style="margin-top:5px">↻ aus dem letzten Termin dieser Kategorie übernommen (war verschoben)</div>`:""}</div>`;
+      <div class="thint" id="editorCarryHint" style="margin-top:5px" hidden></div></div>`;
   }
   else if(kind==="phase"){
     h += titleField(ed ? "Phase bearbeiten" : "Neue Phase", v.title);
@@ -131,10 +126,6 @@ function renderEditorBody(){
     h += `<div class="field"><label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:13px;color:var(--text);letter-spacing:0;cursor:pointer">
       <input id="fFinal" type="checkbox" ${v.final?"checked":""} style="width:auto"> Abschluss ★ <span class="note">(auf der Projektlinie)</span></label></div>`;
   }
-  else if(kind==="project"){
-    h += titleField(ed ? "Projekt bearbeiten" : "Neues Projekt", v.name);
-    h += `<div class="field"><p class="note">Projekte werden im Einstellungs-Panel verwaltet.</p></div>`;
-  }
   B.innerHTML = h;
 
   /* wiring */
@@ -153,12 +144,20 @@ function renderEditorBody(){
     _fProj.addEventListener("change", ()=>{
       paint();
       if(ctx.type==="event" && !ed){
+        /* a new event takes over the postponed todos of its category: refresh only the todo list,
+           so everything already typed (title, time, date …) stays as it is */
         ctx.initial.categoryId = _fProj.value || null;
         ctx.todos = ctx.todos.filter(t=>!t.carried).concat(getCarryover(ctx.initial.categoryId, ctx.initial.date, null));
-        renderEditorBody();
+        showTodos();
       }
     });
   }
+  function showTodos(){
+    const list = B.querySelector("#editorTodos"), hint = B.querySelector("#editorCarryHint");
+    if(list) list.innerHTML = ctx.todos.map(todoRowHTML).join("");
+    if(hint){ hint.textContent = "↻ aus einem früheren Termin übernommen (war verschoben)"; hint.hidden = !ctx.todos.some(t=>t.carried); }
+  }
+  if(kind==="event") showTodos();
   const addTodo = ()=>{
     const inp = B.querySelector("#fNewTodo"); const txt = inp.value.trim(); if(!txt) return;
     const list = ctx.todos;
@@ -222,8 +221,14 @@ function saveEditor(){
     const data = { title, categoryId: val("fProj")||null,
       date: val("fDate")||todayISO(), startMin:s, endMin:e,
       repeat: val("fRepeat")||"none",
-      reminderMin: val("fRem")==="" ? null : Number(val("fRem")),
-      todos: ctx.todos };
+      reminderMin: val("fRem")==="" ? null : Number(val("fRem")) };
+    /* this day's todos go back to their day; if the event moved, every day's todos move with it */
+    const shift = ed ? diffDays(ed.date, data.date) : 0;
+    let byDate = shiftTodos(ed ? ed.todosByDate : {}, shift);
+    const day = ed ? isoDate(addDays(parseISO(ctx.occurrence), shift)) : data.date;
+    if(data.repeat === "none") byDate = {};                        // a plain event has one day: its own
+    byDate[data.repeat === "none" ? data.date : day] = ctx.todos;
+    data.todosByDate = JSON.parse(JSON.stringify(byDate));
     if(data.reminderMin!=null) requestNotifPermission();
     mutate(st=>{ if(ed) Object.assign(st.events.find(x=>x.id===ed.id), data);
                  else st.events.push({ id:uid(), ...data }); });
@@ -246,7 +251,6 @@ function saveEditor(){
                  else st.milestones.push({ id:uid(), ...data }); });
     if(UI.addMode) setAddMode(false);
   }
-  /* kind==="project" handled in settings panel, not here */
   closeEditor();
 }
 

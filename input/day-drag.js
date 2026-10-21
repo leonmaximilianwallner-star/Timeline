@@ -172,16 +172,20 @@ function eventPointerDown(e, eventEl){
     const dayDelta = st.day - dayIdx(dateISO);
     if(copy){
       mutate(s=>{
+        const day = idxDate(st.day);
         s.events.push({ ...structuredClone(ev), id:uid(), repeat:"none",
-          date: idxDate(st.day), startMin: st.s, endMin: st.en,
-          todos: ev.todos.map(t=>({...t, id:uid()})) });
+          date: day, startMin: st.s, endMin: st.en,
+          todosByDate: { [day]: todosOf(ev, dateISO).map(t=>({...t, id:uid()})) } });   // the copied day's todos
       });
       toast("Kopie erstellt");
     } else {
       mutate(s=>{
         const t = s.events.find(x=>x.id===ev.id);
         t.startMin = st.s; t.endMin = st.en;
-        if(dayDelta) t.date = isoDate(addDays(parseISO(t.date), dayDelta));  // series shifts as a whole
+        if(dayDelta){                                     // series shifts as a whole, each day's todos with it
+          t.date = isoDate(addDays(parseISO(t.date), dayDelta));
+          t.todosByDate = shiftTodos(t.todosByDate, dayDelta);
+        }
       });
     }
   };

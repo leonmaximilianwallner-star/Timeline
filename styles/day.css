@@ -39,7 +39,6 @@
 .dayCol{position:absolute; top:0; bottom:0}
 .dayCol.weekend{background:rgba(127,127,140,.045)}
 .hline{position:absolute; left:0; right:0; height:1px; background:var(--line-soft); pointer-events:none}
-.hline.half{opacity:.4; background:transparent; border-top:1px dashed var(--line-soft)}
 #nowLine{position:absolute; height:0; border-top:2px solid var(--accent); z-index:9; pointer-events:none}
 #nowLine::before{content:""; position:absolute; left:-4px; top:-5px; width:8px; height:8px; border-radius:50%; background:var(--accent)}
 .event{

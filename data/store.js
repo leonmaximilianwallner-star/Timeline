@@ -56,6 +56,17 @@ function toCurrentShape(d, takeDeviceState){
     RECORD_LISTS.forEach(list => (d[list]||[]).forEach(r => { r.updatedAt = now; }));   // all reshaped: all changed
     d.version = 4;
   }
+  if(d.version < 5){                                       // version 5 (21 Oct): todos belong to one occurrence
+    (d.events||[]).forEach(ev=>{
+      const list = ev.todos || [];
+      /* a series' shared list goes to its current occurrence (the latest up to today) */
+      const day = isSeries(ev) ? (latestOccurrence(ev, todayISO()) || ev.date) : ev.date;
+      ev.todosByDate = list.length ? { [day]: list } : {};
+      delete ev.todos;
+      ev.updatedAt = now;
+    });
+    d.version = 5;
+  }
   RECORD_LISTS.forEach(list => (d[list]||[]).forEach(r => { if(!r.updatedAt) r.updatedAt = now; }));
   d.deleted = d.deleted || {};
   return d;

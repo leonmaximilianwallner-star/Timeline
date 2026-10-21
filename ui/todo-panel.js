@@ -20,43 +20,49 @@ function openTodoPanel(ev, dateISO, anchorEl){
     </div>
     <div class="panel-title">${esc(ev.title)}</div>
     <div class="panel-meta">${fmtDateLong(dateISO)} · ${fmtMin(ev.startMin)}–${fmtMin(ev.endMin)}${ev.repeat&&ev.repeat!=="none"?" · ↻":""}</div>
-    <div class="todoList" id="todoPanelTodos">${ev.todos.map(todoRowHTML).join("")}</div>
+    <div class="todoList" id="todoPanelTodos">${todosOf(ev, dateISO).map(todoRowHTML).join("")}</div>
     <div class="todoAdd" style="margin-top:8px"><input id="todoPanelNew" placeholder="Todo hinzufügen…">
       <button class="cbtn small" id="todoPanelAdd"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>`;
   document.body.appendChild(panel);
-  panel.classList.toggle("complete", ev.todos.length>0 && ev.todos.every(t=>t.state==="done"));
+  const allDone = list => list.length>0 && list.every(t=>t.state==="done");
+  panel.classList.toggle("complete", allDone(todosOf(ev, dateISO)));
   panel.style.setProperty("--cat-fill", c.color);
   UI.todoPanel = { evId:ev.id, date:dateISO };
 
-  const sync = mutFn => {                       // mutate without tearing the todo panel down
-    mutate(s=>{ const e2 = s.events.find(x=>x.id===ev.id); if(e2) mutFn(e2); }, { skipRender:true });
+  /* changes this day's list (and only this day's) without tearing the todo panel down */
+  const current = ()=> todosOf(S.events.find(x=>x.id===ev.id), dateISO);
+  const sync = change => {
+    mutate(s=>{
+      const e2 = s.events.find(x=>x.id===ev.id); if(!e2) return;
+      const list = JSON.parse(JSON.stringify(todosOf(e2, dateISO)));
+      change(list);
+      setTodosOf(e2, dateISO, list);
+    }, { skipRender:true });
     renderAll();
     const e2 = S.events.find(x=>x.id===ev.id);
-    document.getElementById("todoPanelTodos").innerHTML = e2.todos.map(todoRowHTML).join("");
-    panel.classList.toggle("complete", e2.todos.length>0 && e2.todos.every(t=>t.state==="done"));
+    document.getElementById("todoPanelTodos").innerHTML = current().map(todoRowHTML).join("");
+    panel.classList.toggle("complete", allDone(current()));
     panel.style.setProperty("--cat-fill", cat(e2.categoryId).color);
   };
   panel.querySelector(".panel-close").onclick = closeTodoPanel;
-  panel.querySelector("#todoPanelEdit").onclick = ()=>{ const e2=S.events.find(x=>x.id===ev.id); closeTodoPanel(); if(e2) openEditor({ type:"event", edit:e2 }); };
+  panel.querySelector("#todoPanelEdit").onclick = ()=>{ const e2=S.events.find(x=>x.id===ev.id); closeTodoPanel(); if(e2) openEditor({ type:"event", edit:e2, occurrence:dateISO }); };
   const add = ()=>{ const i=panel.querySelector("#todoPanelNew"); const t=i.value.trim(); if(!t) return; i.value="";
-    sync(e2=>e2.todos.push({ id:uid(), text:t, state:"open" })); };
+    sync(list=>list.push({ id:uid(), text:t, state:"open" })); };
   panel.querySelector("#todoPanelAdd").onclick = add;
   panel.querySelector("#todoPanelNew").addEventListener("keydown", e=>{ if(e.key==="Enter") add(); });
   panel.addEventListener("click", e=>{
     const row = e.target.closest(".todoRow"); if(!row) return;
-    if(e.target.closest(".tdel")) sync(e2=>{ e2.todos = e2.todos.filter(t=>t.id!==row.dataset.tid); });
+    if(e.target.closest(".tdel")) sync(list=>{ const i = list.findIndex(t=>t.id===row.dataset.tid); if(i>=0) list.splice(i,1); });
     else if(e.target.closest(".tcheck")){
-      const before = S.events.find(x=>x.id===ev.id).todos.every(t=>t.state==="done");
-      sync(e2=>{ const t=e2.todos.find(t=>t.id===row.dataset.tid); if(t) cycleTodo(t); });
-      const e2 = S.events.find(x=>x.id===ev.id);
-      const after = e2.todos.length>0 && e2.todos.every(t=>t.state==="done");
-      if(after && !before) celebrate(e2, ev.id);
+      const before = allDone(current());
+      sync(list=>{ const t=list.find(t=>t.id===row.dataset.tid); if(t) cycleTodo(t); });
+      if(allDone(current()) && !before) celebrate(S.events.find(x=>x.id===ev.id), ev.id);
     }
   });
   panel.addEventListener("contextmenu", e=>{
     const row = e.target.closest(".todoRow"); if(!row) return;
     e.preventDefault();
-    sync(e2=>{ const t=e2.todos.find(t=>t.id===row.dataset.tid); if(t) t.state = t.state==="postponed"?"open":"postponed"; });
+    sync(list=>{ const t=list.find(t=>t.id===row.dataset.tid); if(t) t.state = t.state==="postponed"?"open":"postponed"; });
   });
 }
 function closeTodoPanel(){ const p=document.getElementById("todoPanel"); if(p) p.remove(); UI.todoPanel=null; }

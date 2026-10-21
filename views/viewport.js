@@ -56,11 +56,14 @@ $scene.addEventListener("scrollend", () => {
 function maybeExtendRange(){
   const w = $scene.scrollLeft, max = $scene.scrollWidth - $scene.clientWidth;
   if(w < EDGE_BUFFER_PX){
-    /* prepend EXTEND_DAYS — re-anchor scrollLeft so the view doesn't jump */
+    /* prepend EXTEND_DAYS — re-anchor scrollLeft so the view doesn't jump.
+       The range start then snaps back to a Monday, so the real shift can be a few days more:
+       re-anchor by the days actually added in front, not by EXTEND_DAYS */
+    const oldStart = UI.range.start;
     UI.range.start = isoDate(addDays(parseISO(UI.range.start), -EXTEND_DAYS));
     UI.range.days += EXTEND_DAYS;
     renderAll();
-    $scene.scrollLeft = w + EXTEND_DAYS * TL_PPD;
+    $scene.scrollLeft = w + diffDays(UI.range.start, oldStart) * TL_PPD;
     return true;
   }
   if(max - w < EDGE_BUFFER_PX){
