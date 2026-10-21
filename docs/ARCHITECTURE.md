@@ -122,21 +122,17 @@ Undo and redo stamp the same way: whatever they bring back counts as changed *no
 
 ## 5. Where the data lives
 
-### 5.1 Supabase, one row per thing
+### 5.1 Supabase, one row per record *(as built, 21 Oct)*
 
-**Decision.** The truth lives in a Supabase (Postgres) database with one table per entity, using the rulebook's names (RULEBOOK §7). Each row carries `user_id`, `updated_at` and `deleted_at`.
+**One table, `records`** (`supabase/schema.sql`): one row per record of the plan — a category, phase, milestone or event.
 
 ```
-items       id, user_id, kind, title, body, cat, time_start, time_end, final, reached,
-            (canvas fields added when the canvas returns: x, y, w, h, blocks, certainty, …),
-            updated_at, deleted_at
-events      id, user_id, title, cat, date, start_min, end_min, repeat, reminder_min, todos,
-            updated_at, deleted_at
-categories  colour, user_id, name, span_start, span_end, updated_at
-settings    user_id, density, theme, time_zone, …
+records   user_id, id, list, data (the record as JSON), updated_at (its stamp), deleted, synced_at (arrival, server clock)
 ```
 
-Phases and milestones are `items` from day one, even though v2_7 has no canvas. That way the canvas can return later without a second migration. Per-device state, such as which phase details are open and the scroll position, stays on the device and is never synced.
+**Why one table and not one per kind (as draft 1 planned).** The record's fields live in `data`, so a new field or a renamed one is a change in the app only, never a database migration. The server only needs what sync needs: who, which record, when, deleted or not. Agents can still read records in pieces (`list = 'phases'`, fields inside `data`). *(Claude, 21 Oct)*
+
+**The server's two rules** (a trigger): it notes when each row arrived (`synced_at`), and an older version never overwrites a newer one. Devices ask "what arrived since…" by the server's clock, so a device whose clock is off, or that comes back from offline with old edits, still sees everything.
 
 **Why rows, not one blob.**
 - **A blob loses data.** It's last-write-wins on *everything*: two devices editing offline means one device's work silently disappears. With rows, only edits to the *same thing* can conflict.
@@ -148,7 +144,13 @@ Phases and milestones are `items` from day one, even though v2_7 has no canvas. 
 - The browser holds only Supabase's *public* key, which permits nothing by itself. Every table has **Row Level Security**: the database refuses any row whose `user_id` isn't the person logged in. The permission is your login, checked by the database.
 - Rule: **no secret ever goes in the repo or the app.** The `service_role` key exists only in Supabase's dashboard and server functions.
 
-**Deletes are soft.** A delete sets `deleted_at` instead of removing the row. Otherwise a device that was offline would see "that item is missing, let me upload it" and bring deleted things back to life. Old tombstones can be cleaned up after 90 days.
+**Deletes are soft.** A deletion is a row with `deleted = true`; nothing is ever removed (there is no delete permission at all). Otherwise a device that was offline would see "that record is missing, let me upload it" and bring deleted things back to life. Old deletion rows can be cleaned up later.
+
+**How a sync runs** (`data/sync.js`, `data/merge.js`): pull what arrived since this device last looked, merge (the newer stamp wins), then push what this device stamped since its last push. After every change (1.5 s later), on start, when the app comes back to the screen or online, and every minute. Changes from another device clear undo (undo can't step back across them).
+
+**First sign-in on a device:** if the server is empty, this device's plan goes up. If another device came first, this device takes the server's plan; its own is kept on the device as a backup (`timeline.data.before-sync`), never uploaded.
+
+**Login:** email and password, one account, created in the Supabase dashboard; sign-ups are switched off. The login lives on the device (`timeline.login.v1`) and renews itself.
 
 ### 5.2 Offline-first
 
@@ -267,7 +269,7 @@ v2_7 has no steps: they come from the canvas's blocks. The question of where the
    **Rename pass. Built 21 Oct:** the names that survive the restructure now follow the dictionary (old words 276 → 45); the rest go with step 3. See `DECISIONS.md`.
 3. **Data layer. Built 21 Oct** (§4), simpler than planned: one gate stamps every change; deletions are remembered; device state is separate; the editor's cancel really cancels. The plan is now stored under `timeline.data.v3`; the V2 data is copied over on first start and stays untouched under its old key.
    **3b. Stored names. Built 21 Oct:** exams and project milestones are one `milestones` list (one editor); end dates are stored exclusive (`lastDay`/`dayAfter` in `core/dates.js`); the mono font is gone. Data version 4; older data converts on load. *Deferred on purpose:* phase descriptions as plain lines (with the canvas), categories keyed by colour (open question, RULEBOOK B.8).
-4. **Supabase.** Login, tables with Row Level Security, sync by stamps, export/import. Two devices in sync again.
+4. **Supabase. Built 21 Oct:** one `records` table, login in settings, sync by stamps (§5.1). Tested against a simulated Supabase with two devices; the first real sync happens on Max's phone.
 5. **Notifications.** Reminders from a scheduled Supabase function by web push; a native wrapper only if Android web push proves insufficient.
 6. **Then features, one at a time**: the viewport prototype → the canvas → blocks and steps → step → event drag → the single-day view → agents.
 
@@ -294,6 +296,8 @@ core/                       rules with no screen
 data/
   device.js                 device state: theme, days, open dropdowns (never synced)
   changes.js                stamps what changed; remembers deletions
+  merge.js                  how the plan and the server's copy meet: the newer stamp wins
+  sync.js                   login, pull, push, when to sync
   store.js                  the plan, loading, saving, the one gate (mutate), undo/redo, category lookup
 
 views/
@@ -369,8 +373,7 @@ styles/
   base.css · editor.css · timeline.css · day.css
 
 supabase/
-  schema.sql            tables
-  policies.sql          row level security
+  schema.sql            the table, who may read it, the server's two rules
 
 tests/                  fingerprints, core, sync, vocabulary
 docs/

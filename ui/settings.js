@@ -68,11 +68,21 @@ function renderSettings(){
       ${UI.settingsForm==="cat" ? catForm : ""}
       <p class="note" style="margin-top:8px">Grau ist fix für „frei". Jede Farbe gehört nur einem Projekt oder einer Kategorie.</p></section>
 
+    <section><h3>Sync</h3>
+      ${login ? `<div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn" id="sSyncNow">Jetzt synchronisieren</button>
+          <button class="btn" id="sSignOut">Abmelden</button></div>`
+        : SYNC_KEY ? `<div class="sync-login" style="display:flex;flex-direction:column;gap:6px">
+          <input id="sEmail" type="email" placeholder="E-Mail" autocomplete="username">
+          <input id="sPassword" type="password" placeholder="Passwort" autocomplete="current-password">
+          <button class="btn primary" id="sSignIn">Anmelden</button></div>` : ""}
+      <p class="note" id="syncStatus" style="margin-top:8px">${esc(syncStatusText())}</p></section>
+
     <section><h3>Daten</h3><div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn" id="sExport">Exportieren</button>
       <button class="btn" id="sImport">Importieren</button>
       <input id="sFile" type="file" accept="application/json" style="display:none"></div>
-      <p class="note" style="margin-top:8px">Alles liegt lokal in diesem Browser (localStorage). Export = JSON-Sicherung.</p></section>
+      <p class="note" style="margin-top:8px">Alles liegt zuerst auf diesem Gerät; angemeldet wird es mit deinen anderen Geräten abgeglichen. Export = JSON-Sicherung.</p></section>
 
     <section><h3>Erinnerungen</h3><p class="note">Benachrichtigungen funktionieren, solange die App offen oder (auf Android) kürzlich im Hintergrund ist. Es gibt keinen Server — bei geschlossener App kann kein Push zugestellt werden.</p></section>`;
 
@@ -158,6 +168,22 @@ function renderSettings(){
     const nameInp = openForm.querySelector('input[type="text"]');
     if(nameInp) setTimeout(()=>nameInp.focus(), 0);
   }
+
+  /* sync: sign in / out. Only the status line updates while signing in, so typed input stays */
+  const signInBtn = $set.querySelector("#sSignIn");
+  if(signInBtn){
+    const go = ()=>{
+      const email = $set.querySelector("#sEmail").value.trim(), password = $set.querySelector("#sPassword").value;
+      if(!email || !password){ setSyncState("off", "E-Mail und Passwort eingeben"); return; }
+      signInBtn.disabled = true; setSyncState("busy", "");
+      signIn(email, password).then(()=>renderSettings())
+        .catch(e=>{ signInBtn.disabled = false; setSyncState("off", e instanceof TypeError ? "Keine Verbindung" : e.message); });
+    };
+    signInBtn.onclick = go;
+    $set.querySelector("#sPassword").addEventListener("keydown", e=>{ if(e.key==="Enter") go(); });
+  }
+  const syncBtn = $set.querySelector("#sSyncNow"); if(syncBtn) syncBtn.onclick = ()=>syncNow();
+  const outBtn = $set.querySelector("#sSignOut"); if(outBtn) outBtn.onclick = ()=>signOut().then(()=>renderSettings());
 
   $set.querySelector("#sExport").onclick = ()=>{
     const a = document.createElement("a");

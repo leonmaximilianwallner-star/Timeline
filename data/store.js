@@ -119,6 +119,7 @@ function mutate(fn, opts={}){
   fn(S);
   stampChanges(JSON.parse(before), S, new Date().toISOString());
   persist();
+  scheduleSync();
   if(!opts.skipRender) renderAll();
   updateUndoButtons();
 }
@@ -128,7 +129,7 @@ function undo(){
   const before = S;
   S = JSON.parse(UI.undo.pop());
   stampChanges(before, S, new Date().toISOString());       // what undo brings back counts as changed now
-  persist(); renderAll(); updateUndoButtons(); toast("Rückgängig");
+  persist(); scheduleSync(); renderAll(); updateUndoButtons(); toast("Rückgängig");
 }
 function redo(){
   if(!UI.redo.length) return;
@@ -136,7 +137,7 @@ function redo(){
   const before = S;
   S = JSON.parse(UI.redo.pop());
   stampChanges(before, S, new Date().toISOString());
-  persist(); renderAll(); updateUndoButtons(); toast("Wiederholt");
+  persist(); scheduleSync(); renderAll(); updateUndoButtons(); toast("Wiederholt");
 }
 function updateUndoButtons(){
   document.getElementById("btnUndo").toggleAttribute("disabled", !UI.undo.length);
