@@ -26,6 +26,7 @@ const OUT = resolve('tests/.fingerprint');
 
 // ── the steps both builds go through ─────────────────────────────────────────
 // Each step leaves the app in a state worth comparing. Steps only use things a person can do.
+// Selectors list the current name first and older names after it, so a rename can be compared with the build before it.
 const STEPS = [
   ['start',            async p => {}],
   ['scrolled',         async p => p.evaluate(() => { const s = document.getElementById('scene'); s.scrollLeft += 1700; s.scrollTop += 500; })],
@@ -33,9 +34,9 @@ const STEPS = [
   ['today',            async p => p.click('#btnToday')],
   ['phase-editor',     async p => { await p.locator('[data-phase]').first().click(); }],
   ['closed',           async p => p.keyboard.press('Escape')],
-  ['todo-panel',       async p => { await p.locator('.evcard').nth(1).click(); }],
-  ['todo-ticked',      async p => { await p.locator('#pop .tcheck').first().click(); }],
-  ['event-editor',     async p => { await p.locator('#popEdit').click(); }],
+  ['todo-panel',       async p => { await p.locator('.event, .evcard').nth(1).click(); }],
+  ['todo-ticked',      async p => { await p.locator('#todoPanel .tcheck, #pop .tcheck').first().click(); }],
+  ['event-editor',     async p => { await p.locator('#todoPanelEdit, #popEdit').click(); }],
   ['closed-2',         async p => p.keyboard.press('Escape')],
   ['undo',             async p => p.click('#btnUndo')],
   ['add-mode',         async p => p.click('#fab')],
@@ -154,8 +155,10 @@ for (const [screenName, screen] of Object.entries(SCREENS)) {
   for (let i = 0; i < STEPS.length; i++) {
     const a = ref.frames[i], b = now.frames[i];
     const px = pixelDiff(a.png, b.png);
-    const moved = a.layout.join('\n') === b.layout.join('\n') ? null
-      : a.layout.findIndex((l, j) => l !== b.layout[j]);
+    // Positions are compared without names, so renaming an ID or class doesn't count as a change.
+    const geo = l => l.slice(l.lastIndexOf(' ', l.lastIndexOf(' ') - 1) + 1);
+    const moved = a.layout.length === b.layout.length && a.layout.every((l, j) => geo(l) === geo(b.layout[j])) ? null
+      : Math.max(0, a.layout.findIndex((l, j) => !b.layout[j] || geo(l) !== geo(b.layout[j])));
     if (process.env.FP_SAVE) { await mkdir(OUT, { recursive: true }); await writeFile(join(OUT, `${screenName}-${String(i).padStart(2, '0')}-${a.name}.png`), b.png); }
     if (px === 0 && moved === null) { console.log(`✓ ${screenName} · ${a.name}`); continue; }
     failed = true;

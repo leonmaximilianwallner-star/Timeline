@@ -1,9 +1,9 @@
-/* styles/device.css — adjustments for reduced motion and small screens. Moved unchanged from index.html lines 521–528 on 21 Oct 2026. */
+/* styles/device.css — adjustments for reduced motion and small screens. Moved from index.html lines 521–528 on 21 Oct 2026; names updated to the dictionary the same day. */
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation-duration:.01ms !important; transition-duration:.01ms !important}
 }
 @media (max-width:640px){
   :root{--rail-w:48px}
   #topdate{display:none}
-  .bubble{max-width:260px}
+  .dropdown{max-width:260px}
 }

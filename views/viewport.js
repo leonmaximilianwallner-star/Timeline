@@ -1,4 +1,4 @@
-// views/viewport.js — the one scroll container. Moved unchanged from index.html lines 1238–1321 on 21 Oct 2026.
+// views/viewport.js — the one scroll container. Moved from index.html lines 1238–1321 on 21 Oct 2026; names updated to the dictionary the same day.
 "use strict";
 /* ════════════════════════════════════════════════════════════
    scroll — ONE native viewport (#scene), both axes, compositor-driven.
@@ -30,7 +30,7 @@ $scene.addEventListener("scroll", () => { updateKW(); scheduleExtend();} , { pas
 
 /* day-snap on scrollend.
    The smooth scrollTo issued below is itself a scroll; if the user starts a
-   new gesture mid-animation, the two fight and stutter. We track _snapping
+   new gesture mid-animation, the two fight and stutter. We keep _snapping
    and abort the in-flight smooth scroll on the next user-initiated input
    (pointerdown or wheel). Re-issuing scrollTo at the current position is the
    standard way to cancel a smooth scroll. */

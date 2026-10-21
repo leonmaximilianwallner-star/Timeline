@@ -1,4 +1,4 @@
-// input/pointer.js — pointer helpers and edge auto-pan. Moved unchanged from index.html lines 1325–1374 on 21 Oct 2026.
+// input/pointer.js — pointer helpers and edge auto-pan. Moved from index.html lines 1325–1374 on 21 Oct 2026; names updated to the dictionary the same day.
 "use strict";
 /* ════════════════════════════════════════════════════════════
    input — unified Pointer Events pipeline, drag machines
@@ -32,7 +32,7 @@ let _pan = null, _panRAF = 0;
 
 function panSpeed(depth){ const r = clamp(depth/PAN_ZONE, 0, 1); return PAN_MAX * r * r; }
 function panBind(apply, axes, x0, y0){ _pan = { apply, axes, x:x0, y:y0, zoneSince:0 }; if(!_panRAF) _panRAF = requestAnimationFrame(panFrame); }
-function panTrack(x, y){ if(_pan){ _pan.x = x; _pan.y = y; } }
+function panFollow(x, y){ if(_pan){ _pan.x = x; _pan.y = y; } }
 function panRelease(){ _pan = null; if(_panRAF){ cancelAnimationFrame(_panRAF); _panRAF = 0; } }
 
 function panFrame(){

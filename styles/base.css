@@ -1,4 +1,4 @@
-/* styles/base.css — reset, hidden scrollbars, app frame, header. Moved unchanged from index.html lines 38–100 on 21 Oct 2026. */
+/* styles/base.css — reset, hidden scrollbars, app frame, header. Moved from index.html lines 38–100 on 21 Oct 2026; names updated to the dictionary the same day. */
 *{box-sizing:border-box; margin:0; padding:0}
 html,body{height:100%}
 body{
@@ -37,8 +37,8 @@ input,select,textarea{font-family:inherit; font-size:14px; color:var(--text)}
 }
 #scene.addmode{touch-action:none}     /* in add-mode every gesture is JS creation, not a pan */
 
-/* ---------- top bar ---------- */
-#topbar{
+/* ---------- header ---------- */
+#header{
   display:flex; align-items:center; gap:10px;
   padding:10px 16px 8px; flex:0 0 auto;
   z-index:30; background:var(--base);
@@ -46,7 +46,7 @@ input,select,textarea{font-family:inherit; font-size:14px; color:var(--text)}
 #wordmark{height:16px; display:block; opacity:.95}
 #wordmark .wm{fill:var(--text)}
 #topdate{font-size:12px; color:var(--text-dim); margin-left:4px; white-space:nowrap}
-#topbar .spacer{flex:1}
+#header .spacer{flex:1}
 .cbtn{
   width:34px; height:34px; border-radius:50%;
   display:inline-flex; align-items:center; justify-content:center;

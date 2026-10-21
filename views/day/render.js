@@ -1,4 +1,4 @@
-// views/day/render.js — draws the day view. Moved unchanged from index.html lines 1083–1237 on 21 Oct 2026.
+// views/day/render.js — draws the day view. Moved from index.html lines 1083–1237 on 21 Oct 2026; names updated to the dictionary the same day.
 "use strict";
 /* ---------- daily view ---------- */
 function renderDays(){
@@ -9,7 +9,7 @@ function renderDays(){
   const inner = document.createElement("div");
   inner.style.width = W+"px";
 
-  /* sticky day-of-week bar */
+  /* sticky day header */
   const head = document.createElement("div"); head.id="dayHead";
   const corner = document.createElement("div");
   corner.id = "dayHeadCorner";
@@ -53,32 +53,32 @@ function renderDays(){
     l.style.top = (h-HOUR_START)*HOUR_PX+"px"; grid.appendChild(l);
   }
 
-  /* event cards with overlap clustering */
+  /* events, overlapping ones side by side */
   for(let i=0;i<days;i++){
     const dIso = idxDate(i);
     const occ = S.events.filter(ev=>occursOn(ev,dIso))
       .map(ev=>({ev, s:ev.startMin, e:ev.endMin}))
       .sort((a,b)=> a.s-b.s || b.e-a.e);
-    /* cluster transitively overlapping, assign columns greedily */
-    let cluster = [], clusterEnd = -1;
+    /* group events that overlap (directly or via others), assign columns greedily */
+    let overlap = [], overlapEnd = -1;
     const flush = ()=>{
-      if(!cluster.length) return;
+      if(!overlap.length) return;
       const colsEnd = [];
-      cluster.forEach(o=>{
+      overlap.forEach(o=>{
         let c = colsEnd.findIndex(end=>end <= o.s);
         if(c===-1){ c = colsEnd.length; colsEnd.push(0); }
         colsEnd[c] = o.e; o.col = c;
       });
       const n = colsEnd.length, innerW = ppd - 8;
-      cluster.forEach(o=>{
+      overlap.forEach(o=>{
         const cw = (innerW - (n-1)*4)/n;
-        grid.appendChild(eventCard(o.ev, dIso, i*ppd + 4 + o.col*(cw+4), cw));
+        grid.appendChild(renderEvent(o.ev, dIso, i*ppd + 4 + o.col*(cw+4), cw));
       });
-      cluster = []; clusterEnd = -1;
+      overlap = []; overlapEnd = -1;
     };
     occ.forEach(o=>{
-      if(cluster.length && o.s >= clusterEnd) flush();
-      cluster.push(o); clusterEnd = Math.max(clusterEnd, o.e);
+      if(overlap.length && o.s >= overlapEnd) flush();
+      overlap.push(o); overlapEnd = Math.max(overlapEnd, o.e);
     });
     flush();
   }
@@ -116,12 +116,12 @@ function updateKW(){
   el.textContent = isoWeek(parseISO(idxDate(clamped)));
 }
 
-function eventCard(ev, dIso, x, w){
+function renderEvent(ev, dIso, x, w){
   const top = (ev.startMin - HOUR_START*60)/60*HOUR_PX;
   const h   = Math.max((ev.endMin - ev.startMin)/60*HOUR_PX - 2, 18);
   const el = document.createElement("div");
   const allDone = ev.todos.length>0 && ev.todos.every(t=>t.state==="done");
-  el.className = "evcard" + (allDone ? " complete" : "");
+  el.className = "event" + (allDone ? " complete" : "");
   const col = cat(ev.categoryId).color;
   el.style.cssText = `left:${x}px;top:${top}px;width:${w}px;height:${h}px;background:${col}d0;--cat-fill:${col}`;
   el.dataset.ev = ev.id; el.dataset.date = dIso;

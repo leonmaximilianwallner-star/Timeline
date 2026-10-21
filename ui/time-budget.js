@@ -1,4 +1,4 @@
-// ui/time-budget.js — time budget. Moved unchanged from index.html lines 2088–2135 on 21 Oct 2026.
+// ui/time-budget.js — time budget. Moved from index.html lines 2088–2135 on 21 Oct 2026; names updated to the dictionary the same day.
 "use strict";
 /* ════════════════════════════════════════════════════════════
    budget — Zeitbudget donut (actual time per category, 7/30 days)
@@ -8,9 +8,9 @@ function openBudget(){
   closeBudget();
   UI.budgetOpen = true;
   const ov = document.createElement("div"); ov.className="overlay"; ov.id="budgetPage";
-  ov.innerHTML = `<div class="mcard"><div class="mhead"><h2>Zeitbudget</h2>
+  ov.innerHTML = `<div class="overlay-window"><div class="overlay-window-header"><h2>Zeitbudget</h2>
     <button class="cbtn small" id="bClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
-    <div class="mbody"><div class="seg" id="bSeg">
+    <div class="overlay-window-body"><div class="seg" id="bSeg">
       <button data-d="7"  class="${UI.budgetDays===7?"on":""}">7 Tage</button>
       <button data-d="30" class="${UI.budgetDays===30?"on":""}">30 Tage</button></div>
       <div id="bBody"></div>

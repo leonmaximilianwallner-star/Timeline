@@ -1,4 +1,4 @@
-// views/timeline/render.js — draws the timeline view. Moved unchanged from index.html lines 954–1082 on 21 Oct 2026.
+// views/timeline/render.js — draws the timeline view. Moved from index.html lines 954–1082 on 21 Oct 2026; names updated to the dictionary the same day.
 "use strict";
 /* ---------- timeline view ---------- */
 function renderTimeline(){
@@ -79,7 +79,7 @@ function renderTimeline(){
 function appendPhaseLanes(frag, phases, W){
   if(!phases.length) return;
   const nLanes = packLanes(phases);
-  /* group phases by their packed lane so each lane row owns its own bubble rows */
+  /* group phases by their packed lane so each lane row owns its own phase dropdown rows */
   const byLane = Array.from({length:nLanes}, ()=>[]);
   phases.forEach(ph => byLane[ph._lane].push(ph));
 
@@ -100,15 +100,15 @@ function appendPhaseLanes(frag, phases, W){
       r.appendChild(el);
     });
 
-    /* bubble rows for this lane's expanded phases — inserted immediately
-       after the lane row so the popup always sits under its parent bar */
+    /* phase dropdown rows for this lane's open phases — inserted immediately
+       after the lane row so the dropdown always sits under its phase */
     byLane[l].forEach(ph => {
       if(!ph.expanded) return;
       const x = dayIdx(ph.start)*TL_PPD, w = Math.max((diffDays(ph.start, ph.end)+1)*TL_PPD, 26);
-      const br = document.createElement("div"); br.className="tlRow bubbleRow";
-      const anchor = document.createElement("div"); anchor.className="bubbleAnchor";
+      const br = document.createElement("div"); br.className="tlRow dropdown-row";
+      const anchor = document.createElement("div"); anchor.className="dropdown-anchor";
       anchor.style.marginLeft = x+"px"; anchor.style.width = Math.max(w, 340)+"px";
-      const bb = document.createElement("div"); bb.className="bubble";
+      const bb = document.createElement("div"); bb.className="dropdown";
       bb.style.borderTopColor = cat(ph.categoryId).color;
       bb.innerHTML = sanitize(ph.details||"");
       anchor.appendChild(bb); br.appendChild(anchor);
@@ -120,8 +120,8 @@ function appendPhaseLanes(frag, phases, W){
 /* shrink label font before ever compromising the pill — never the radius */
 function fitLabels(scope){
   scope.querySelectorAll(".phase .ph-label").forEach(lab=>{
-    const bar = lab.parentElement;
-    const avail = bar.clientWidth - 30;
+    const phaseEl = lab.parentElement;
+    const avail = phaseEl.clientWidth - 30;
     lab.style.fontSize = "";
     if(lab.scrollWidth > avail) lab.style.fontSize = "11px";
     if(lab.scrollWidth > avail) lab.style.fontSize = "10px";

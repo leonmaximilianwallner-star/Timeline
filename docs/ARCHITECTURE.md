@@ -279,6 +279,7 @@ v2_7 has no steps: they come from the canvas's blocks. The question of where the
 1. **Dictionary. Done, 20 Oct:** words, pictures (`docs/dictionary/`) and the vocabulary test.
 2. **Split, no behaviour change. Built 21 Oct** as classic scripts (§2.1): 12 style files and 23 script files, each a run of consecutive lines of the old file. Proven line by line (`tests/split-2026-10-21.py --prove`) and pixel by pixel (fingerprint test); the loading screen was checked separately.
    *Original plan:* v2_7 moves into the file layout (§12): core, data, input, views/timeline, views/day, styles. Fingerprint tests prove it looks and behaves exactly as before. Old names may survive this step (allow-listed).
+   **Rename pass. Built 21 Oct:** the names that survive the restructure now follow the dictionary (old words 276 → 45); the rest go with step 3. See `DECISIONS.md`.
 3. **Data layer.**
    - The store, commands, undo and IndexedDB, starting from an empty store.
    - Stored names follow the dictionary from here on: exclusive ends, colour = category, exams = milestones, plain-line descriptions.

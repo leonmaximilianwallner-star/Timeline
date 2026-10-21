@@ -1,4 +1,4 @@
-// core/model.js — constants, colour palette, starting data. Moved unchanged from index.html lines 665–715 on 21 Oct 2026.
+// core/model.js — constants, colour palette, starting data. Moved from index.html lines 665–715 on 21 Oct 2026; names updated to the dictionary the same day.
 "use strict";
 /* ════════════════════════════════════════════════════════════
    data — types, constants, palette, seed data
@@ -17,7 +17,7 @@ function seedData(){
   const t = new Date(); t.setHours(0,0,0,0);
   const d = n => isoDate(addDays(t, n));
   return {
-    /* unified tracks: entries with start&end are projects (get a spine); dateless entries are categories. Grey is reserved for "frei". */
+    /* unified categories: entries with start&end are projects (get a spine); dateless entries are categories. Grey is reserved for "frei". */
     categories: [
       { id:"seminar", name:"Seminararbeit", color:"#40838b",
         start:d(-14), end:d(28),

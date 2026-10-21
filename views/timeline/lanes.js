@@ -1,6 +1,6 @@
-// views/timeline/lanes.js — packs phases into lanes. Moved unchanged from index.html lines 879–889 on 21 Oct 2026.
+// views/timeline/lanes.js — packs phases into lanes. Moved from index.html lines 879–889 on 21 Oct 2026; names updated to the dictionary the same day.
 "use strict";
-/* greedy interval lane packing for phase bars */
+/* greedy interval lane packing for phase pills */
 function packLanes(items){
   const lanes = [];
   items.slice().sort((a,b)=> a.start<b.start?-1:1).forEach(it=>{

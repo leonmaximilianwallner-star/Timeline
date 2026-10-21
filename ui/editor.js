@@ -1,7 +1,7 @@
-// ui/editor.js — editor and its todo list. Moved unchanged from index.html lines 1712–1985 on 21 Oct 2026.
+// ui/editor.js — editor and its todo list. Moved from index.html lines 1712–1985 on 21 Oct 2026; names updated to the dictionary the same day.
 "use strict";
 /* ════════════════════════════════════════════════════════════
-   modal — draft modal (preview persists behind it), todo editor,
+   editor — the editor (a preview stays behind it), its todo list,
    postponed carry-over
    ════════════════════════════════════════════════════════════ */
 function getCarryover(catId, dateISO, excludeId){
@@ -38,49 +38,49 @@ function todoRowHTML(t){
 }
 function cycleTodo(t){ t.state = t.state==="open" ? "done" : t.state==="done" ? "cancelled" : "open"; }
 
-function openModal(ctx){
-  closeModal();
-  UI.modal = ctx;
+function openEditor(ctx){
+  closeEditor();
+  UI.editor = ctx;
   const ed = ctx.edit;
   if(ctx.type==="point") ctx.pointKind = ctx.pointKind || "exam";
   if(ctx.type==="event" && !ed){
-    ctx.draft.todos = getCarryover(ctx.draft.categoryId, ctx.draft.date, null);
+    ctx.initial.todos = getCarryover(ctx.initial.categoryId, ctx.initial.date, null);
   }
   const ov = document.createElement("div");
-  ov.className = "overlay"; ov.id = "modalOv";
-  ov.innerHTML = `<div class="mcard">
-    <div class="mhead">
-      <div id="mTitleBox" style="flex:1; min-width:0"></div>
-      <button class="cbtn small" id="mClose" title="Abbrechen (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
-      <button class="cbtn small danger" id="mDelete" style="display:none" title="Löschen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/></svg></button>
-      <button class="cbtn small primary" id="mSave" title="Speichern (Strg+Enter)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></button>
+  ov.className = "overlay"; ov.id = "editorOverlay";
+  ov.innerHTML = `<div class="overlay-window">
+    <div class="overlay-window-header">
+      <div id="editorTitleBox" style="flex:1; min-width:0"></div>
+      <button class="cbtn small" id="editorClose" title="Abbrechen (Esc)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      <button class="cbtn small danger" id="editorDelete" style="display:none" title="Löschen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-13"/></svg></button>
+      <button class="cbtn small primary" id="editorSave" title="Speichern (Strg+Enter)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></button>
     </div>
-    <div class="mbody" id="mBody"></div></div>`;
+    <div class="overlay-window-body" id="editorBody"></div></div>`;
   document.body.appendChild(ov);
-  ov.addEventListener("pointerdown", e=>{ if(e.target===ov) closeModal(); });
-  ov.querySelector("#mClose").onclick = closeModal;
-  ov.querySelector("#mSave").onclick = saveModal;
-  renderModalBody();
+  ov.addEventListener("pointerdown", e=>{ if(e.target===ov) closeEditor(); });
+  ov.querySelector("#editorClose").onclick = closeEditor;
+  ov.querySelector("#editorSave").onclick = saveEditor;
+  renderEditorBody();
 }
-function closeModal(){
-  const ov = document.getElementById("modalOv");
+function closeEditor(){
+  const ov = document.getElementById("editorOverlay");
   if(ov) ov.remove();
-  if(UI.modal && UI.modal.preview) clearPreview(UI.modal.preview);   // preview persisted behind the modal until now
-  UI.modal = null;
+  if(UI.editor && UI.editor.preview) clearPreview(UI.editor.preview);   // preview persisted behind the editor until now
+  UI.editor = null;
 }
 
-function renderModalBody(){
-  const ctx = UI.modal, ed = ctx.edit, B = document.getElementById("mBody");
-  const T = document.getElementById("mTitle");
-  const v = (ed||ctx.draft||{});
+function renderEditorBody(){
+  const ctx = UI.editor, ed = ctx.edit, B = document.getElementById("editorBody");
+  const T = document.getElementById("editorTitle");
+  const v = (ed||ctx.initial||{});
   let h = "";
   const titleField = (placeholder,val)=>{
-    document.getElementById("mTitleBox").innerHTML =
+    document.getElementById("editorTitleBox").innerHTML =
       `<div class="field title-field"><textarea id="fTitle" class="title-inline" rows="1" placeholder="${esc(placeholder||"")}" autocomplete="off">${esc(val||"")}</textarea></div>`;
     return "";
   };
   const dateField  = (id,lab,val)=>`<div class="field"><label>${lab}</label><input id="${id}" type="date" value="${val||todayISO()}"></div>`;
-  const trackPicker = (selectedId)=>{
+  const categoryPicker = (selectedId)=>{
     const projs = S.categories.filter(c=>c.start && c.end);
     const cats  = S.categories.filter(c=>!c.start && !c.end);
     return `<div class="field"><label>Projekt / Kategorie</label>
@@ -103,7 +103,7 @@ function renderModalBody(){
 
   if(kind==="event"){
     h += titleField(ed ? "Termin bearbeiten" : "Neuer Termin", v.title);
-    h += trackPicker(v.categoryId);
+    h += categoryPicker(v.categoryId);
     h += `<div class="frow">${dateField("fDate","Datum",v.date)}
       <div class="field"><label>Von</label><input id="fStart" type="time" step="900" value="${fmtMin(v.startMin??9*60)}"></div>
       <div class="field"><label>Bis</label><input id="fEnd" type="time" step="900" value="${fmtMin(v.endMin??10*60)}"></div></div>`;
@@ -111,14 +111,14 @@ function renderModalBody(){
       ${["none|Keine","daily|Täglich","weekly|Wöchentlich","monthly|Monatlich","weekdays|Werktags"].map(o=>{const[k,l]=o.split("|");return `<option value="${k}" ${ (v.repeat||"none")===k?"selected":""}>${l}</option>`;}).join("")}</select></div>
       <div class="field"><label>Erinnerung</label><select id="fRem">
       ${["|Keine","0|Zum Start","5|5 min","15|15 min","30|30 min","60|1 h","1440|1 Tag"].map(o=>{const[k,l]=o.split("|");return `<option value="${k}" ${String(v.reminderMin??"")===k?"selected":""}>${l}</option>`;}).join("")}</select></div></div>`;
-    h += `<div class="field"><label>Todos</label><div class="todoList" id="mTodos">${(v.todos||[]).map(todoRowHTML).join("")}</div>
+    h += `<div class="field"><label>Todos</label><div class="todoList" id="editorTodos">${(v.todos||[]).map(todoRowHTML).join("")}</div>
       <div class="todoAdd" style="margin-top:6px"><input id="fNewTodo" placeholder="Todo hinzufügen…">
       <button class="cbtn small" id="fAddTodo" title="Hinzufügen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
       ${(v.todos||[]).some(t=>t.carried)?`<div class="thint" style="margin-top:5px">↻ aus dem letzten Termin dieser Kategorie übernommen (war verschoben)</div>`:""}</div>`;
   }
   else if(kind==="phase"){
     h += titleField(ed ? "Phase bearbeiten" : "Neue Phase", v.title);
-    h += trackPicker(v.categoryId);
+    h += categoryPicker(v.categoryId);
     h += `<div class="frow">${dateField("fStart2","Beginn",v.start)}${dateField("fEnd2","Ende",v.end)}</div>`;
     h += `<div class="field desc-field"><label>Beschreibung</label>
       <div class="rte-tools">
@@ -150,12 +150,12 @@ function renderModalBody(){
 
   /* wiring */
   const seg = B.querySelector("#pointSeg");
-  if(seg) seg.querySelectorAll("button").forEach(b=>b.onclick=()=>{ ctx.pointKind = b.dataset.k; renderModalBody(); });
+  if(seg) seg.querySelectorAll("button").forEach(b=>b.onclick=()=>{ ctx.pointKind = b.dataset.k; renderEditorBody(); });
   B.querySelectorAll(".rte-tools .cbtn").forEach(b=>b.onclick=e=>{
     e.preventDefault(); document.getElementById("fDetails").focus();
     document.execCommand(b.dataset.cmd, false, null);            // deprecated, fine for this scope
   });
-  /* unified track dropdown: paints color swatch + (event modal) refreshes carry-over */
+  /* category picker: paints the colour swatch and (event editor) refreshes carry-over */
   const _fProj = B.querySelector("#fProj"), _fProjCol = document.getElementById("fProjCol");
   if(_fProj && _fProjCol){
     const paint = ()=>{
@@ -166,24 +166,24 @@ function renderModalBody(){
     _fProj.addEventListener("change", ()=>{
       paint();
       if(ctx.type==="event" && !ed){
-        ctx.draft.categoryId = _fProj.value || null;
-        ctx.draft.todos = ctx.draft.todos.filter(t=>!t.carried).concat(getCarryover(ctx.draft.categoryId, ctx.draft.date, null));
-        renderModalBody();
+        ctx.initial.categoryId = _fProj.value || null;
+        ctx.initial.todos = ctx.initial.todos.filter(t=>!t.carried).concat(getCarryover(ctx.initial.categoryId, ctx.initial.date, null));
+        renderEditorBody();
       }
     });
   }
   const addTodo = ()=>{
     const inp = B.querySelector("#fNewTodo"); const txt = inp.value.trim(); if(!txt) return;
-    const list = ed ? ed.todos : ctx.draft.todos;
+    const list = ed ? ed.todos : ctx.initial.todos;
     list.push({ id:uid(), text:txt, state:"open" }); inp.value="";
-    B.querySelector("#mTodos").insertAdjacentHTML("beforeend", todoRowHTML(list[list.length-1]));
+    B.querySelector("#editorTodos").insertAdjacentHTML("beforeend", todoRowHTML(list[list.length-1]));
   };
   const addBtn = B.querySelector("#fAddTodo");
   if(addBtn){ addBtn.onclick = addTodo;
     B.querySelector("#fNewTodo").addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); addTodo(); } }); }
-  const tl = B.querySelector("#mTodos");
+  const tl = B.querySelector("#editorTodos");
   if(tl){
-    const list = ()=> ed ? ed.todos : ctx.draft.todos;
+    const list = ()=> ed ? ed.todos : ctx.initial.todos;
     tl.addEventListener("click", e=>{
       const row = e.target.closest(".todoRow"); if(!row) return;
       const t = list().find(x=>x.id===row.dataset.tid); if(!t) return;
@@ -198,7 +198,7 @@ function renderModalBody(){
       row.outerHTML = todoRowHTML(t);
     });
   }
-  const del = document.getElementById("mDelete");
+  const del = document.getElementById("editorDelete");
   del.style.display = ed ? "" : "none";
   del.onclick = ()=>{
     const k = ctx.type==="point" ? ctx.pointKind : ctx.type;
@@ -209,21 +209,21 @@ function renderModalBody(){
       else if(k==="milestone"){ const p=s.categories.find(c=>c.id===ctx.project.id); if(p && p.milestones) p.milestones=p.milestones.filter(m=>m.id!==ed.id); }
     });
     toast(k==="event" && ed.repeat && ed.repeat!=="none" ? "Serie gelöscht" : "Gelöscht");
-    closeModal();
+    closeEditor();
   };
   const f = B.querySelector("#fTitle");
   if(f){
     const grow = ()=>{ f.style.height="auto"; f.style.height = f.scrollHeight+"px"; };
     grow(); f.addEventListener("input", grow);
     f.addEventListener("keydown", ev=>{
-      if(ev.key==="Enter"){ ev.preventDefault(); if(ev.ctrlKey||ev.metaKey) saveModal(); } // never a literal newline in a title
+      if(ev.key==="Enter"){ ev.preventDefault(); if(ev.ctrlKey||ev.metaKey) saveEditor(); } // never a literal newline in a title
     });
     f.focus();
   }
 }
 
-function saveModal(){
-  const ctx = UI.modal, ed = ctx.edit, B = document.getElementById("mBody");
+function saveEditor(){
+  const ctx = UI.editor, ed = ctx.edit, B = document.getElementById("editorBody");
   const kind = ctx.type==="point" ? ctx.pointKind : ctx.type;
   const val = id => { const el=document.getElementById(id); return el?el.value:undefined; };
   const mins = id => { const t=val(id); if(!t) return null; const [h,m]=t.split(":").map(Number); return h*60+m; };
@@ -237,7 +237,7 @@ function saveModal(){
       date: val("fDate")||todayISO(), startMin:s, endMin:e,
       repeat: val("fRepeat")||"none",
       reminderMin: val("fRem")==="" ? null : Number(val("fRem")),
-      todos: (ed?ed.todos:ctx.draft.todos) };
+      todos: (ed?ed.todos:ctx.initial.todos) };
     if(data.reminderMin!=null) requestNotifPermission();
     mutate(st=>{ if(ed) Object.assign(st.events.find(x=>x.id===ed.id), data);
                  else st.events.push({ id:uid(), ...data }); });
@@ -271,6 +271,6 @@ function saveModal(){
     if(UI.addMode) setAddMode(false);
   }
   /* kind==="project" handled in settings panel, not here */
-  closeModal();
+  closeEditor();
 }
 
