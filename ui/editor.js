@@ -43,8 +43,9 @@ function openEditor(ctx){
   UI.editor = ctx;
   const ed = ctx.edit;
   if(ctx.type==="point") ctx.pointKind = ctx.pointKind || "exam";
-  if(ctx.type==="event" && !ed){
-    ctx.initial.todos = getCarryover(ctx.initial.categoryId, ctx.initial.date, null);
+  if(ctx.type==="event"){
+    /* the editor works on its own copy of the todos: saving hands it over, cancelling drops it */
+    ctx.todos = ed ? JSON.parse(JSON.stringify(ed.todos)) : getCarryover(ctx.initial.categoryId, ctx.initial.date, null);
   }
   const ov = document.createElement("div");
   ov.className = "overlay"; ov.id = "editorOverlay";
@@ -111,10 +112,10 @@ function renderEditorBody(){
       ${["none|Keine","daily|Täglich","weekly|Wöchentlich","monthly|Monatlich","weekdays|Werktags"].map(o=>{const[k,l]=o.split("|");return `<option value="${k}" ${ (v.repeat||"none")===k?"selected":""}>${l}</option>`;}).join("")}</select></div>
       <div class="field"><label>Erinnerung</label><select id="fRem">
       ${["|Keine","0|Zum Start","5|5 min","15|15 min","30|30 min","60|1 h","1440|1 Tag"].map(o=>{const[k,l]=o.split("|");return `<option value="${k}" ${String(v.reminderMin??"")===k?"selected":""}>${l}</option>`;}).join("")}</select></div></div>`;
-    h += `<div class="field"><label>Todos</label><div class="todoList" id="editorTodos">${(v.todos||[]).map(todoRowHTML).join("")}</div>
+    h += `<div class="field"><label>Todos</label><div class="todoList" id="editorTodos">${(ctx.todos||[]).map(todoRowHTML).join("")}</div>
       <div class="todoAdd" style="margin-top:6px"><input id="fNewTodo" placeholder="Todo hinzufügen…">
       <button class="cbtn small" id="fAddTodo" title="Hinzufügen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
-      ${(v.todos||[]).some(t=>t.carried)?`<div class="thint" style="margin-top:5px">↻ aus dem letzten Termin dieser Kategorie übernommen (war verschoben)</div>`:""}</div>`;
+      ${(ctx.todos||[]).some(t=>t.carried)?`<div class="thint" style="margin-top:5px">↻ aus dem letzten Termin dieser Kategorie übernommen (war verschoben)</div>`:""}</div>`;
   }
   else if(kind==="phase"){
     h += titleField(ed ? "Phase bearbeiten" : "Neue Phase", v.title);
@@ -167,14 +168,14 @@ function renderEditorBody(){
       paint();
       if(ctx.type==="event" && !ed){
         ctx.initial.categoryId = _fProj.value || null;
-        ctx.initial.todos = ctx.initial.todos.filter(t=>!t.carried).concat(getCarryover(ctx.initial.categoryId, ctx.initial.date, null));
+        ctx.todos = ctx.todos.filter(t=>!t.carried).concat(getCarryover(ctx.initial.categoryId, ctx.initial.date, null));
         renderEditorBody();
       }
     });
   }
   const addTodo = ()=>{
     const inp = B.querySelector("#fNewTodo"); const txt = inp.value.trim(); if(!txt) return;
-    const list = ed ? ed.todos : ctx.initial.todos;
+    const list = ctx.todos;
     list.push({ id:uid(), text:txt, state:"open" }); inp.value="";
     B.querySelector("#editorTodos").insertAdjacentHTML("beforeend", todoRowHTML(list[list.length-1]));
   };
@@ -183,7 +184,7 @@ function renderEditorBody(){
     B.querySelector("#fNewTodo").addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); addTodo(); } }); }
   const tl = B.querySelector("#editorTodos");
   if(tl){
-    const list = ()=> ed ? ed.todos : ctx.initial.todos;
+    const list = ()=> ctx.todos;
     tl.addEventListener("click", e=>{
       const row = e.target.closest(".todoRow"); if(!row) return;
       const t = list().find(x=>x.id===row.dataset.tid); if(!t) return;
@@ -237,7 +238,7 @@ function saveEditor(){
       date: val("fDate")||todayISO(), startMin:s, endMin:e,
       repeat: val("fRepeat")||"none",
       reminderMin: val("fRem")==="" ? null : Number(val("fRem")),
-      todos: (ed?ed.todos:ctx.initial.todos) };
+      todos: ctx.todos };
     if(data.reminderMin!=null) requestNotifPermission();
     mutate(st=>{ if(ed) Object.assign(st.events.find(x=>x.id===ed.id), data);
                  else st.events.push({ id:uid(), ...data }); });
@@ -250,7 +251,7 @@ function saveEditor(){
       categoryId: val("fProj")||null, start:a, end:b,
       details: sanitize(B.querySelector("#fDetails").innerHTML) };
     mutate(st=>{ if(ed) Object.assign(st.phases.find(x=>x.id===ed.id), data);
-                 else st.phases.push({ id:uid(), expanded:false, ...data }); });
+                 else st.phases.push({ id:uid(), ...data }); });
     if(UI.addMode) setAddMode(false);
   }
   else if(kind==="exam"){

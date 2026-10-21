@@ -43,11 +43,11 @@ function renderSettings(){
     <button class="cbtn small" id="sClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
 
     <section><h3>Darstellung</h3><div class="seg" id="sTheme">
-      <button data-t="dark" class="${S.settings.theme==="dark"?"on":""}">Dunkel</button>
-      <button data-t="light" class="${S.settings.theme==="light"?"on":""}">Hell</button></div></section>
+      <button data-t="dark" class="${device.theme==="dark"?"on":""}">Dunkel</button>
+      <button data-t="light" class="${device.theme==="light"?"on":""}">Hell</button></div></section>
 
     <section><h3>Sichtbare Tage (Zoom)</h3><div class="seg" id="sDens">
-      ${[3,5,7].map(d=>`<button data-d="${d}" class="${S.settings.density===d?"on":""}">${d}</button>`).join("")}</div></section>
+      ${[3,5,7].map(d=>`<button data-d="${d}" class="${device.density===d?"on":""}">${d}</button>`).join("")}</div></section>
 
     <section><h3>Projekte</h3>
       <div id="sProjs">${projs.map(p=>`<div class="catRow" data-pid="${p.id}">
@@ -77,8 +77,8 @@ function renderSettings(){
     <section><h3>Erinnerungen</h3><p class="note">Benachrichtigungen funktionieren, solange die App offen oder (auf Android) kürzlich im Hintergrund ist. Es gibt keinen Server — bei geschlossener App kann kein Push zugestellt werden.</p></section>`;
 
   $set.querySelector("#sClose").onclick = ()=>toggleSettings(false);
-  $set.querySelectorAll("#sTheme button").forEach(b=>b.onclick=()=>{ mutate(s=>{ s.settings.theme=b.dataset.t; }); renderSettings(); });
-  $set.querySelectorAll("#sDens button").forEach(b=>b.onclick=()=>{ mutate(s=>{ s.settings.density=+b.dataset.d; }); renderSettings(); });
+  $set.querySelectorAll("#sTheme button").forEach(b=>b.onclick=()=>{ setDevice(dv=>{ dv.theme=b.dataset.t; }); renderSettings(); });
+  $set.querySelectorAll("#sDens button").forEach(b=>b.onclick=()=>{ setDevice(dv=>{ dv.density=+b.dataset.d; }); renderSettings(); });
 
   $set.querySelectorAll(".cpicker").forEach(pk=>pk.addEventListener("click", e=>{
     const sw = e.target.closest(".csw"); if(!sw || sw.classList.contains("taken")) return;
@@ -168,7 +168,7 @@ function renderSettings(){
     f.text().then(t=>{
       const d = JSON.parse(t);
       if(!d || !d.categories || !d.events) throw 0;
-      mutate(()=>{ S = migrateData(d); });
+      mutate(()=>{ S = toCurrentShape(d); });
       renderSettings(); toast("Import erfolgreich");
     }).catch(()=>toast("Import fehlgeschlagen: ungültige Datei"));
   });

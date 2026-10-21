@@ -38,7 +38,7 @@ const dayIdx  = d => diffDays(UI.range.start, d);
 const idxDate = i => isoDate(addDays(parseISO(UI.range.start), i));
 function dayPPD(){
   const vw = document.getElementById("scene").clientWidth || window.innerWidth;
-  return Math.max(50, (vw - railW()) / S.settings.density);
+  return Math.max(50, (vw - railW()) / device.density);
 }
 function railW(){ return parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--rail-w")) || 68; }
 

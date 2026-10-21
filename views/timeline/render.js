@@ -78,10 +78,10 @@ function renderTimeline(){
 
 function appendPhaseLanes(frag, phases, W){
   if(!phases.length) return;
-  const nLanes = packLanes(phases);
+  const { count: nLanes, laneOf } = packLanes(phases);
   /* group phases by their packed lane so each lane row owns its own phase dropdown rows */
   const byLane = Array.from({length:nLanes}, ()=>[]);
-  phases.forEach(ph => byLane[ph._lane].push(ph));
+  phases.forEach(ph => byLane[laneOf.get(ph)].push(ph));
 
   for(let l = 0; l < nLanes; l++){
     const r = document.createElement("div"); r.className = "tlRow laneRow";
@@ -94,7 +94,7 @@ function appendPhaseLanes(frag, phases, W){
       el.style.background = cat(ph.categoryId).color;
       el.dataset.phase = ph.id;
       el.innerHTML =
-        `<span class="ph-stick"><button class="ph-exp" data-expand="${ph.id}" title="Details">${ph.expanded?"▾":"▸"}</button>`+
+        `<span class="ph-stick"><button class="ph-exp" data-expand="${ph.id}" title="Details">${device.openPhases.includes(ph.id)?"▾":"▸"}</button>`+
         `<span class="ph-label">${esc(ph.title)}</span></span>`+
         `<span class="ph-handle l" data-rez="l"></span><span class="ph-handle r" data-rez="r"></span>`;
       r.appendChild(el);
@@ -103,7 +103,7 @@ function appendPhaseLanes(frag, phases, W){
     /* phase dropdown rows for this lane's open phases — inserted immediately
        after the lane row so the dropdown always sits under its phase */
     byLane[l].forEach(ph => {
-      if(!ph.expanded) return;
+      if(!device.openPhases.includes(ph.id)) return;
       const x = dayIdx(ph.start)*TL_PPD, w = Math.max((diffDays(ph.start, ph.end)+1)*TL_PPD, 26);
       const br = document.createElement("div"); br.className="tlRow dropdown-row";
       const anchor = document.createElement("div"); anchor.className="dropdown-anchor";

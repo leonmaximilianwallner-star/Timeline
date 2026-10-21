@@ -3,7 +3,9 @@
 /* ════════════════════════════════════════════════════════════
    data — types, constants, palette, seed data
    ════════════════════════════════════════════════════════════ */
-const STORE_KEY  = "timeline.app.v2";
+const STORE_KEY  = "timeline.data.v3";   // the plan (data/store.js)
+const OLD_STORE_KEY = "timeline.app.v2";  // the V2 app's data: read once, never changed
+const DEVICE_KEY = "timeline.device.v1";  // this device's state (data/device.js)
 const NOTIF_STORE= "timeline.notif.v2";
 const HOUR_START = 0, HOUR_END = 24, HOUR_PX = 52;
 const GRID_H     = (HOUR_END - HOUR_START) * HOUR_PX;
@@ -34,9 +36,9 @@ function seedData(){
       { id:"personal",name:"Persönlich", color:"#d86e9a" },
     ],
     phases: [
-      { id:uid(), title:"Schreiben §2–§3", categoryId:"seminar", start:d(-3), end:d(4),  details:"", expanded:false },
-      { id:uid(), title:"Folien & Probevortrag", categoryId:"seminar", start:d(5), end:d(17), details:"<b>Fokus:</b> LOS als Brückenvariable sauber erzählen.<ul><li>Evidenzstärke pro Variable kennzeichnen</li><li>max. 12 Folien</li></ul>", expanded:false },
-      { id:uid(), title:"Viewer: Cache & Kompression", categoryId:"work", start:d(1), end:d(14), details:"", expanded:false },
+      { id:uid(), title:"Schreiben §2–§3", categoryId:"seminar", start:d(-3), end:d(4),  details:"" },
+      { id:uid(), title:"Folien & Probevortrag", categoryId:"seminar", start:d(5), end:d(17), details:"<b>Fokus:</b> LOS als Brückenvariable sauber erzählen.<ul><li>Evidenzstärke pro Variable kennzeichnen</li><li>max. 12 Folien</li></ul>" },
+      { id:uid(), title:"Viewer: Cache & Kompression", categoryId:"work", start:d(1), end:d(14), details:"" },
     ],
     exams: [
       { id:uid(), title:"Präsentation", date:d(18), points:"30 Punkte" },
@@ -47,7 +49,6 @@ function seedData(){
         todos:[ {id:uid(),text:"Abschnitt 2.1 Absätze 3–5",state:"open"}, {id:uid(),text:"Quellenliste prüfen",state:"postponed"} ] },
       { id:uid(), title:"Bachata", categoryId:"personal", date:d(1), startMin:19*60, endMin:20*60+30, repeat:"weekly", reminderMin:60, todos:[] },
     ],
-    settings: { theme:"dark", density:5 },
   };
 }
 

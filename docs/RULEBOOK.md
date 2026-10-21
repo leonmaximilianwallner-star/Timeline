@@ -244,11 +244,15 @@ Code: `openTodoPanel`, `UI.todoPanel`, ID `#todoPanel`, classes `.panel-…`. *(
 ## A.9 Code-only words
 
 **Item** · `item` — the one stored record for anything on the canvas or timeline view. Its `kind` is `idea`, `phase`, `milestone`, `table` or `pile`. **Never say:** card, node, element (for an item).
-**Kind** · `kind` — what an item is. **Never say:** type (`type` is for commands and links).
+**Kind** · `kind` — what an item is. **Never say:** type (`type` is for links and the editor's context).
 **Initial values** · `initial` — the starting values of a thing being created in the editor; the counterpart of `edit`, the existing thing being edited. **Never say:** draft.
 **Body** · `body` — the text of an idea, block or phase: steps (`[ ]`), headings (`#`), points (`-`), plain lines. Written only through `setBody`. **Never say:** details, description, content.
 **Store** · `store` — the one holder of state (ARCHITECTURE §4).
-**Command** · `command` — a named change, sent to `store.dispatch`; named verb + thing (`movePhase`).
+**Record** · `record` — one stored thing that syncs on its own: a category (with its milestones), a phase, an exam or an event.
+**Stamp** · `updatedAt` — when a record last changed; set only by the gate.
+**Deleted** · `deleted` — records removed from the plan: id → the list it was in and when. Keeps a deleted record from coming back.
+**Device state** · `device` — what belongs to this screen, not the plan: theme, number of days, open dropdowns. Saved per device, never synced, not undoable.
+**The gate** · `mutate(fn)` — the one way to change the plan; stamps what changed (ARCHITECTURE §4).
 **Progress** · `progress` — a number from 0 to 1, shown as a fill or a count.
 **Open** · `open` — whether something that unfolds is unfolded: a phase on the canvas, a phase dropdown. **Never say:** expanded, fold, collapsed.
 
@@ -397,7 +401,7 @@ level → view
 
 ## B.7 Data
 
-The tables, the store, commands and sync are defined in `ARCHITECTURE.md` §4–5. The rules that belong to the product:
+The gate, the store and sync are defined in `ARCHITECTURE.md` §4–5. The rules that belong to the product:
 
 - **One record per thing.** Everything on the canvas and the timeline is an item; the timeline shows items, it doesn't own copies.
 - **A phase's `blocks` is the only truth** about which ideas are its blocks. An idea stores nothing about its phase.

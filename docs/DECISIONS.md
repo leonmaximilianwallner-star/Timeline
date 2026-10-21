@@ -28,3 +28,12 @@
 - **Left for step 3, on purpose:** stored data names (`exams`, `details`, `expanded`) and the German text on screen ("Prüfung"). The new store replaces the stored names anyway; renaming them now would be renaming code about to be deleted. *Claude*
 - **Two new words.** *Window*: a squircle shown centred over a dimmed backdrop; the editor and the time budget are windows (code: `.overlay-window`). *Initial values*: the starting values of a thing being created in the editor, the counterpart of `edit` (code: `ctx.initial`, was `ctx.draft`). *Claude*
 - **One word, three meanings, found on the way:** `pop` was the todo panel, an "appear" animation shared by several panels (now `appear`), and JavaScript's own `.pop()` for taking the last item off a list (unchanged; the vocabulary test ignores it). A blind search-and-replace would have broken undo. *Claude*
+
+## 21 Oct 2026 — step 3, the data layer
+
+- **Keep it simple: build on the gate that exists.** Every change already went through `mutate()`. Step 3 makes it complete and has it stamp what changed. Dropped from the plan as not needed now: named commands, IndexedDB, modules. *Max (simplest solution); Claude (what to drop)*
+- **Records are stamped, deletions remembered.** Each category, phase, exam and event carries `updatedAt`; removed ones go to `deleted`. Sync can then send only what changed, and a deleted record can't come back. *Claude*
+- **Device state is separate from the plan:** theme, number of days, open dropdowns. A phone and a laptop want different ones; synced, they would flip each other. No longer undoable. *Claude*
+- **The editor works on a copy of an event's todos.** Before, todos added to an existing event went straight into the plan, even when cancelled, and would never have reached sync. *Claude (bug found)*
+- **The phone's V2 data comes along.** On first start the new version copies it into the new shape (`timeline.data.v3`); the V2 copy stays untouched. Supersedes "no migration" from 20 Oct: copying turned out simpler than starting empty. *Claude*
+- **Stored names change in a separate step (3b)**, before Supabase. *Claude*

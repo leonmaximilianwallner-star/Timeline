@@ -32,6 +32,8 @@ const STEPS = [
   ['scrolled',         async p => p.evaluate(() => { const s = document.getElementById('scene'); s.scrollLeft += 1700; s.scrollTop += 500; })],
   ['scrolled-back',    async p => p.evaluate(() => { const s = document.getElementById('scene'); s.scrollLeft -= 2600; s.scrollTop -= 500; })],
   ['today',            async p => p.click('#btnToday')],
+  ['phase-dropdown',   async p => { await p.locator('.ph-exp').first().click(); }],
+  ['dropdown-closed',  async p => { await p.locator('.ph-exp').first().click(); }],
   ['phase-editor',     async p => { await p.locator('[data-phase]').first().click(); }],
   ['closed',           async p => p.keyboard.press('Escape')],
   ['todo-panel',       async p => { await p.locator('.event, .evcard').nth(1).click(); }],
