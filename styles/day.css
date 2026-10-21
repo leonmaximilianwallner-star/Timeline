@@ -36,7 +36,7 @@
   background-size: var(--gridline-size);
 }
 #dayGrid.addmode{cursor:crosshair}
-.dayCol{position:absolute; top:0; bottom:0}
+.dayCol{scroll-snap-align:start; position:absolute; top:0; bottom:0}
 .dayCol.weekend{background:rgba(127,127,140,.045)}
 .hline{position:absolute; left:0; right:0; height:1px; background:var(--line-soft); pointer-events:none}
 #nowLine{position:absolute; height:0; border-top:2px solid var(--accent); z-index:9; pointer-events:none}

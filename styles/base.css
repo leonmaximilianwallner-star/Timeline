@@ -36,6 +36,10 @@ input,select,textarea{font-family:inherit; font-size:14px; color:var(--text)}
   background:var(--base);
 }
 #scene.addmode{touch-action:none}     /* in add-mode every gesture is JS creation, not a pan */
+/* days snap to the hour rail, done by the browser itself (21 Oct): it settles momentum and gives way
+   the moment a new gesture starts, so there is no timer or second animation to fight with */
+#scene{scroll-snap-type:x mandatory; scroll-padding-left:var(--rail-w)}
+#scene.panning{scroll-snap-type:none}  /* edge auto-pan while dragging: snapping waits until the drop */
 
 /* ---------- header ---------- */
 #header{
