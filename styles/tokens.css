@@ -1,20 +1,17 @@
-/* styles/tokens.css — design tokens: colours, radii, springs, light theme. Moved from index.html lines 13–37 on 21 Oct 2026; names updated to the dictionary the same day. */
-/* ============================================================
-   styles — all visual rules, CSS variables
-   ============================================================ */
+/* styles/tokens.css — the design tokens, the only place for colours, sizes, radii and type (RULEBOOK C.4).
+   One set since 22 Oct: the old near-duplicates (--text-dim, --text-faint, --line, --surface2/3, the blue
+   --add, the red --accent, shadows) were merged into these. */
 :root{
-  --base:#111118; --surface:#191923; --surface2:#20202c; --surface3:#2a2a38;
-  --line:#2e2e3c; --line-soft:#26262f;
-  --text:#ededec; --text-dim:#9b9ba6; --text-faint:#62626e;
-  --accent:#e9473a; --add:#6498c0; --success:#8fc14e;
+  --base:#111118; --surface:#191923;
+  --line-soft:#26262f;       /* the day grid's lines: quieter than --hairline between rows */
+  --text:#ededec;
   --c-amber:#f4971f; --c-red:#e9473a; --c-teal:#40838b; --c-blue:#6498c0;
   --c-green:#8fc14e; --c-gray:#90909a; --c-purple:#a060c8; --c-pink:#d86e9a;
-  --r-panel:14px; --r-small:8px;
+  --r-small:8px;             /* events */
   --spring:cubic-bezier(0.34,1.3,0.64,1);
   --soft:cubic-bezier(0.3,1,0.5,1);
-  --shadow:0 12px 40px rgba(0,0,0,.5), 0 2px 8px rgba(0,0,0,.35);
   --rail-w:60px;
-  /* the editor and settings (RULEBOOK Part C; mockup "Timeline v2", design system "Timeline v2 Blueprint") */
+  /* from the mockup "Timeline v2" and its design system "Timeline v2 Blueprint" (RULEBOOK Part C) */
   --raised:#23232d;          /* a floating panel: one step above surface */
   --hairline:#2c2c38;        /* dividers between rows; never the only edge of a control */
   --fg-muted:#adadba;        /* secondary text and icons (4.8:1 or better on surface and raised) */
@@ -22,20 +19,22 @@
   --on-primary:#111118;      /* text and icons on the light primary button */
   --scrim:#000000a6;         /* solid dim behind the editor and settings; no blur */
   --danger:#ff6b6b;          /* destructive words and icons; always with a word or icon */
-  --shadow-float:0 24px 64px #00000066;
   --r-row:16px;              /* a list of rows */
   --r-float:24px;            /* the editor and the settings panel */
   --row-h:44px;              /* one row: also the smallest touch target */
-  --round-btn:36px;          /* round buttons in a header */
+  --round-btn:36px;          /* every round button (RULEBOOK C.4) */
+  --float-btn:44px;          /* the one floating button (add): alone over the content, used with a thumb */
+  --now:#ffb454;             /* the current time: its line and label, nothing else */
+  /* type: five sizes, plus one for the celebration */
+  --fs-label:11px; --fs-small:12px; --fs-body:14px; --fs-lead:16px; --fs-title:20px; --fs-glance:28px;
   --sticky-left:calc(var(--rail-w) + 12px);
   --gridline: linear-gradient(to right, var(--line-soft) 1px, transparent 1px);
   --gridline-size: var(--tl-ppd, 160px) 100%;
 }
 html[data-theme="light"]{
-  --base:#f2f1ee; --surface:#ffffff; --surface2:#f7f6f3; --surface3:#ecebe7;
-  --line:#dcdad4; --line-soft:#e6e4df;
-  --text:#1d1d24; --text-dim:#5d5d68; --text-faint:#9a9aa4;
-  --shadow:0 12px 40px rgba(30,30,40,.18), 0 2px 8px rgba(30,30,40,.10);
+  --base:#f2f1ee; --surface:#ffffff;
+  --line-soft:#e6e4df;
+  --text:#1d1d24;
   --raised:#f7f6f3; --hairline:#e6e4df; --fg-muted:#5d5d68; --border-control:#8a8a96;
-  --on-primary:#ffffff; --scrim:#0000004d; --danger:#c8372b; --shadow-float:0 24px 64px rgba(30,30,40,.22);
+  --on-primary:#ffffff; --scrim:#0000004d; --danger:#c8372b; --now:#d9822b;
 }

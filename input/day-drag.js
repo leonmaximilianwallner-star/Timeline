@@ -173,7 +173,7 @@ function eventPointerDown(e, eventEl){
     UI.dragLive = false;
     clearPreview(pv);
     if(floatEl){ floatEl.remove(); floatEl = null; }
-    if(!st.moved){ openTodoPanel(ev, dateISO, eventEl); return; }   // plain click → todo panel
+    if(!st.moved){ openEditor({ type:"event", edit:ev, occurrence:dateISO }); return; }   // a plain click opens the editor (the todo panel is gone, 22 Oct)
     const dayDelta = st.day - dayIdx(dateISO);
     if(copy){
       mutate(s=>{

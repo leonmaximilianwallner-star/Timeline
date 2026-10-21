@@ -49,20 +49,19 @@ input,select,textarea{font-family:inherit; font-size:14px; color:var(--text)}
 }
 #wordmark{height:16px; display:block; opacity:.95}
 #wordmark .wm{fill:var(--text)}
-#topdate{font-size:12px; color:var(--text-dim); margin-left:4px; white-space:nowrap}
+#topdate{font-size:var(--fs-small); color:var(--fg-muted); margin-left:4px; white-space:nowrap}
 #header .spacer{flex:1}
+/* the header's buttons: plain round 36px icon buttons (RULEBOOK C.3); filled while their panel is open */
 .cbtn{
-  width:34px; height:34px; border-radius:50%;
+  width:var(--round-btn); height:var(--round-btn); border-radius:9999px; padding:0; border:0;
   display:inline-flex; align-items:center; justify-content:center;
-  background:var(--surface); border:1px solid var(--line);
-  color:var(--text-dim); flex:0 0 auto;
+  background:transparent; color:var(--fg-muted); flex:0 0 auto;
   transition:background .15s, color .15s, transform .15s var(--spring);
 }
-.cbtn:hover{background:var(--surface2); color:var(--text)}
+.cbtn:hover{background:color-mix(in srgb, var(--text) 8%, transparent); color:var(--text)}
 .cbtn:active{transform:scale(.92)}
-.cbtn svg{width:16px; height:16px; display:block}
-.cbtn.small{width:26px; height:26px}
-.cbtn.small svg{width:13px;height:13px}
-.cbtn:focus-visible,button:focus-visible{outline:2px solid var(--c-blue); outline-offset:2px}
+.cbtn svg{width:20px; height:20px; display:block; stroke-width:1.5}
+.cbtn.open{background:var(--text); color:var(--on-primary)}
+button:focus-visible{outline:2px solid var(--text); outline-offset:2px}
 .cbtn[disabled]{opacity:.35; pointer-events:none}
 

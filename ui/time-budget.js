@@ -6,10 +6,10 @@
    ════════════════════════════════════════════════════════════ */
 function openBudget(){
   closeBudget();
-  UI.budgetOpen = true;
+  UI.budgetOpen = true; document.getElementById("btnBudget").classList.add("open");
   const ov = document.createElement("div"); ov.className="overlay"; ov.id="budgetPage";
   ov.innerHTML = `<div class="overlay-window"><div class="overlay-window-header"><h2>Zeitbudget</h2>
-    <button class="cbtn small" id="bClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <button type="button" class="rbtn outline" id="bClose" title="Schließen">${icon("close")}</button></div>
     <div class="overlay-window-body"><div class="seg" id="bSeg">
       <button data-d="7"  class="${UI.budgetDays===7?"on":""}">7 Tage</button>
       <button data-d="30" class="${UI.budgetDays===30?"on":""}">30 Tage</button></div>
@@ -22,7 +22,7 @@ function openBudget(){
   ov.querySelectorAll("#bSeg button").forEach(b=>b.onclick=()=>{ UI.budgetDays=+b.dataset.d; openBudget(); });
   renderBudgetBody();
 }
-function closeBudget(){ const o=document.getElementById("budgetPage"); if(o) o.remove(); UI.budgetOpen=false; }
+function closeBudget(){ const o=document.getElementById("budgetPage"); if(o) o.remove(); UI.budgetOpen=false; document.getElementById("btnBudget").classList.remove("open"); }
 function renderBudgetBody(){
   const N = UI.budgetDays, to = todayISO(), from = isoDate(addDays(parseISO(to), -(N-1)));
   const sums = new Map();

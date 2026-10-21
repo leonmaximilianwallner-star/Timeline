@@ -115,22 +115,36 @@ function updateKW(){
   el.textContent = isoWeek(parseISO(idxDate(clamped)));
 }
 
+/* An event shows as many 16px lines as its height holds (mockup "Detail nach Höhe"):
+   the title first (words break at German syllables), then the time, then the todo count.
+   Under one line high it is just its colour. */
+const EVENT_LINE = 16, EVENT_PAD_Y = 4, EVENT_NARROW = 80, TIME_W = 66;   // px; TIME_W: "09:00–11:00" at 12px
+const EVENT_ICON = {
+  repeat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="wiederholt"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>',
+  bell:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Erinnerung"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>',
+};
 function renderEvent(ev, dIso, x, w){
   const top = (ev.startMin - HOUR_START*60)/60*HOUR_PX;
   const h   = Math.max((ev.endMin - ev.startMin)/60*HOUR_PX - 2, 18);
   const el = document.createElement("div");
   const todos = todosOf(ev, dIso);                 // this occurrence's todos only
   const allDone = todos.length>0 && todos.every(t=>t.state==="done");
-  el.className = "event" + (allDone ? " complete" : "");
+  const narrow = w < EVENT_NARROW;
+  el.className = "event" + (allDone ? " complete" : "") + (narrow ? " narrow" : "");
   const col = cat(ev.categoryId).color;
-  el.style.cssText = `left:${x}px;top:${top}px;width:${w}px;height:${h}px;background:${col}d0;--cat-fill:${col}`;
+  /* the lines: title ≥ 1, then the time (only the start where the range doesn't fit), then todos */
+  const lines = Math.floor((h - 2*EVENT_PAD_Y) / EVENT_LINE);
+  const fullTime = (w - (narrow ? 12 : 16)) >= TIME_W;
+  const showTime = lines >= 2;
+  const showTodos = todos.length && lines >= (showTime ? 3 : 2);
+  const titleLines = Math.max(1, lines - (showTime ? 1 : 0) - (showTodos ? 1 : 0));
+  el.style.cssText = `left:${x}px;top:${top}px;width:${w}px;height:${h}px;background:${col}d0;--cat-fill:${col};--title-lines:${titleLines}`;
   el.dataset.ev = ev.id; el.dataset.date = dIso;
-  const open = todos.filter(t=>t.state==="open"||t.state==="postponed").length;
   const done = todos.filter(t=>t.state==="done").length;
-  el.innerHTML =
-    `<span class="et">${esc(ev.title)}</span>`+
-    (h>34?`<span class="em">${fmtMin(ev.startMin)}–${fmtMin(ev.endMin)}${ev.repeat&&ev.repeat!=="none"?" ↻":""}${ev.reminderMin!=null?" 🔔":""}</span>`:"")+
-    (todos.length?`<span class="badges"><span class="badge">${done}/${todos.length} ✓${open&&todos.some(t=>t.state==="postponed")?" ·→":""}</span></span>`:"")+
+  const marks = (ev.repeat&&ev.repeat!=="none" ? EVENT_ICON.repeat : "") + (ev.reminderMin!=null ? EVENT_ICON.bell : "");
+  el.innerHTML = (lines >= 1 ? `<span class="et">${esc(ev.title)}</span>` : "") +
+    (showTime ? `<span class="em">${fullTime ? `${fmtMin(ev.startMin)}–${fmtMin(ev.endMin)}${marks ? `<span class="marks">${marks}</span>` : ""}` : fmtMin(ev.startMin)}</span>` : "") +
+    (showTodos ? `<span class="badge">✓ ${done}/${todos.length}${todos.some(t=>t.state==="postponed") ? " · →" : ""}</span>` : "") +
     `<span class="rezH t"></span><span class="rezH b"></span>`;
   return el;
 }

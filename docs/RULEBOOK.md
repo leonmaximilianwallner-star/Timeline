@@ -25,7 +25,7 @@
 
    | Pattern | Made of | Examples |
    |---|---|---|
-   | **thing + part** | a thing (A.4–A.6) + a part (A.8) | event editor, phase editor, todo panel, phase dropdown, project spine |
+   | **thing + part** | a thing (A.4–A.6) + a part (A.8) | event editor, phase editor, phase dropdown, project spine |
    | **verb + thing** | a verb (A.10) + a thing | `moveEvent`, `openPhaseEditor`, `tickTodo`, `renderTimeline` |
    | **thing + property** | a thing + a field | `eventStart`, `phaseCount`, `todoState` |
 
@@ -214,7 +214,7 @@ A part is always named **thing + part**. These are all the part words:
 | Part | What it is | Examples |
 |---|---|---|
 | **editor** | the one squircle sheet for editing a thing, in the thing's colour | event editor, phase editor, milestone editor, idea editor, project editor |
-| **panel** | a small squircle attached to a thing, for a quick action | todo panel |
+| **panel** | a squircle that slides in from an edge for one area of the app | settings panel |
 | **dropdown** | what unfolds below a pill when ▸ is tapped | phase dropdown |
 | **label** | a thing's name drawn on or beside it; sticky labels pin to the left edge | phase label, month label |
 | **mark** | anything the rail or timeline view draws for a thing | the phase's mark, a milestone's mark |
@@ -233,11 +233,11 @@ A part is always named **thing + part**. These are all the part words:
 **Editor** · *(thing) bearbeiten* · `editor`
 All editors share one shell (**Max**, 2 Oct): a header in the thing's colour (overline, name, delete · close · done) over a raised body. Each is called after its thing: the event editor is `openEventEditor(event)`; the shared shell is `editor`. **Never say:** modal, dialog, draft, popup, sheet.
 The editor is a window (see Parts). Code: `openEditor(ctx)`, `UI.editor`, IDs `#editor…`. *(Renamed from `openModal`/`mcard` on 21 Oct.)*
-**Closing** (**Max**, 21 Oct): a tap outside the editor **saves**, because it is usually an accident and the input shouldn't be lost. ✕ and Escape cancel. Changing one field never resets another.
+**Opening** (**Max**, 22 Oct): a click on an event opens its editor directly (the todo panel is gone). It never starts typing by itself on a phone: the keyboard would push the editor up for a guess. With a mouse, a *new* thing's name is focused.
+**Closing** (**Max**, 21 Oct): a tap outside the editor **saves**, because it is usually an accident and the input shouldn't be lost. ✕ and Escape cancel; on a phone, so does pulling the editor down by its header (**Max**, 22 Oct). Changing one field never resets another.
+**Todos apply at once** (**Max**, 22 Oct): ticking, adding, postponing or deleting a todo of a stored event takes effect immediately (undoable). Ticking is doing, not planning, so cancelling the editor discards only the event's own changes. A new event's todos wait for ✓ with the rest. Ticking the last open todo plays the celebration.
 
-**Todo panel** · — · `todoPanel`
-The small panel on an event for ticking and adding todos. **Never say:** popover, pop, popup.
-Code: `openTodoPanel`, `UI.todoPanel`, ID `#todoPanel`, classes `.panel-…`. *(Renamed from `openTodoPop`/`#pop` on 21 Oct.)*
+**Todo panel** · — · *retired 22 Oct* — the small panel that opened on a click on an event. It repeated the editor with less in it, so it is gone: the editor does its job (**Max**). **Never say:** popover, pop, popup.
 
 **Settings** · *Einstellungen* · `settings` — the drawer for colours, projects, data, display and reminders. Changes apply at once.
 
@@ -402,7 +402,7 @@ monospace → DM Sans with tabular figures
 
 ### Scheduling a step *(built in the step-D build; returns after the restructure)*
 1. The phase dropdown shows the phase as the canvas has it: its own lines, then each block with its lines.
-2. Every step has a dot. Dragging it into the day view creates an event for that step: titled by it, one hour, in the block's colour. Its todo panel opens. Dropped anywhere else, nothing happens.
+2. Every step has a dot. Dragging it into the day view creates an event for that step: titled by it, one hour, in the block's colour. Its editor opens. Dropped anywhere else, nothing happens.
 3. Todos typed into the event belong to the event.
 4. Ticking todos rolls up: event → step → block → phase → milestone ring.
 5. Dragging the same step in again adds a second event; the step is open again until both are done.
@@ -447,8 +447,10 @@ The gate, the store and sync are defined in `ARCHITECTURE.md` §4–5. The rules
 
 - **The interface is colourless; colour belongs to categories** (B.3). Buttons, lists, switches, focus rings: light grey on dark (dark on light in the light theme). No blue "primary" button.
 - **The thing you edit wears its colour**: the editor's header, a project's or category's page in settings. The body below is the neutral raised surface. Text on a colour is #ededec (B.3).
-- **Three surfaces**: base (the page) → surface (a list) → raised (a floating panel). Only floating things have a shadow. Behind them, a solid dim layer; no blur.
-- The current time keeps its own colour; nothing else takes a hue that isn't a category.
+- **Three surfaces**: base (the page) → surface (a list) → raised (a floating panel). **No soft shadows anywhere** (**Max**, 22 Oct): a floating panel is told apart by the dim layer behind it, its lighter surface and a 1px edge (`--hairline`). Where something must stand off what lies under it (the add button, a dragged copy), a hard 2px ring in the page colour, never a blur.
+- **One dim layer** (`--scrim`, solid, no blur) behind everything that floats: the editor, settings, the time budget.
+- **The current time is amber** (`--now`, #ffb454; the mockup), its line and its tip, nothing else. **Today** is not coloured: its weekday and date are simply brighter. The red they had was a category's red.
+- Muted text is one grey (`--fg-muted`), never darker: the old faint grey read at 3:1.
 
 ## C.3 Arrangement
 
@@ -458,15 +460,20 @@ The gate, the store and sync are defined in `ARCHITECTURE.md` §4–5. The rules
 - **A row's value is changed in the row**: tapping it opens the phone's own picker (a native select over the row), types into it, or flips a switch. A row with a chevron opens a page in the same panel; a back arrow returns.
 - **The one big number**: each panel may have one thing set large (20px, semibold, tabular figures): the time of an event, the days left of a project. Under it, the same in words (B.4).
 - **Header actions**, right to left: done (filled round button), close without saving (outlined), a gap, delete (plain). In settings, changes apply at once, so there is only close (or back); creating something new has a done.
+- **Round buttons: one size, three looks.** 36px everywhere: **plain** (an icon; the app header's buttons, delete), **outlined** (close, cancel), **filled** (done; the app header's button while its panel is open). The one exception is the **add button, 44px** (`--float-btn`): it floats alone over the content and is used with a thumb. It is filled like done; in add mode it is outlined like cancel. Icons are 20px, stroke 1.5.
+- **Day view, an event shows what its height holds** (mockup "Detail nach Höhe"): lines of 16px; under one line just its colour; then the title (as many lines as are left, words broken at syllables), the time (in a narrow column only the start), the todo count. Small line icons for repeat and reminder, never emoji.
 
 ## C.4 Measures (tokens in `styles/tokens.css`)
 
 - Spacing 4 · 8 · 12 · 16 · 24. Radii nest: panel 24 → list 16 → controls round.
 - Row 44px (also the smallest touch target). Round buttons 36px. Editor 480px wide on a desktop; on a phone it rises from the bottom, full width. Settings 360px, below the app header.
-- Type: DM Sans only. Numbers in tabular figures, never a monospace font (**Max**). 20/26 semibold for names and the big number, 14/20 for rows, 12/16 for hints, 11/14 uppercase for overlines.
+- Type: DM Sans only. Numbers in tabular figures, never a monospace font (**Max**). **Five sizes** (`--fs-…`): 11 labels and overlines (uppercase), 12 small text (events, hints), 14 body and rows, 16 lead, 20 names and the big number; plus 28 for the celebration only. Weights 400 · 500 · 600, never 700.
+- Radii: 8 events · 16 lists · 24 floating panels · round. Nothing else.
 
 ## C.5 Not yet in this design *(the whole-app pass)*
 
-- The todo panel, the time budget, the timeline's dropdowns, the add button: still the older look.
-- The duration format ("1.5h") and the amber of postponed todos are shared with the todo panel and change with it.
+- The timeline view (phases, dropdowns, milestone chips) has the new colours, type and edges, but not yet its own design pass.
+- The time budget has the new frame; its content (donut, legend) is still the older look.
+- The duration format ("1.5h"); the amber of a postponed todo's text in the day view's count.
+- **German hyphenation** relies on the phone's browser (Android Chrome, Safari: yes). It could not be checked in the test browser, which has no German dictionary there. **Max** to look on the phone.
 

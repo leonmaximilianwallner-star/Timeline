@@ -106,3 +106,16 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **The closed settings panel is hidden completely.** Its shadow showed at the right edge, and it could be reached with Tab while closed. *Claude (found by the fingerprint test)*
 - **The settings dim the app below the header**, and a tap there closes them, as in the mockup. *Max (mockup)*
 - **Kept as they were:** every input's id, so the existing behaviour tests prove nothing but the look changed; the editor's rules (a tap outside saves, ✕ and Escape cancel). *Claude*
+
+## 22 Oct 2026 — one scale: buttons, edges, type; the todo panel goes (pull request #13)
+
+- **An audit measured the interface instead of eyeballing it:** 5 round-button sizes (18, 26, 34, 36, 54 px), 6 different shadows, 3 dim layers, 7 radii, 11 font sizes, two colour vocabularies side by side. *Max (asked for the scrape); Claude (measured)*
+- **The todo panel is gone; a click on an event opens its editor.** Two views of the same thing, the first with less in it, cost a second click. The celebration (all todos done) moved to the editor. *Max*
+- **Todos apply at once; cancelling discards only the event's own changes.** Reverses "cancel drops todo changes" (step 3) for todos only, now that the editor is where todos are ticked: tick-then-slide-down must not lose the tick. *Max*
+- **The editor never starts typing by itself on a phone**; pulled down by its header, it closes without saving. *Max*
+- **Round buttons: one size (36), three looks; the add button 44 as the one exception**, filled light like done, no blue, no glow. *Max (one scale, the add button too large and too blue); Claude (44 for the thumb)*
+- **No soft shadows, one dim layer without blur.** Edges and lighter surfaces separate floating panels; hard rings where something must stand off. *Max*
+- **The current time is amber, today is just brighter** (the mockup); the red was a category's. Blue hover lines and focus rings became grey. *Claude (from the mockup)*
+- **One token set.** The old near-duplicate colours merged into the mockup's; the faint grey (3:1) is gone, so hour and weekday labels read better. Five font sizes, weights up to 600, radii 8 · 16 · 24 · round. *Claude*
+- **Events show what their height holds**, words broken at syllables (the browser's German hyphenation), the start time alone in narrow columns, line icons instead of emoji. *Max (the problem); Claude (from the mockup's "Detail nach Höhe")*
+- **Not checked here:** hyphenation (the test browser lacks the German dictionary). Max checks on the phone. *Claude*
