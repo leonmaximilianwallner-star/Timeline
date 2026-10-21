@@ -45,6 +45,7 @@ input[type="color"]{padding:2px; height:34px; cursor:pointer}
 .btn:active{transform:scale(.95)}
 .btn.primary{background:var(--add); border-color:transparent; color:#fff}
 .btn.danger{color:var(--c-red)}
+.btn[disabled]{opacity:.35; pointer-events:none}   /* as .cbtn[disabled] */
 
 /* compact head with three circular action buttons; no footer */
 .overlay-window-header{ gap:8px; }

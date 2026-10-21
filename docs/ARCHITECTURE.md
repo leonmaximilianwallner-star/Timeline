@@ -177,6 +177,21 @@ The phone must keep working on the U-Bahn and must never lose a tick. So:
 - Stored dates are ISO day strings (`2026-10-20`). **Ends are exclusive everywhere** (last day + 1). Displays show the last day.
 - Event times are minutes since local midnight, read in the time zone stored in settings (`Europe/Vienna`). That's what keeps a 9:00 event at 9:00 across the clock change.
 
+### 5.5 Reminders *(as built, 21 Oct)*
+
+An event's reminder (`reminderMin`) reaches you in one of two ways, never both on one device:
+
+- **Push, switched on per device** (Settings → Erinnerungen; needs the sync login). The device registers with its browser's push service (Google's for Chrome, Apple's for Safari) and leaves the address and keys in the `push_devices` table, together with its time zone. Every minute, Supabase runs the function `send-reminders` (`supabase/functions/send-reminders/index.ts`): it reads each account's events from `records`, works out which reminders are due, and sends each one, encrypted, to each registered device. `reminders_sent` makes sure none goes out twice. A reminder up to 10 minutes late (a slow run) still goes out; later ones are dropped. The service worker (`sw.js`) shows it, even with the app closed.
+- **In the app**, when push is off: checked every 30 s while the app is open, as before.
+
+Whether push is on is read from the browser's own subscription, not stored. On every start the device registers again (cheap), so a changed time zone or a server that forgot it heals by itself. Signing out switches push off first.
+
+**Keys.** Push needs a key pair. The public half is in `reminders.js`; the private half exists only as the Supabase secret `VAPID_KEYS`. If it is ever lost or leaked: make a new pair, change both places, and switch push off and on again on each device.
+
+**Event times on the server.** An event's time is minutes after local midnight; the server reads it in the device's time zone (`Intl`), so 9:00 stays 9:00 across the clock change. The function repeats `occursOn` from `core/repeat.js`; a test compares the two over two years of dates.
+
+**What it costs.** One function call a minute (about 45,000 a month; the free plan includes 500,000). iPhones receive web push only from an app added to the home screen (iOS 16.4 or later).
+
 ---
 
 ## 6. Views: one page, one scroll container — **Max, 20 Oct**
@@ -270,7 +285,7 @@ v2_7 has no steps: they come from the canvas's blocks. The question of where the
 3. **Data layer. Built 21 Oct** (§4), simpler than planned: one gate stamps every change; deletions are remembered; device state is separate; the editor's cancel really cancels. The plan is now stored under `timeline.data.v3`; the V2 data is copied over on first start and stays untouched under its old key.
    **3b. Stored names. Built 21 Oct:** exams and project milestones are one `milestones` list (one editor); end dates are stored exclusive (`lastDay`/`dayAfter` in `core/dates.js`); the mono font is gone. Data version 4; older data converts on load. *Deferred on purpose:* phase descriptions as plain lines (with the canvas), categories keyed by colour (open question, RULEBOOK B.8).
 4. **Supabase. Built 21 Oct:** one `records` table, login in settings, sync by stamps (§5.1). Tested against a simulated Supabase with two devices; the first real sync happens on Max's phone.
-5. **Notifications.** Reminders from a scheduled Supabase function by web push; a native wrapper only if Android web push proves insufficient.
+5. **Notifications. Built 21 Oct** (§5.5): web push from a Supabase function that runs every minute, switched on per device. No native wrapper needed. Tested here end to end except the real push services and the real Supabase: the first real push arrives on Max's phone.
 6. **Then features, one at a time**: the viewport prototype → the canvas → blocks and steps → step → event drag → the single-day view → agents.
 
 ---
@@ -284,7 +299,8 @@ What exists now. Every file starts with one comment line saying what it holds an
 ```
 index.html                  page skeleton: meta, fonts, loading screen, app frame; loads everything below
 app.js                      keyboard shortcuts and start-up
-reminders.js                reminders (notifications)
+reminders.js                reminders: the push switch, and in-app reminders when push is off
+sw.js                       service worker: shows a push reminder, even with the app closed
 
 core/                       rules with no screen
   model.js                  constants, colour palette, starting data
@@ -324,8 +340,14 @@ ui/
 
 styles/   tokens · base · timeline · day · add-button · editor · todos · settings · time-budget · toast · device · loader
 
+supabase/
+  schema.sql                the plan's table (records): who may read it, the server's two rules
+  push.sql                  push_devices, reminders_sent, the every-minute schedule
+  functions/send-reminders/index.ts   sends due reminders by push (§5.5)
+
 docs/     ARCHITECTURE.md · RULEBOOK.md · DECISIONS.md · dictionary/
-tests/    vocabulary · fingerprint · the split's record
+tests/    vocabulary · fingerprint · data layer · merge · sync · reminders · push · push switch · the split's record
+          vendor/webpush.bundle.mjs: the push library, for the tests only
 package.json                lists the tools the tests use; the app itself needs no install
 ```
 

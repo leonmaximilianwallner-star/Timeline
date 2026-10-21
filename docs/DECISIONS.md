@@ -78,3 +78,15 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 ## 21 Oct 2026 — version tags on every file (pull request #9)
 
 - **Every file index.html loads carries `?v=<version>`, computed from all files' content.** GitHub Pages lets browsers reuse a file for 10 minutes; right after #8, Max's browser ran the new index.html with the old settings file, so the Sync section was missing. With mixed data code that could do real harm. Now any change gives every file a new address, so they are fetched together. `tests/asset-version.mjs` fails if a change wasn't tagged. *Claude*
+
+## 21 Oct 2026 — step 5, push reminders (pull request #10)
+
+- **Web push, no native app.** Android Chrome and installed iPhone web apps (iOS 16.4+) receive push like a native app; a native wrapper would add an app store and a second codebase for nothing. *Max (asked); Claude (checked)*
+- **A Supabase function, run every minute, decides what is due** and sends it. The alternative, the phone scheduling its own alarms, doesn't exist on the web. *Claude*
+- **Switched on per device, not per account.** You may want reminders on the phone and not on the laptop. *Claude*
+- **Never both push and in-app reminders on one device**, so nothing arrives twice. *Claude*
+- **Whether push is on is read from the browser, not stored.** A stored flag could disagree with reality (permission revoked, browser data cleared). *Claude*
+- **The server reads times in the device's time zone**, sent along on every start. *Claude*
+- **A reminder more than 10 minutes late is dropped**, not sent hours later after an outage. *Claude*
+- **Found on the way:** the in-app reminders used `new Notification(...)`, which Android Chrome refuses; the error was swallowed, so they probably never worked on the phone. They now go through the service worker. *Claude*
+- **Tested here:** due-time rules (clock changes, repeats, midnight), sending once, gone devices; real encryption and signature, decrypted independently as a phone would; the switch in a browser against a simulated Supabase. **Not testable here:** the real push services and the real Supabase. The first real push is on Max's phone. *Claude*

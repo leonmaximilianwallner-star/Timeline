@@ -164,6 +164,7 @@ A rule that makes one event occur on many days. Each day it appears is an **occu
 
 **Reminder** · *Erinnerung* · `reminderMin`
 Minutes before an event's start when a notification fires. **Never say:** alarm.
+It arrives as a **push** (sent by the server, `send-reminders`; per device, Settings → Erinnerungen) or, with push off, from the open app. A device that receives push is a **push device** (`push_devices`). Not to be confused with sync's sending of rows (`pushRows`).
 
 **Carry-over** · *Übernahme* · `carryOver`
 Postponed todos come along to the next time (**Max**, 21 Oct):
