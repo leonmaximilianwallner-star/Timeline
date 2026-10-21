@@ -398,3 +398,4 @@ docs/
 7. Pointer Events only: no parallel mouse or touch handlers.
 8. Stored names change only with a migration that copies.
 9. When the right fix is structural, say so before patching.
+10. After changing any script or style, run `node tests/asset-version.mjs --update`: every file `index.html` loads carries a version tag from all files' content, so a browser never mixes old and new files after an update. The test fails if it's forgotten.

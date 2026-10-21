@@ -74,3 +74,7 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **Changes from another device clear undo.** Undoing across them would bring back what the other device changed. *Claude*
 - **Tested against a simulated Supabase** (two devices, offline, conflicts, deletions, expired login); this environment can't reach supabase.co, so the first real sync is on Max's phone. *Claude*
 - **Found while looking into the missing app icon:** sync didn't stop when the token leaked. The V2 rewrite of 12 June dropped the old Gist sync, along with the manifest link (pull request #7). *Claude*
+
+## 21 Oct 2026 — version tags on every file (pull request #9)
+
+- **Every file index.html loads carries `?v=<version>`, computed from all files' content.** GitHub Pages lets browsers reuse a file for 10 minutes; right after #8, Max's browser ran the new index.html with the old settings file, so the Sync section was missing. With mixed data code that could do real harm. Now any change gives every file a new address, so they are fetched together. `tests/asset-version.mjs` fails if a change wasn't tagged. *Claude*
