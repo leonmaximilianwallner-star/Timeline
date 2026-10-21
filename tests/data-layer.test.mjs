@@ -72,19 +72,20 @@ const tests = {
   async 'changing theme and days changes device state, not the plan'(page) {
     const first = await stored(page, 'timeline.data.v3');
     await page.click('#btnSettings');
-    await page.click('#sTheme button[data-t="light"]');
-    await page.click('#sDens button[data-d="3"]');
+    await page.selectOption('#sTheme', 'light');
+    await page.selectOption('#sDens', '3');
     const dv = await device(page);
     assert.equal(dv.theme, 'light'); assert.equal(dv.density, 3);
     assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'light');
     assert.equal(await stored(page, 'timeline.data.v3'), first);
+    await page.keyboard.press('Escape');                       // close settings: the dim layer covers the app while they are open
   },
   async 'cancelling the editor drops todo changes'(page) {
     const before = (await data(page)).events;
     await page.locator('.event').nth(1).click();
     await page.click('#todoPanelEdit');
     await page.fill('#fNewTodo', 'nur ein Versuch');
-    await page.click('#fAddTodo');
+    await page.press('#fNewTodo', 'Enter');
     await page.click('#editorClose');
     await page.waitForTimeout(200);
     assert.deepEqual((await data(page)).events, before);
@@ -96,7 +97,7 @@ const tests = {
     const id = await page.evaluate(() => UI.todoPanel.evId);
     await page.click('#todoPanelEdit');
     await page.fill('#fNewTodo', 'Folien hochladen');
-    await page.click('#fAddTodo');
+    await page.press('#fNewTodo', 'Enter');
     await page.click('#editorSave');
     await page.waitForTimeout(200);
     const after = (await data(page)).events;

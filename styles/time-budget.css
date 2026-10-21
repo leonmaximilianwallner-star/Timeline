@@ -11,3 +11,4 @@
 .donutCenter{fill:var(--text); font-size:17px; font-weight:500; font-variant-numeric:tabular-nums}
 .donutSub{fill:var(--text-faint); font-size:9.5px; letter-spacing:.08em; text-transform:uppercase; font-family:"DM Sans",sans-serif}
 
+.note{font-size:11.5px; color:var(--text-faint); line-height:1.5}   /* moved from settings.css on 22 Oct: only the time budget uses it now */

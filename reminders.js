@@ -58,8 +58,8 @@ async function checkPush(){
 function setPushState(message){
   pushState.message = message;
   const el = document.getElementById("pushStatus"); if(el) el.textContent = pushStatusText();
-  const btn = document.getElementById("sPush");
-  if(btn){ btn.textContent = pushState.on ? "Ausschalten" : "Einschalten"; btn.disabled = pushState.busy; }
+  const sw = document.getElementById("sPush");     // the switch in settings
+  if(sw){ sw.checked = pushState.on; sw.disabled = pushState.busy || (!login && !pushState.on); }
 }
 function pushStatusText(){
   if(pushState.message) return pushState.message;

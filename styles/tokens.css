@@ -14,6 +14,19 @@
   --soft:cubic-bezier(0.3,1,0.5,1);
   --shadow:0 12px 40px rgba(0,0,0,.5), 0 2px 8px rgba(0,0,0,.35);
   --rail-w:60px;
+  /* the editor and settings (RULEBOOK Part C; mockup "Timeline v2", design system "Timeline v2 Blueprint") */
+  --raised:#23232d;          /* a floating panel: one step above surface */
+  --hairline:#2c2c38;        /* dividers between rows; never the only edge of a control */
+  --fg-muted:#adadba;        /* secondary text and icons (4.8:1 or better on surface and raised) */
+  --border-control:#72728a;  /* outline of a secondary round button */
+  --on-primary:#111118;      /* text and icons on the light primary button */
+  --scrim:#000000a6;         /* solid dim behind the editor and settings; no blur */
+  --danger:#ff6b6b;          /* destructive words and icons; always with a word or icon */
+  --shadow-float:0 24px 64px #00000066;
+  --r-row:16px;              /* a list of rows */
+  --r-float:24px;            /* the editor and the settings panel */
+  --row-h:44px;              /* one row: also the smallest touch target */
+  --round-btn:36px;          /* round buttons in a header */
   --sticky-left:calc(var(--rail-w) + 12px);
   --gridline: linear-gradient(to right, var(--line-soft) 1px, transparent 1px);
   --gridline-size: var(--tl-ppd, 160px) 100%;
@@ -23,4 +36,6 @@ html[data-theme="light"]{
   --line:#dcdad4; --line-soft:#e6e4df;
   --text:#1d1d24; --text-dim:#5d5d68; --text-faint:#9a9aa4;
   --shadow:0 12px 40px rgba(30,30,40,.18), 0 2px 8px rgba(30,30,40,.10);
+  --raised:#f7f6f3; --hairline:#e6e4df; --fg-muted:#5d5d68; --border-control:#8a8a96;
+  --on-primary:#ffffff; --scrim:#0000004d; --danger:#c8372b; --shadow-float:0 24px 64px rgba(30,30,40,.22);
 }

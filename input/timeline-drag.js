@@ -121,5 +121,5 @@ $tlWrap.addEventListener("click", e=>{
   const mEl = e.target.closest("[data-edit-milestone]");
   if(mEl){ const m = S.milestones.find(v=>v.id===mEl.dataset.editMilestone); if(m) openEditor({ type:"milestone", edit:m }); return; }
   const prEl = e.target.closest("[data-edit-project]");
-  if(prEl){ toggleSettings(true); }
+  if(prEl){ toggleSettings(true, { name:"colour", id:prEl.dataset.editProject }); }   // the project's own page
 });
