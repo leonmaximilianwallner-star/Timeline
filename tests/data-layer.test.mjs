@@ -26,6 +26,7 @@ async function open(before) {
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   await page.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
+  await page.clock.setSystemTime(new Date('2026-10-21T10:00:00+02:00'));  // a Wednesday: "today" in every test; the clock keeps running
   if (before) await page.addInitScript(before);
   await page.goto(URL_);
   await page.waitForTimeout(500);
@@ -41,14 +42,16 @@ const V2 = JSON.stringify({
   categories: [{ id: 'seminar', name: 'Seminararbeit', color: '#40838b', start: '2026-10-01', end: '2026-11-30',
                  milestones: [{ id: 'm1', date: '2026-11-20', label: 'Abgabe', end: true }] }],
   phases: [{ id: 'p1', title: 'Schreiben', categoryId: 'seminar', start: '2026-10-15', end: '2026-10-30', details: '', expanded: true, _lane: 0 }],
-  exams: [{ id: 'x1', title: 'Statik', date: '2026-11-05', points: '30 Punkte' }], events: [{ id: 'e1', title: 'Tutorium', categoryId: null, date: '2026-10-21', startMin: 540, endMin: 660, repeat: 'none', reminderMin: null, todos: [] }],
+  exams: [{ id: 'x1', title: 'Statik', date: '2026-11-05', points: '30 Punkte' }], events: [{ id: 'e2', title: 'Krit', categoryId: null, date: '2026-10-07', startMin: 600, endMin: 660, repeat: 'weekly', reminderMin: null,
+              todos: [{ id: 't1', text: 'Skizze', state: 'open' }] },
+           { id: 'e1', title: 'Tutorium', categoryId: null, date: '2026-10-21', startMin: 540, endMin: 660, repeat: 'none', reminderMin: null, todos: [] }],
   settings: { theme: 'light', density: 3 },
 });
 
 const tests = {
   async 'first start: the plan is saved in the new shape, every record stamped'(page) {
     const d = await data(page);
-    assert.equal(d.version, 4);
+    assert.equal(d.version, 5);
     assert.equal(d.settings, undefined);
     for (const l of LISTS) for (const r of d[l]) assert.ok(r.updatedAt, `${l}/${r.id} has no stamp`);
     for (const p of d.phases) { assert.equal(p.expanded, undefined); assert.equal(p._lane, undefined); }
@@ -85,7 +88,7 @@ const tests = {
     await page.click('#editorClose');
     await page.waitForTimeout(200);
     assert.deepEqual((await data(page)).events, before);
-    assert.equal(await page.evaluate(() => S.events.some(e => e.todos.some(t => t.text === 'nur ein Versuch'))), false);
+    assert.equal(await page.evaluate(() => S.events.some(e => Object.values(e.todosByDate).flat().some(t => t.text === 'nur ein Versuch'))), false);
   },
   async 'saving the editor keeps todo changes and stamps only that event'(page) {
     const before = (await data(page)).events;
@@ -98,7 +101,7 @@ const tests = {
     await page.waitForTimeout(200);
     const after = (await data(page)).events;
     const ev = after.find(e => e.id === id);
-    assert.ok(ev.todos.some(t => t.text === 'Folien hochladen'));
+    assert.ok(Object.values(ev.todosByDate).flat().some(t => t.text === 'Folien hochladen'));
     assert.notEqual(ev.updatedAt, before.find(e => e.id === id).updatedAt);
     for (const e of after) if (e.id !== id) assert.equal(e.updatedAt, before.find(b => b.id === e.id).updatedAt);
   },
@@ -147,6 +150,98 @@ const tests = {
     assert.equal(d.milestones.some(x => x.id === m.id), false);
     assert.equal(d.deleted[m.id].in, 'milestones');
   },
+  async "a repeating event's occurrences each have their own todos"(page) {
+    const id = await page.evaluate(() => S.events.find(e => e.title === 'Tutorium').id);
+    await page.locator(`.event[data-ev="${id}"][data-date="2026-10-21"]`).click();
+    await page.fill('#todoPanelNew', 'Folien'); await page.press('#todoPanelNew', 'Enter');
+    await page.locator('#todoPanel .todoRow .tcheck').first().click();
+    const ev = (await data(page)).events.find(e => e.id === id);
+    assert.equal(ev.todosByDate['2026-10-21'][0].state, 'done');
+    assert.equal(ev.todosByDate['2026-10-28'], undefined);
+    await page.keyboard.press('Escape');
+    await page.locator(`.event[data-ev="${id}"][data-date="2026-10-28"]`).click();
+    assert.equal(await page.locator('#todoPanel .todoRow').count(), 0);      // next week starts empty
+    await page.keyboard.press('Escape');
+  },
+  async 'a postponed todo shows up in the next occurrence, and is stored there once changed'(page) {
+    const id = await page.evaluate(() => S.events.find(e => e.title === 'Tutorium').id);
+    await page.locator(`.event[data-ev="${id}"][data-date="2026-10-21"]`).click();
+    await page.fill('#todoPanelNew', 'Frage stellen'); await page.press('#todoPanelNew', 'Enter');
+    await page.locator('#todoPanel .todoRow', { hasText: 'Frage stellen' }).click({ button: 'right' });
+    await page.keyboard.press('Escape');
+    let ev = (await data(page)).events.find(e => e.id === id);
+    assert.equal(ev.todosByDate['2026-10-28'], undefined);                     // shown, not yet stored
+    await page.locator(`.event[data-ev="${id}"][data-date="2026-10-28"]`).click();
+    assert.equal(await page.locator('#todoPanel .todoRow', { hasText: 'Frage stellen' }).count(), 1);
+    await page.locator('#todoPanel .todoRow', { hasText: 'Frage stellen' }).locator('.tcheck').click();
+    await page.keyboard.press('Escape');
+    ev = (await data(page)).events.find(e => e.id === id);
+    assert.equal(ev.todosByDate['2026-10-28'].find(t => t.text === 'Frage stellen').state, 'done');
+    assert.equal(ev.todosByDate['2026-10-21'].find(t => t.text === 'Frage stellen').state, 'postponed');
+    assert.deepEqual(await page.evaluate(i => todosOf(S.events.find(e => e.id === i), '2026-11-04'), id), []);   // one step only
+  },
+  async 'moving a repeating event moves every day\'s todos with it'(page) {
+    const id = await page.evaluate(() => S.events.find(e => e.title === 'Tutorium').id);
+    const before = (await data(page)).events.find(e => e.id === id);
+    await page.evaluate(i => openEditor({ type: 'event', edit: S.events.find(e => e.id === i), occurrence: '2026-10-21' }), id);
+    await page.fill('#fDate', await page.evaluate(d => dayAfter(d), before.date));
+    await page.click('#editorSave'); await page.waitForTimeout(200);
+    const after = (await data(page)).events.find(e => e.id === id);
+    assert.deepEqual(Object.keys(after.todosByDate).sort(), ['2026-10-22', '2026-10-29']);
+    assert.deepEqual(after.todosByDate['2026-10-22'], before.todosByDate['2026-10-21']);
+    await page.click('#btnUndo'); await page.waitForTimeout(200);
+  },
+  async 'the editor keeps what was typed when the category changes'(page) {
+    await page.evaluate(() => openEditor({ type: 'event', initial: { date: '2026-10-23', startMin: 600, endMin: 660 } }));
+    await page.fill('#fTitle', 'Krit Entwurf');
+    await page.fill('#fStart', '13:00'); await page.fill('#fEnd', '14:30');
+    await page.selectOption('#fProj', 'seminar');
+    assert.equal(await page.inputValue('#fTitle'), 'Krit Entwurf');
+    assert.equal(await page.inputValue('#fStart'), '13:00');
+    assert.equal(await page.inputValue('#fEnd'), '14:30');
+    await page.click('#editorSave'); await page.waitForTimeout(200);
+    const ev = (await data(page)).events.find(e => e.title === 'Krit Entwurf');
+    assert.deepEqual([ev.startMin, ev.endMin, ev.categoryId], [780, 870, 'seminar']);
+  },
+  async 'a tap outside the editor saves; ✕ and Escape cancel'(page) {
+    const count = async t => (await data(page)).events.filter(e => e.title === t).length;
+    await page.evaluate(() => openEditor({ type: 'event', initial: { date: '2026-10-24', startMin: 600, endMin: 660 } }));
+    await page.fill('#fTitle', 'Aus Versehen');
+    await page.mouse.click(4, 4); await page.waitForTimeout(200);
+    assert.equal(await count('Aus Versehen'), 1);
+    await page.evaluate(() => openEditor({ type: 'event', initial: { date: '2026-10-24', startMin: 600, endMin: 660 } }));
+    await page.fill('#fTitle', 'Abgebrochen'); await page.click('#editorClose');
+    await page.evaluate(() => openEditor({ type: 'event', initial: { date: '2026-10-24', startMin: 600, endMin: 660 } }));
+    await page.fill('#fTitle', 'Abgebrochen'); await page.keyboard.press('Escape');
+    assert.equal(await count('Abgebrochen'), 0);
+  },
+  async "open dropdowns of phases that don't overlap share one row"(page) {
+    /* two phases of their own, one ending the day the other starts */
+    const ids = await page.evaluate(() => {
+      mutate(s => s.phases.push({ id: 'pa', title: 'A', categoryId: null, start: '2027-03-01', end: '2027-03-10', details: '' },
+                               { id: 'pb', title: 'B', categoryId: null, start: '2027-03-10', end: '2027-03-20', details: '' }));
+      return ['pa', 'pb'];
+    });
+    await page.evaluate(ids => setDevice(dv => { dv.openPhases = ids; }), ids);
+    assert.equal(await page.locator('.dropdown').count(), 2);
+    assert.equal(await page.locator('.dropdown-row').count(), 1);
+    await page.evaluate(() => setDevice(dv => { dv.openPhases = []; }));
+    await page.click('#btnUndo');
+  },
+  async 'loading more past days does not move the view'(page) {
+    const firstDay = () => page.evaluate(() => idxDate(Math.round($scene.scrollLeft / UI.dayPPD)));
+    const before = await page.evaluate(() => { $scene.scrollLeft = UI.dayPPD; return idxDate(1); });   // one day from the left edge: more days get loaded
+    await page.waitForTimeout(800);
+    assert.notEqual(await page.evaluate(() => idxDate(1)), before);          // days were added in front
+    assert.equal(await firstDay(), before);
+    await page.evaluate(() => scrollToToday(false)); await page.waitForTimeout(300);
+  },
+  async 'the week number is the week of the first visible day'(page) {
+    await page.evaluate(() => { const i = dayIdx('2026-10-25'); $scene.scrollLeft = i * UI.dayPPD; });   // a Sunday, week 43
+    await page.waitForTimeout(600);
+    assert.equal(await page.textContent('#kwNum'), '43', `first visible day: ${await page.evaluate(() => idxDate(Math.round($scene.scrollLeft / UI.dayPPD)))}`);
+    await page.evaluate(() => scrollToToday(false)); await page.waitForTimeout(300);
+  },
   async 'deleting is remembered; undo brings the event back and forgets the deletion'(page) {
     await page.locator('.event').nth(1).click();
     const id = await page.evaluate(() => UI.todoPanel.evId);
@@ -165,9 +260,10 @@ const tests = {
 
 const v2Tests = {
   async 'V2 data is copied into the new shape; the V2 copy stays untouched'(page) {
-    assert.equal(await stored(page, 'timeline.app.v2'), V2);
+    const kept = await stored(page, 'timeline.app.v2');
+    assert.equal(kept, V2, `stored V2 copy: ${String(kept).slice(0, 120)}`);
     const d = await data(page);
-    assert.equal(d.events[0].title, 'Tutorium');
+    assert.equal(d.events.find(e => e.id === 'e1').title, 'Tutorium');
     assert.equal(d.phases[0].expanded, undefined);
     assert.equal(d.phases[0]._lane, undefined);
     assert.ok(d.phases[0].updatedAt);
@@ -187,7 +283,14 @@ const v2Tests = {
     const d = await data(page);
     assert.equal(d.phases[0].end, '2026-10-31');
     assert.equal(d.categories[0].end, '2026-12-01');
-    assert.equal(d.version, 4);
+    assert.equal(d.categories[0].end, '2026-12-01');
+  },
+  async "V2 todos belong to one day: a series' list goes to its current occurrence"(page) {
+    const d = await data(page);
+    assert.equal(d.version, 5);
+    assert.equal(d.events.find(e => e.id === 'e2').todos, undefined);
+    assert.deepEqual(d.events.find(e => e.id === 'e2').todosByDate, { '2026-10-21': [{ id: 't1', text: 'Skizze', state: 'open' }] });
+    assert.deepEqual(d.events.find(e => e.id === 'e1').todosByDate, {});
   },
   async "V2's theme, days and open dropdowns move to this device"(page) {
     const dv = await device(page);

@@ -289,6 +289,7 @@ core/                       rules with no screen
   dates.js                  date and time helpers
   text.js                   escaping and cleaning text
   repeat.js                 on which days a repeating event occurs
+  todos.js                  which todos belong to which day of an event; carry-over within a series
 
 data/
   device.js                 device state: theme, days, open dropdowns (never synced)

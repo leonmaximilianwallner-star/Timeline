@@ -66,8 +66,8 @@
 .phase .ph-label{ font-size:12px; font-weight:600; }
 .phase .ph-handle{position:absolute; top:0; height:100%; width:10px; cursor:ew-resize}
 .phase .ph-handle.l{left:0}.phase .ph-handle.r{right:0}
-.dropdown-row{padding:2px 0 8px}
-.dropdown-anchor{display:flex}
+.dropdown-row{padding:2px 0 8px; display:grid}           /* dropdowns in one row share its height */
+.dropdown-anchor{display:flex; grid-area:1/1; align-self:start}
 .dropdown{
   position:sticky; left:var(--sticky-left);
   border-top:2px solid var(--line);

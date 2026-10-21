@@ -15,12 +15,12 @@ const PALETTE    = ["#f4971f","#e9473a","#40838b","#6498c0","#8fc14e","#90909a",
 
 const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-3);
 
-/* starting data, in today's shape (version 4): ends exclusive, milestones in one list */
+/* starting data, in today's shape (version 5): ends exclusive, milestones in one list, todos per occurrence */
 function seedData(){
   const t = new Date(); t.setHours(0,0,0,0);
   const d = n => isoDate(addDays(t, n));
   return {
-    version: 4,
+    version: 5,
     /* unified categories: entries with start&end are projects (get a spine); dateless entries are categories. Grey is reserved for "frei". */
     categories: [
       { id:"seminar", name:"Seminararbeit", color:"#40838b",
@@ -44,10 +44,10 @@ function seedData(){
       { id:uid(), title:"Präsentation",          date:d(18), categoryId:null,      final:false, note:"30 Punkte" },
     ],
     events: [
-      { id:uid(), title:"Tutorium", categoryId:"work", date:d(0), startMin:9*60,  endMin:11*60, repeat:"weekly", reminderMin:null, todos:[] },
+      { id:uid(), title:"Tutorium", categoryId:"work", date:d(0), startMin:9*60,  endMin:11*60, repeat:"weekly", reminderMin:null, todosByDate:{} },
       { id:uid(), title:"Seminararbeit Schreibblock", categoryId:"seminar", date:d(0), startMin:13*60, endMin:16*60, repeat:"none", reminderMin:null,
-        todos:[ {id:uid(),text:"Abschnitt 2.1 Absätze 3–5",state:"open"}, {id:uid(),text:"Quellenliste prüfen",state:"postponed"} ] },
-      { id:uid(), title:"Bachata", categoryId:"personal", date:d(1), startMin:19*60, endMin:20*60+30, repeat:"weekly", reminderMin:60, todos:[] },
+        todosByDate:{ [d(0)]: [ {id:uid(),text:"Abschnitt 2.1 Absätze 3–5",state:"open"}, {id:uid(),text:"Quellenliste prüfen",state:"postponed"} ] } },
+      { id:uid(), title:"Bachata", categoryId:"personal", date:d(1), startMin:19*60, endMin:20*60+30, repeat:"weekly", reminderMin:60, todosByDate:{} },
     ],
   };
 }

@@ -47,3 +47,16 @@
 - **No mono font, ever.** The font download and all four rules are gone (the drag/hover time labels in the day view and the time-budget numbers); numbers that change while you watch use DM Sans with tabular figures. The vocabulary test bans "mono". *Max*
 - **Deferred:** phase descriptions as plain lines (with the canvas), categories keyed by colour (open). *Claude*
 - **A flaw in the fingerprint test, found and fixed.** Since the split's last commit, every screenshot was black, so pull requests #2 and #3 were compared by positions only, not pixels as claimed. Fixed, and a blank screenshot now fails the test. Rechecked afterwards: #2 and #3 changed nothing visible except the undo button's state when opening a dropdown (intended, step 3). *Claude*
+
+## 21 Oct 2026 — the audit (pull request #5)
+
+Max asked for a thorough check before Supabase. Every file was read; his five issues and what turned up:
+
+- **Todos belong to one occurrence of an event.** A repeating event's later occurrences start empty (`todosByDate`, data version 5). Before, a weekly event had one list for every week, so ticking a todo ticked it everywhere. Existing lists of a series went to its current occurrence. *Max (the rule)*
+- **Postponed todos of a series come along to the next occurrence**, shown until changed there, one step only. *Max (chose this); Claude (shown, stored on first change)*
+- **The editor no longer resets fields.** Changing the category of a new event rebuilt the whole form to refresh carried-over todos, losing title, time and date typed before. Now only the todo list refreshes. *Claude (cause)*
+- **A tap outside the editor saves; ✕ and Escape cancel.** *Max*
+- **Phase dropdowns that don't overlap share a row** instead of each taking its own. *Max*
+- **Found in the audit:** loading more past days moved the view by up to 6 days (re-anchored by 180 days, but the start then snaps to a Monday); the week number in the corner was read one day too far right (a Sunday showed next week's number). Both fixed. *Claude*
+- **Removed dead code:** an unused colour-dot picker and its styles, two unused style classes, two unused variables, an editor branch for a "project" type nothing opens. The pink token is `--c-pink` (was `--c-orange`). *Claude*
+- **Day snapping** (the stutter when moving again right after stopping) gets its own pull request, because it changes how scrolling feels and must be judged on the phone. *Claude*

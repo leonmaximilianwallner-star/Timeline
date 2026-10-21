@@ -28,9 +28,6 @@ input[type="color"]{padding:2px; height:34px; cursor:pointer}
 .seg{display:flex; background:var(--surface2); border:1px solid var(--line); border-radius:9999px; padding:3px; gap:2px}
 .seg button{flex:1; border-radius:9999px; padding:5px 10px; font-size:12px; font-weight:600; color:var(--text-dim); white-space:nowrap}
 .seg button.on{background:var(--surface3); color:var(--text)}
-.catdots{display:flex; flex-wrap:wrap; gap:8px}
-.catdot{width:26px; height:26px; border-radius:50%; border:2px solid transparent; transition:transform .15s var(--spring)}
-.catdot.on{border-color:var(--text); transform:scale(1.12)}
 .rte-tools{display:flex; gap:6px; margin-bottom:6px}
 .rte{
   min-height:84px; max-height:200px; overflow:auto; background:var(--surface2);
@@ -39,7 +36,6 @@ input[type="color"]{padding:2px; height:34px; cursor:pointer}
 }
 .rte:focus{border-color:var(--c-blue)}
 .rte ul,.rte ol{padding-left:18px}
-.mfoot{display:flex; gap:10px; padding:0 16px 16px; align-items:center}
 .btn{
   border-radius:9999px; padding:9px 18px; font-weight:600; font-size:13px;
   background:var(--surface2); border:1px solid var(--line); color:var(--text-dim);
@@ -49,7 +45,6 @@ input[type="color"]{padding:2px; height:34px; cursor:pointer}
 .btn:active{transform:scale(.95)}
 .btn.primary{background:var(--add); border-color:transparent; color:#fff}
 .btn.danger{color:var(--c-red)}
-.mfoot .spacer{flex:1}
 
 /* compact head with three circular action buttons; no footer */
 .overlay-window-header{ gap:8px; }
