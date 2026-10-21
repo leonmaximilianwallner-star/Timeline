@@ -9,7 +9,7 @@ const $dayWrap = document.getElementById("dayWrap");
 const $dayInner= document.getElementById("dayInner");
 
 function renderAll(){
-  document.documentElement.dataset.theme = S.settings.theme;
+  document.documentElement.dataset.theme = device.theme;
   recomputeRange();
   TL_PPD = dayPPD();                       // same grid in both views
   $tlInner.style.paddingLeft = railW()+"px";

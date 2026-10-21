@@ -1,6 +1,6 @@
 # Timeline — Architecture
 
-> **Draft 4, 21 Oct 2026. Author: Claude, for Max.** Draft 1 asked four questions; Max's answers are recorded below and in `DECISIONS.md`. Lines marked **Max** are his decisions; everything else is a proposal with its reasoning attached. Max can veto any of it.
+> **Draft 5, 21 Oct 2026 (after step 3). Author: Claude, for Max.** Draft 1 asked four questions; Max's answers are recorded below and in `DECISIONS.md`. Lines marked **Max** are his decisions; everything else is a proposal with its reasoning attached. Max can veto any of it.
 >
 > **How the documents divide the work.**
 > - `RULEBOOK.md` says **what** the product is: its words, its levels, its rules for progress and time. It is also the project's dictionary (§9).
@@ -28,11 +28,11 @@ None of this is about skill or the size of the app. It's about **boundaries**: w
 
 | # | Decision | Status |
 |---|---|---|
-| 1 | Plain JavaScript, no framework, no build step. Classic scripts since the split; native modules from step 3 | proposed |
+| 1 | Plain JavaScript, no framework, no build step. Classic scripts; modules only when a present problem needs them | proposed |
 | 2 | Layers that only depend downward: **core → data → views** | proposed |
-| 3 | **Every change is a named command.** One gate for save, undo and sync (and agents, later) | proposed |
+| 3 | **One gate for every change:** `mutate()` stamps what changed. Named commands: dropped (§4) | **Claude, 21 Oct**, after Max asked for the simplest solution |
 | 4 | One page, one scroll container; the levels stack like a website | **Max, 20 Oct** |
-| 5 | Supabase, one row per thing (not one blob), offline-first. No secret in the app | proposed |
+| 5 | Supabase, one row per record (not one blob), offline-first on the device's localStorage. No secret in the app | proposed |
 | 6 | Where steps live (in a block's body, or their own table) | deferred until the canvas returns |
 | 7 | Agent access | **Max, 20 Oct: later.** Design kept possible, nothing built |
 | 8 | Restructure the live app (`index_v2_7`), then bring features back one at a time | **Max, 20 Oct** |
@@ -64,7 +64,7 @@ The split (step 2) loads the files as **classic scripts** (`<script src="…">`)
 
 - **Why.** The old file was already five script blocks sharing one namespace: every function and variable was visible everywhere. Classic scripts keep exactly that, so the split could move code without changing a single line, which is what "move only" asked for. Modules would have forced changes inside the code (import lines, and a different way to update `S` and `TL_PPD`, which several files reassign).
 - **What it means.** The files depend on load order: `index.html` lists them in the old file's order, and that order must not change without a reason. The layer rule (§3) can't yet be checked by a test, because nothing declares its imports.
-- **When it changes.** Step 3 replaces the shared global state with the store, which removes what blocks modules. Files then move to modules one at a time, each declaring what it needs.
+- **When it changes.** Only when a present problem needs it. Step 3 turned out not to (§4), so the files stay classic scripts. Revisit if load order causes a real bug, or when the layer rule (§3) needs to be checked by a test.
 - **A side effect.** Classic scripts still work when `index.html` is opened directly from disk.
 
 ---
@@ -78,7 +78,7 @@ Like a building, the app has structure, services and fit-out. They change at dif
   ui/           editor shell · settings · pickers
   input/        the one pointer pipeline
   ────────────────────────────────────────────────
-  data/         store · commands · undo · local · sync · migrations   ← changes rarely
+  data/         store (the gate) · changes · device · undo · sync      ← changes rarely
   ────────────────────────────────────────────────
   core/         model · dates · body/steps · progress · colours       ← almost never
 ```
@@ -91,47 +91,32 @@ Like a building, the app has structure, services and fit-out. They change at dif
   - Views talk to each other only through the store: the timeline changes an item, the store announces it, and the day view redraws.
 
 **Why this is the fix for "it always broke at some point".**
-- **A new look** is a change in `views/` or `styles/`. By construction it can't corrupt data, because views can't write data except through commands (§4).
+- **A new look** is a change in `views/` or `styles/`. By construction it can't corrupt data, because views can't write data except through the gate (§4).
 - **A data bug** lives in `core/` or `data/`, both small and both tested. It's found there instead of being hunted through thousands of lines.
 - **An AI session can be told "only touch `views/timeline/`"**, and you can check that it did by looking at which files changed.
 
-**What it costs.** More files. And sometimes a small detour: a view that wants to "just set a field" must call a command instead. That detour is the point.
+**What it costs.** More files. And sometimes a small detour: a view that wants to "just set a field" must go through `mutate` instead. That detour is the point.
 
 ---
 
-## 4. Commands: one gate for everything that changes
+## 4. One gate for every change *(as built, 21 Oct)*
 
-**Decision.** Nothing in the app edits data directly. Every change is a **command**: a small named object such as
+**Every change to the plan goes through `mutate(fn)`** (`data/store.js`). It already existed; step 3 made it complete and gave it one more job. In order, it:
 
-```js
-{ type: 'movePhase',  id: 'p_12', start: '2026-11-03' }
-{ type: 'createEvent', date: '2026-10-22', startMin: 540, endMin: 600, cat: 'teal' }
-{ type: 'setTodo',    eventId: 'e_41', index: 2, state: 'done' }
-```
+1. **remembers** the plan as it was, for undo;
+2. **applies** the change (`fn`);
+3. **stamps what changed** (`data/changes.js`): it compares before and after, record by record (one category, phase, exam or event), and gives every new or changed record `updatedAt` = now. A record that disappears is remembered in `deleted` (its id, list and time), so a device that was offline can't bring it back;
+4. **saves** to the device;
+5. **redraws**.
 
-All commands go to one function, `store.dispatch(command)`. It:
+Undo and redo stamp the same way: whatever they bring back counts as changed *now*.
 
-1. **validates** the command (does the item exist, is the end after the start);
-2. **applies** it through `core/` rules (exclusive ends, carry-over, rollup);
-3. **records** it for undo;
-4. **saves** it locally: this is the persist gate, the only one;
-5. **queues** it for sync;
-6. **tells** every view that something changed.
+**The rules that keep the gate honest:**
+- Nothing writes to `S` outside `mutate`. The editor works on a **copy** of an event's todos, so cancelling really cancels.
+- Drawing only reads. The timeline keeps its lane numbers to itself; nothing it computes is stored.
+- **Device state is not the plan.** Theme, number of days and open dropdowns live in `device` (`data/device.js`): saved per device, never synced, not undoable.
 
-`data/commands.js` is the complete list of what can ever happen to your data. If it isn't in that file, the app can't do it.
-
-**Why one gate pays for itself.**
-- **Undo** becomes "apply the inverse of the last command". It's the same for every feature, forever, and no feature can forget to support it.
-- **Sync** sends a list of small changes instead of the whole database, so two devices editing different things no longer overwrite each other.
-- **Debugging**: "what happened to this phase?" has an answer, because there's a log of commands.
-- **Agents, later**, speak the same language: whatever an agent does is a list of commands, checked by the same code as your own clicks.
-
-**What it costs.** Each new kind of change needs a command written first. In practice that's 10–30 lines, and it's exactly the place where an AI should be made to think before it codes.
-
-**Invariants carried over** (from the custom instructions, now enforced by structure):
-- `persist()` exists only inside `dispatch`. Render code has no access to it.
-- Startup: the store loads and migrates first, then emits *one* "ready", then views draw. This replaces the `initializing` flag guarding `renderAll()`.
-- Render functions only read. A render that writes state is a bug. (v2_7's `packLanes` writes `_lane` into stored phases: one to remove.)
+**Why not the "commands" system planned in draft 1.** It would have given undo, small sync updates and a log, but the app already had undo (snapshots), and stamping records gives sync the same small updates without rewriting every change in the app as a command. That would have been 23 rewritten call sites and a new layer for no present problem. **Revisit** when agents arrive (step 6): an agent's proposal is easiest to check as a list of named changes.
 
 ---
 
@@ -169,10 +154,10 @@ Phases and milestones are `items` from day one, even though v2_7 has no canvas. 
 
 The phone must keep working on the U-Bahn and must never lose a tick. So:
 
-1. The full working copy lives on the device in **IndexedDB** (bigger and more robust than localStorage).
-2. Every command is saved there first. The screen updates instantly, with no waiting for the network.
-3. Commands also go into an **outbox**. When online, `sync.js` sends the outbox and then fetches everything changed since the last sync.
-4. Conflicts are resolved per row: the newer `updated_at` wins. For one person on two devices this is almost always right.
+1. The full working copy lives on the device in **localStorage**, as it always has. *(IndexedDB, planned in draft 1, isn't needed: the plan is text, far below localStorage's limit. Revisit if photos arrive.)*
+2. Every change is saved there first. The screen updates instantly, with no waiting for the network.
+3. When online, `sync.js` sends every record stamped after the last sync, plus the new entries in `deleted`, then fetches everything changed elsewhere since then. The stamps make a separate outbox unnecessary.
+4. Conflicts are resolved per record: the newer `updatedAt` wins. For one person on two devices this is almost always right. It relies on the devices' clocks being roughly right, which phones and laptops keep automatically.
 
 **What it costs.** Sync is the most delicate code in the app. That's why it sits in one file behind the store, where no view can touch it, and why it gets the most tests.
 
@@ -216,7 +201,7 @@ In v2_7 the timeline and day grid already share one scroller and one scale relat
 **Decided.** First the app has to work for Max. Agent access comes after sync works.
 
 **What the architecture keeps possible** (nothing here is built now):
-- Commands (§4) are the language an agent would use, so agent changes get the same checks, undo and log as your own.
+- The gate (§4) is where an agent's changes would enter, so they get the same stamps and undo as your own. Named commands may come back for this (§4).
 - Supabase rows can be read in pieces, so an agent can ask for "this month's phases" without downloading everything.
 
 **Recorded for when it's built (Claude's recommendation, not yet decided):** give agents their own database permissions, not only instructions. A prompt is a request, not a limit. An agent can misread it, and text it reads elsewhere (an email, a web page) can steer it. A database role that can only read, or only write proposals, is a limit no wording can talk around. It's cheap to set up when the time comes.
@@ -280,11 +265,9 @@ v2_7 has no steps: they come from the canvas's blocks. The question of where the
 2. **Split, no behaviour change. Built 21 Oct** as classic scripts (§2.1): 12 style files and 23 script files, each a run of consecutive lines of the old file. Proven line by line (`tests/split-2026-10-21.py --prove`) and pixel by pixel (fingerprint test); the loading screen was checked separately.
    *Original plan:* v2_7 moves into the file layout (§12): core, data, input, views/timeline, views/day, styles. Fingerprint tests prove it looks and behaves exactly as before. Old names may survive this step (allow-listed).
    **Rename pass. Built 21 Oct:** the names that survive the restructure now follow the dictionary (old words 276 → 45); the rest go with step 3. See `DECISIONS.md`.
-3. **Data layer.**
-   - The store, commands, undo and IndexedDB, starting from an empty store.
-   - Stored names follow the dictionary from here on: exclusive ends, colour = category, exams = milestones, plain-line descriptions.
-   - The app runs fully offline on the new store.
-4. **Supabase.** Login, tables with Row Level Security, the outbox sync, export/import. Two devices in sync again.
+3. **Data layer. Built 21 Oct** (§4), simpler than planned: one gate stamps every change; deletions are remembered; device state is separate; the editor's cancel really cancels. The plan is now stored under `timeline.data.v3`; the V2 data is copied over on first start and stays untouched under its old key.
+   **3b. Stored names** *(next, separate)*: exclusive end dates, exams → milestones, plain-line descriptions instead of HTML, categories keyed by colour. Each changes behaviour, so each gets its own check. Best done before Supabase, so the server never sees the old names.
+4. **Supabase.** Login, tables with Row Level Security, sync by stamps, export/import. Two devices in sync again.
 5. **Notifications.** Reminders from a scheduled Supabase function by web push; a native wrapper only if Android web push proves insufficient.
 6. **Then features, one at a time**: the viewport prototype → the canvas → blocks and steps → step → event drag → the single-day view → agents.
 
@@ -308,7 +291,9 @@ core/                       rules with no screen
   repeat.js                 on which days a repeating event occurs
 
 data/
-  store.js                  state, loading, saving, undo/redo, category lookup
+  device.js                 device state: theme, days, open dropdowns (never synced)
+  changes.js                stamps what changed; remembers deletions
+  store.js                  the plan, loading, saving, the one gate (mutate), undo/redo, category lookup
 
 views/
   range.js                  which days are drawn, pixels per day
@@ -358,9 +343,9 @@ core/                   pure rules, no DOM, no storage — tested
   colours.js            the 8 colours, their washes, category lookup
 
 data/                   the only code that holds or saves data
-  store.js              state, dispatch, subscribe, undo
-  commands.js           every change the app can make
-  local.js              IndexedDB working copy, outbox, daily snapshots
+  store.js              the plan, the one gate (mutate), undo
+  changes.js            stamps what changed, remembers deletions
+  device.js             device state (never synced)
   sync.js               Supabase push/pull, login
   migrate.js            schema versions (each upgrade copies; never edits the old data)
   backup.js             export / import JSON
@@ -402,7 +387,7 @@ docs/
 
 1. Read this file and the rulebook first. State which layer and which files you'll touch.
 2. Use the rulebook's words. If a word you need isn't there, add it to the rulebook first.
-3. Change data only through a command. Never call persist, never write state from a render.
+3. Change the plan only through `mutate`. Never call persist, never write state from a render. Device state goes through `setDevice`.
 4. Imports point down. Views never import each other.
 5. New behaviour in `core/` gets a test. Existing tests must pass before merge.
 6. No raw colours or font sizes outside `tokens.css`. No secret keys anywhere, ever.

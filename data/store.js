@@ -2,7 +2,9 @@
 "use strict";
 /* ════════════════════════════════════════════════════════════
    state — mutable state object, persist(), undo stack
+   S holds the plan (synced later); `device` holds this screen's state (data/device.js).
    ════════════════════════════════════════════════════════════ */
+let device = loadDevice();
 let S = loadFromStorage();
 const UI = {
   addMode:false, range:{ start:null, days:0 },
@@ -16,9 +18,33 @@ const UI = {
 function loadFromStorage(){
   try{
     const raw = localStorage.getItem(STORE_KEY);
-    if(raw){ const d = JSON.parse(raw); if(d && d.categories) return migrateData(d); }
+    if(raw){ const d = JSON.parse(raw); if(d && d.categories) return toCurrentShape(d); }
+    /* first start of this version: copy the V2 app's data, which stays untouched under its old key */
+    const old = localStorage.getItem(OLD_STORE_KEY);
+    if(old){ const d = JSON.parse(old); if(d && d.categories) return saved(toCurrentShape(d, true)); }
   }catch(e){ console.warn("load failed", e); }
-  return seedData();
+  return saved(toCurrentShape(seedData()));
+}
+function saved(d){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(d)); }catch(e){ console.warn("save failed", e); }
+  return d;
+}
+/* brings any older data (V2 store, V2 export) to today's shape; harmless on data already current.
+   takeDeviceState: move V2's theme, density and open dropdowns into this device's state. */
+function toCurrentShape(d, takeDeviceState){
+  d = migrateData(d);
+  if(takeDeviceState){
+    if(d.settings){ device.theme = d.settings.theme || device.theme; device.density = d.settings.density || device.density; }
+    device.openPhases = (d.phases||[]).filter(p=>p.expanded).map(p=>p.id);
+    saveDevice();
+  }
+  delete d.settings;                                       // device state, not plan
+  (d.phases||[]).forEach(p=>{ delete p.expanded; delete p._lane; });
+  d.version = 3;
+  const now = new Date().toISOString();                    // records without a stamp get one; others keep theirs
+  RECORD_LISTS.forEach(list => (d[list]||[]).forEach(r => { if(!r.updatedAt) r.updatedAt = now; }));
+  d.deleted = d.deleted || {};
+  return d;
 }
 /* migrate older shape (separate categories+projects, projectId on phases) to unified categories (with a span: projects) */
 function migrateData(d){
@@ -61,10 +87,12 @@ function persist(){
 }
 /* every mutation goes through mutate(): snapshot → change → persist → render */
 function mutate(fn, opts={}){
-  UI.undo.push(JSON.stringify(S));
+  const before = JSON.stringify(S);
+  UI.undo.push(before);
   if(UI.undo.length > 60) UI.undo.shift();
   UI.redo.length = 0;
   fn(S);
+  stampChanges(JSON.parse(before), S, new Date().toISOString());
   persist();
   if(!opts.skipRender) renderAll();
   updateUndoButtons();
@@ -72,13 +100,17 @@ function mutate(fn, opts={}){
 function undo(){
   if(!UI.undo.length) return;
   UI.redo.push(JSON.stringify(S));
+  const before = S;
   S = JSON.parse(UI.undo.pop());
+  stampChanges(before, S, new Date().toISOString());       // what undo brings back counts as changed now
   persist(); renderAll(); updateUndoButtons(); toast("Rückgängig");
 }
 function redo(){
   if(!UI.redo.length) return;
   UI.undo.push(JSON.stringify(S));
+  const before = S;
   S = JSON.parse(UI.redo.pop());
+  stampChanges(before, S, new Date().toISOString());
   persist(); renderAll(); updateUndoButtons(); toast("Wiederholt");
 }
 function updateUndoButtons(){

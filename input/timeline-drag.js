@@ -112,7 +112,7 @@ function startPhaseCreate(e, fromHold=false){
 $tlWrap.addEventListener("click", e=>{
   const exp = e.target.closest("[data-expand]");
   if(exp){
-    mutate(s=>{ const p = s.phases.find(x=>x.id===exp.dataset.expand); p.expanded = !p.expanded; });
+    setDevice(dv=>{ const id = exp.dataset.expand; dv.openPhases = dv.openPhases.includes(id) ? dv.openPhases.filter(x=>x!==id) : [...dv.openPhases, id]; });
     return;
   }
   const phEl = e.target.closest(".phase");
