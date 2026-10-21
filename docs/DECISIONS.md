@@ -60,3 +60,7 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **Found in the audit:** loading more past days moved the view by up to 6 days (re-anchored by 180 days, but the start then snaps to a Monday); the week number in the corner was read one day too far right (a Sunday showed next week's number). Both fixed. *Claude*
 - **Removed dead code:** an unused colour-dot picker and its styles, two unused style classes, two unused variables, an editor branch for a "project" type nothing opens. The pink token is `--c-pink` (was `--c-orange`). *Claude*
 - **Day snapping** (the stutter when moving again right after stopping) gets its own pull request, because it changes how scrolling feels and must be judged on the phone. *Claude*
+
+## 21 Oct 2026 — day snapping (pull request #6)
+
+- **Days snap by the browser's own scroll snapping**, not a timer. Before, a timer started a smooth scroll after scrolling stopped; moving again during that scroll made the two fight (the stutter Max felt). Native snapping settles momentum and gives way the moment a new gesture starts. Paused while a drag auto-pans at the screen edge; the view settles on a day at the drop. *Claude (cause and fix); Max (to judge the feel on the phone, revert on its own if wrong)*

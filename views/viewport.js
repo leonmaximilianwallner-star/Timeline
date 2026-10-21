@@ -28,30 +28,9 @@ function scheduleExtend(){
 }
 $scene.addEventListener("scroll", () => { updateKW(); scheduleExtend();} , { passive:true });
 
-/* day-snap on scrollend.
-   The smooth scrollTo issued below is itself a scroll; if the user starts a
-   new gesture mid-animation, the two fight and stutter. We keep _snapping
-   and abort the in-flight smooth scroll on the next user-initiated input
-   (pointerdown or wheel). Re-issuing scrollTo at the current position is the
-   standard way to cancel a smooth scroll. */
-let _snapping = false;
-const _cancelSnap = () => {
-  if(!_snapping) return;
-  _snapping = false;
-  $scene.scrollTo({ left: $scene.scrollLeft, top: $scene.scrollTop });
-};
-$scene.addEventListener("pointerdown", _cancelSnap, { passive:true });
-$scene.addEventListener("wheel",       _cancelSnap, { passive:true });
-
-$scene.addEventListener("scrollend", () => {
-  _snapping = false;                                  // any prior snap is now resolved
-  if(UI.dragLive) return;
-  const ppd = UI.dayPPD; if(!ppd) return;
-  const target = Math.round($scene.scrollLeft / ppd) * ppd;
-  if(Math.abs(target - $scene.scrollLeft) < 1) return;
-  _snapping = true;
-  $scene.scrollTo({ left: target, behavior: "smooth" });
-}, { passive:true });
+/* Day snapping is CSS (styles/base.css: scroll-snap). Until 21 Oct it was a timer here that
+   started a smooth scroll after scrolling stopped; moving again during that scroll made the
+   two fight (the stutter). The browser's own snapping has no such second animation. */
 
 function maybeExtendRange(){
   const w = $scene.scrollLeft, max = $scene.scrollWidth - $scene.clientWidth;

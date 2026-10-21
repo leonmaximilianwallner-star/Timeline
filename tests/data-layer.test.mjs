@@ -236,6 +236,13 @@ const tests = {
     assert.equal(await firstDay(), before);
     await page.evaluate(() => scrollToToday(false)); await page.waitForTimeout(300);
   },
+  async 'after scrolling, the view settles with a day against the hour rail'(page) {
+    await page.evaluate(() => { $scene.scrollLeft = UI.dayPPD * 3.4 + $scene.scrollLeft; });
+    await page.waitForTimeout(700);
+    const off = await page.evaluate(() => $scene.scrollLeft / UI.dayPPD);
+    assert.ok(Math.abs(off - Math.round(off)) < 0.02, `view stopped ${off.toFixed(2)} days in, not on a day`);
+    await page.evaluate(() => scrollToToday(false)); await page.waitForTimeout(300);
+  },
   async 'the week number is the week of the first visible day'(page) {
     await page.evaluate(() => { const i = dayIdx('2026-10-25'); $scene.scrollLeft = i * UI.dayPPD; });   // a Sunday, week 43
     await page.waitForTimeout(600);

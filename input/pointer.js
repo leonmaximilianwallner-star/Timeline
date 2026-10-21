@@ -31,9 +31,9 @@ const PAN_ZONE = 48, PAN_MAX = 16, PAN_DWELL = 140;
 let _pan = null, _panRAF = 0;
 
 function panSpeed(depth){ const r = clamp(depth/PAN_ZONE, 0, 1); return PAN_MAX * r * r; }
-function panBind(apply, axes, x0, y0){ _pan = { apply, axes, x:x0, y:y0, zoneSince:0 }; if(!_panRAF) _panRAF = requestAnimationFrame(panFrame); }
+function panBind(apply, axes, x0, y0){ _pan = { apply, axes, x:x0, y:y0, zoneSince:0 }; $scene.classList.add("panning"); if(!_panRAF) _panRAF = requestAnimationFrame(panFrame); }
 function panFollow(x, y){ if(_pan){ _pan.x = x; _pan.y = y; } }
-function panRelease(){ _pan = null; if(_panRAF){ cancelAnimationFrame(_panRAF); _panRAF = 0; } }
+function panRelease(){ _pan = null; $scene.classList.remove("panning"); if(_panRAF){ cancelAnimationFrame(_panRAF); _panRAF = 0; } }   // snapping resumes: the view settles on a day
 
 function panFrame(){
   if(!_pan){ _panRAF = 0; return; }
