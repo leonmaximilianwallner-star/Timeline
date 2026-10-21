@@ -3,6 +3,8 @@
 // Sends a push notification for every reminder that is due, once per registered device.
 // ARCHITECTURE.md §5.5. The rules below mirror the app's: core/repeat.js (occursOn) and reminders.js.
 
+import * as webpush from "jsr:@negrel/webpush@0.5.0";   // in the tests: tests/vendor/webpush.bundle.mjs (tests/vendor/hooks.mjs)
+
 const LATE_OK_MIN = 10;          // a reminder up to 10 min late still goes out (a missed or slow run)
 const KEEP_SENT_DAYS = 3;        // how long "already sent" marks are kept
 
@@ -146,8 +148,7 @@ export async function webPusher(lib, vapidKeysJson, contact){
 if(globalThis.Deno){
   Deno.serve(async () => {
     try{
-      const lib = await import("jsr:@negrel/webpush@0.5.0");
-      const push = await webPusher(lib, Deno.env.get("VAPID_KEYS"), Deno.env.get("VAPID_CONTACT") || "mailto:timeline@example.com");
+      const push = await webPusher(webpush, Deno.env.get("VAPID_KEYS"), Deno.env.get("VAPID_CONTACT") || "mailto:timeline@example.com");
       const result = await run({ db: supabaseDb(Deno.env.get("SUPABASE_URL"), serverKey()), push });
       return new Response(JSON.stringify(result), { headers: { "Content-Type": "application/json" } });
     }catch(e){

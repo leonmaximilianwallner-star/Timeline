@@ -1,5 +1,5 @@
 // Tests for supabase/functions/send-reminders — when a push goes out, and that it goes out once.
-// Run from the repo root:  node --experimental-strip-types tests/reminders.test.mjs
+// Run from the repo root:  node --import ./tests/vendor/hooks.mjs --experimental-strip-types tests/reminders.test.mjs
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';

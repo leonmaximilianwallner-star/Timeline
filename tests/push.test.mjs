@@ -1,10 +1,10 @@
 // End-to-end test of the push itself: the server function's sender (webPusher) with the real library
 // sends to a fake push service on this machine; the test then decrypts the message on its own
 // (RFC 8291 + RFC 8188, as a phone does) and checks the VAPID signature (RFC 8292, as Google/Apple do).
-// Run from the repo root:  node --experimental-strip-types tests/push.test.mjs
+// Run from the repo root:  node --import ./tests/vendor/hooks.mjs --experimental-strip-types tests/push.test.mjs
 import http from 'node:http';
 import assert from 'node:assert/strict';
-import * as lib from './vendor/webpush.bundle.mjs';
+import * as lib from 'jsr:@negrel/webpush@0.5.0';            // the bundled copy, via tests/vendor/hooks.mjs
 import { webPusher } from '../supabase/functions/send-reminders/index.ts';
 
 const { subtle } = globalThis.crypto;
