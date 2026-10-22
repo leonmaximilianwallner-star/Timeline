@@ -129,3 +129,9 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **Whatever opens with a motion closes with it, reversed** (rulebook C.5): editor, time budget, phase dropdown. Redraws never replay an opening. *Max*
 - **A click on a time or date opens its picker.** *Max*
 - **Found on the way:** the ✕ button handed its click to the close function as "close instantly", which would have skipped the closing motion. Fixed and tested. *Claude*
+
+## 22 Oct 2026 — the category list, one header bar, the thin night (pull request #15)
+
+- **The category list rises from the editor's header**, plain text over the deepened dim layer, as Max drew it; no window of its own. On a desktop the editor glides down to make room, so the list rises everywhere. *Max (the idea, the place); Claude (the room)*
+- **One header bar:** the overline is the category ("Frei" without), the title's placeholder is the kind ("Termin"). The old "TERMIN" over "Neuer Termin" said the same thing twice. *Max*
+- **The soft start is a thin night, not a stop.** Hours before the day's start (6:00 by default, a setting) are a quarter tall. A stop you can push past would fight native scrolling (Max suspected it). Proven: at 0:00 the day view is pixel-identical to before. *Max (soft start); Claude (thin, not stopped)*

@@ -27,18 +27,21 @@ function renderDays(){
   inner.appendChild(head);
 
   /* body: hour rail + grid */
-  const body = document.createElement("div"); body.id="dayBody"; body.style.height = GRID_H+"px";
+  const body = document.createElement("div"); body.id="dayBody"; body.style.height = gridHeight()+"px";
   const rail = document.createElement("div"); rail.id="hourRail";
+  const startH = dayStartMin()/60;
   for(let h=HOUR_START; h<=HOUR_END; h++){
+    if(h > 0 && h < startH) continue;                   // the thin night: too little room for its hours; 00:00 marks where it begins
     const lab = document.createElement("span"); lab.className="hr-lab";
-    lab.style.top = (h-HOUR_START)*HOUR_PX+"px"; lab.textContent = String(h).padStart(2,"0")+":00";
+    lab.style.top = minToY(h*60)+"px"; lab.textContent = String(h).padStart(2,"0")+":00";
     rail.appendChild(lab);
   }
   const hoverLab = document.createElement("span"); hoverLab.id="hoverLab"; rail.appendChild(hoverLab);
   body.appendChild(rail);
 
   const grid = document.createElement("div"); grid.id="dayGrid";
-  grid.style.width = days*ppd+"px"; grid.style.height = GRID_H+"px";
+  grid.style.width = days*ppd+"px"; grid.style.height = gridHeight()+"px";
+  if(startH > 0){ const night = document.createElement("div"); night.className = "night"; night.style.height = minToY(startH*60)+"px"; grid.appendChild(night); }
   grid.classList.toggle("addmode", UI.addMode);
   for(let i=0;i<days;i++){
     const d = parseISO(idxDate(i));
@@ -47,9 +50,9 @@ function renderDays(){
     colEl.style.left = i*ppd+"px"; colEl.style.width = ppd+"px";
     grid.appendChild(colEl);
   }
-  for(let h=HOUR_START+1; h<HOUR_END; h++){
+  for(let h=Math.max(HOUR_START+1, startH); h<HOUR_END; h++){
     const l = document.createElement("div"); l.className="hline";
-    l.style.top = (h-HOUR_START)*HOUR_PX+"px"; grid.appendChild(l);
+    l.style.top = minToY(h*60)+"px"; grid.appendChild(l);
   }
 
   /* events, overlapping ones side by side */
@@ -124,8 +127,8 @@ const EVENT_ICON = {
   bell:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Erinnerung"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>',
 };
 function renderEvent(ev, dIso, x, w){
-  const top = (ev.startMin - HOUR_START*60)/60*HOUR_PX;
-  const h   = Math.max((ev.endMin - ev.startMin)/60*HOUR_PX - 2, 18);
+  const top = minToY(ev.startMin);
+  const h   = Math.max(minToY(ev.endMin) - top - 2, 18);
   const el = document.createElement("div");
   const todos = todosOf(ev, dIso);                 // this occurrence's todos only
   const allDone = todos.length>0 && todos.every(t=>t.state==="done");
@@ -164,7 +167,7 @@ function positionNowLine(){
   const i = dayIdx(todayISO());
   if(min < HOUR_START*60 || min > HOUR_END*60 || i<0 || i>=UI.range.days){ nl.style.display="none"; return; }
   nl.style.display = "";
-  nl.style.top  = (min - HOUR_START*60)/60*HOUR_PX+"px";
+  nl.style.top  = minToY(min)+"px";
   nl.style.left = i*UI.dayPPD+"px"; nl.style.width = UI.dayPPD+"px";
 }
 setInterval(positionNowLine, 60000);

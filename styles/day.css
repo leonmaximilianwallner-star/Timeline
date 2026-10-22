@@ -77,3 +77,5 @@
 .snapLab{position:absolute; z-index:16; right:6px; transform:translateY(-50%);
   font-size:var(--fs-label); font-variant-numeric:tabular-nums; color:var(--text); background:var(--base); padding:0 3px; pointer-events:none}
 
+/* the thin night before the day's start (views/range.js): darker, without hour lines */
+.night{position:absolute; left:0; right:0; top:0; background:var(--night); border-bottom:1px solid var(--hairline); pointer-events:none}

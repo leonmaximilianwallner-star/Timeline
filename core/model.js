@@ -9,7 +9,6 @@ const DEVICE_KEY = "timeline.device.v1";  // this device's state (data/device.js
 const DATA_VERSION = 5;                    // the shape of the plan (data/store.js toCurrentShape)
 const NOTIF_STORE= "timeline.notif.v2";
 const HOUR_START = 0, HOUR_END = 24, HOUR_PX = 52;
-const GRID_H     = (HOUR_END - HOUR_START) * HOUR_PX;
 let   TL_PPD     = 160;              // unified px/day — both views share one grid
 const SNAP       = 15;               // minutes
 const PALETTE    = ["#f4971f","#e9473a","#40838b","#6498c0","#8fc14e","#90909a","#a060c8","#d86e9a"];

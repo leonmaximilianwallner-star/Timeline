@@ -12,7 +12,7 @@ const RULEBOOK   = join(ROOT, 'docs/RULEBOOK.md');
 const ALLOW_FILE = join(ROOT, 'tests/vocabulary.allow.json');
 const SCAN_EXT   = new Set(['.js', '.mjs', '.html', '.css']);
 const SKIP_DIRS  = new Set(['.git', 'docs', 'tests', 'node_modules']);
-const EXEMPT     = new Set(['zoomlevel', 'scrollbar', 'scrollbars', 'webkit-scrollbar-track', 'aria-modal']);     // whole words the rulebook allows (§A.11)
+const EXEMPT     = new Set(['zoomlevel', 'scrollbar', 'scrollbars', 'webkit-scrollbar-track', 'aria-modal', 'aria-expanded']);     // whole words the rulebook allows (§A.11)
 
 // 1. The banned words, read from the rulebook's never-say block.
 function bannedWords() {

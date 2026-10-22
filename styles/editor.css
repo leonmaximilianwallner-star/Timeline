@@ -24,17 +24,37 @@
 .overlay.editor-overlay{background:var(--scrim); backdrop-filter:none}
 .editor{
   --ink:#ededec;                                   /* text on a colour is always #ededec (RULEBOOK B.3) */
-  width:min(480px,100%); max-height:min(720px, calc(100vh - 36px)); display:flex; flex-direction:column;
+  width:100%; max-height:min(720px, calc(100vh - 36px)); display:flex; flex-direction:column;
   background:var(--ed-colour, var(--c-gray)); border:1px solid var(--ed-colour, var(--c-gray));
   border-radius:var(--r-float); overflow:hidden;
   animation:editor-rise .26s var(--soft); transition:background .2s, border-color .2s;
 }
 .editor-header{display:flex; align-items:center; gap:8px; padding:16px 16px 20px 20px; color:var(--ink)}
 .editor-name{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px}
-.editor-kind{position:relative; align-self:flex-start; height:16px; display:flex; align-items:center; gap:2px;
-  font-size:11px; line-height:14px; font-weight:600; letter-spacing:.06em; text-transform:uppercase}
-.editor-kind svg{width:14px; height:14px}
-.editor-kind select{position:absolute; inset:-6px -4px; width:calc(100% + 8px); opacity:0; cursor:pointer; font-size:16px}
+.editor-kind{position:relative; align-self:flex-start; height:16px; padding:0; border:0; background:transparent; color:inherit; cursor:pointer;
+  display:flex; align-items:center; gap:2px; font:inherit; font-size:var(--fs-label); line-height:14px; font-weight:600; letter-spacing:.06em; text-transform:uppercase}
+.editor-kind::after{content:""; position:absolute; inset:-14px -8px}                 /* a 44px tall tap target around the 16px label */
+.kind-arrow{display:flex; transform:rotate(180deg); transition:transform .2s var(--soft)}   /* closed: points up, where the list will rise */
+.kind-arrow svg{width:14px; height:14px}
+.editor-kind[aria-expanded="true"] .kind-arrow{transform:none}                           /* open: points down, to close it */
+
+/* the editor and its category list share a frame: the list rises above the editor, plain text over the dim layer */
+.editor-stack{position:relative; width:min(480px,100%); transition:transform .24s var(--soft)}   /* glides down when the list needs room above */
+.overlay.editor-overlay{transition:background .2s}
+.overlay.editor-overlay.listing{background:var(--scrim-deep)}
+.cat-list{position:absolute; left:12px; bottom:calc(100% + 8px); display:flex; flex-direction:column; align-items:flex-start;
+  animation:cat-rise .2s var(--soft)}
+.cat-list[hidden]{display:none}
+.cat-item{height:var(--row-h); padding:0 8px; border:0; background:transparent; color:var(--text); cursor:pointer;
+  display:flex; align-items:center; gap:12px; font:inherit; font-size:var(--fs-body); font-weight:500; border-radius:var(--r-row)}
+.cat-item:hover{background:color-mix(in srgb, var(--text) 8%, transparent)}
+.cat-item[aria-selected="true"]{font-weight:600}
+.cat-item[aria-selected="true"] .row-dot{box-shadow:0 0 0 2px var(--base), 0 0 0 3.5px currentColor}   /* the current one: a ring */
+.cat-list.leaving{animation:cat-sink .16s var(--soft) forwards}
+@keyframes cat-rise{from{opacity:0; transform:translateY(8px)}}
+@keyframes cat-sink{to{opacity:0; transform:translateY(8px)}}
+/* no room above (a desktop, the editor high up): below its label, over the body, as a list on its own surface */
+.cat-list.below{bottom:auto; top:56px; z-index:2; padding:4px; background:var(--surface); border:1px solid var(--hairline); border-radius:var(--r-row)}
 #fTitle{min-width:0; height:26px; padding:0; border:0; outline:none; background:transparent; color:var(--ink);
   font:inherit; font-size:20px; line-height:26px; font-weight:600}
 #fTitle::placeholder{color:var(--ink); opacity:.6}
@@ -82,6 +102,7 @@ html[data-theme="light"] .when input{color-scheme:light}
 .editor-grip{display:none}
 @media (max-width:600px){
   .overlay.editor-overlay{align-items:flex-end; padding:0}
+  .editor-stack{width:100%}
   .editor{width:100%; max-height:92vh; border-radius:var(--r-float) var(--r-float) 0 0; animation:editor-slide .3s var(--soft)}
   .editor-leaving .editor{animation:editor-slide-out .24s var(--soft) forwards}
   .editor-header{touch-action:none; padding-top:20px}                      /* pulled down, it closes (ui/editor.js slideToClose) */

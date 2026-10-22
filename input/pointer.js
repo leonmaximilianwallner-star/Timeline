@@ -13,7 +13,7 @@ function gridPos(e){
   const g = document.getElementById("dayGrid").getBoundingClientRect();
   const x = e.clientX - g.left, y = e.clientY - g.top;
   const day = clamp(Math.floor(x / UI.dayPPD), 0, UI.range.days-1);
-  const min = snapMin(HOUR_START*60 + y/HOUR_PX*60);
+  const min = snapMin(yToMin(y));
   return { x, y, day, min };
 }
 function tlPos(e){

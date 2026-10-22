@@ -94,7 +94,10 @@ function mainPage(){
           pick:`<select id="sTheme" class="row-pick" aria-label="Thema">${optionsHTML([["dark","Dunkel"],["light","Hell"]], device.theme)}</select>` })}
         ${rowHTML({ icon:"columns", label:"Sichtbare Tage", value: String(device.density),
           pick:`<select id="sDens" class="row-pick" aria-label="Sichtbare Tage">${optionsHTML([[3,"3"],[5,"5"],[7,"7"]], device.density)}</select>` })}
-      </div></div>
+        ${rowHTML({ icon:"sun", label:"Tag beginnt um", value: (device.dayStart ?? 6) ? `${device.dayStart ?? 6}:00` : "0:00",
+          pick:`<select id="sDayStart" class="row-pick" aria-label="Tag beginnt um">${optionsHTML([[0,"0:00 (ganzer Tag)"],[5,"5:00"],[6,"6:00"],[7,"7:00"],[8,"8:00"]], device.dayStart ?? 6)}</select>` })}
+      </div>
+      <p class="hint">Die Stunden davor bleiben erreichbar, nur schmal.</p></div>
   </div>`;
 }
 
@@ -167,6 +170,7 @@ function wireSettings(page, c){
     on("#sPush", "change", e=>{ e.target.checked = pushState.on; togglePush(); });   // the switch shows what is, not what was tapped
     on("#sTheme", "change", e=>{ setDevice(dv=>{ dv.theme = e.target.value; }); renderSettings(); });
     on("#sDens", "change", e=>{ setDevice(dv=>{ dv.density = +e.target.value; }); renderSettings(); });
+    on("#sDayStart", "change", e=>{ setDevice(dv=>{ dv.dayStart = +e.target.value; }); renderSettings(); });
     on("#sExport", "click", ()=>{
       const a = document.createElement("a");
       a.href = URL.createObjectURL(new Blob([JSON.stringify(S,null,2)], {type:"application/json"}));
