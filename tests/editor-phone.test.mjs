@@ -52,7 +52,7 @@ await step('a new event on a phone does not start typing either', async () => {
   await page.evaluate(() => closeEditor());
 });
 await step('the editor sits at the bottom, full width', async () => {
-  await open();
+  await open(); await page.waitForTimeout(300);
   const r = await page.locator('.editor').boundingBox();
   assert.equal(Math.round(r.width), 390); assert.equal(Math.round(r.y + r.height), 844);
   await page.evaluate(() => closeEditor());
@@ -78,6 +78,21 @@ await step('a quick flick closes it', async () => {
   assert.equal(await page.locator('#editorOverlay').count(), 0);
 });
 
+await step('many todos: repeat and reminder keep their full height, the body scrolls, the editor does not grow', async () => {
+  const id = await open();
+  await page.waitForTimeout(300);
+  const h0 = (await page.locator('.editor').boundingBox()).height;
+  for (let i = 0; i < 18; i++) { await page.fill('#fNewTodo', 'Todo ' + i); await page.press('#fNewTodo', 'Enter'); }
+  await page.waitForTimeout(200);
+  const list = await page.evaluate(() => Math.round(document.querySelector('.editor-body > .list').getBoundingClientRect().height));
+  assert.ok(list >= 88, `the repeat/reminder list is ${list}px high (two 44px rows need 88)`);   // squeezed, it clips its rows away
+  const body = await page.evaluate(() => { const b = document.getElementById('editorBody'); return { scroll: b.scrollHeight > b.clientHeight }; });
+  assert.ok(body.scroll, 'the body scrolls');
+  assert.equal(Math.round((await page.locator('.editor').boundingBox()).height), Math.round(h0), 'the editor keeps its height');
+  assert.equal(await page.evaluate(() => { const r = document.getElementById('fNewTodo').getBoundingClientRect(); return r.bottom <= innerHeight && r.top >= 0; }), true, 'the new-todo row stays in view');
+  await page.evaluate(i => { mutate(s => { const e = s.events.find(x => x.id === i); e.todosByDate = {}; }); closeEditor(); }, id);
+});
+
 /* what an event shows at each height (narrow phone column) */
 const shows = minutes => page.evaluate(m => {
   const el = renderEvent({ id: 'x', title: 'Betreuungstermin Seminararbeit', date: todayISO(), startMin: 600, endMin: 600 + m, repeat: 'weekly', reminderMin: 15,
@@ -96,6 +111,50 @@ await step('1 hour in a wide column: the title, then the whole time', async () =
   assert.equal(await page.evaluate(() => { const el = renderEvent({ id:'x', title:'T', date:todayISO(), startMin:600, endMin:660, repeat:'none', reminderMin:null, todosByDate:{} }, todayISO(), 0, 180); return el.querySelector('.em').textContent; }), '10:00–11:00'); });
 await step('3 hours: title on several lines, time, todos; words break at syllables', async () => {
   const s = await shows(180); assert.ok(s.lines >= 4, `${s.lines} lines`); assert.equal(s.time, true); assert.equal(s.todos, true); assert.equal(s.hyphens, 'auto'); });
+
+/* motion: with animations on, as on a real phone */
+const moving = await (await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true })).newPage();
+await moving.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
+await moving.clock.setSystemTime(new Date('2026-10-21T10:00:00+02:00'));
+await moving.goto(APP); await moving.waitForTimeout(3300);
+await step('the editor slides up to open, and down to close: the same motion reversed', async () => {
+  await moving.evaluate(() => openEditor({ type: 'event', edit: S.events.find(e => e.repeat === 'none') }));
+  assert.equal(await moving.evaluate(() => getComputedStyle(document.querySelector('#editorOverlay .editor')).animationName), 'editor-slide');
+  await moving.waitForTimeout(400);
+  await moving.click('#editorClose');
+  const leaving = await moving.evaluate(() => { const ov = document.querySelector('.editor-leaving'); return ov && { id: ov.id, anim: getComputedStyle(ov.querySelector('.editor')).animationName, dir: getComputedStyle(ov.querySelector('.editor')).animationDirection }; });
+  assert.deepEqual(leaving, { id: '', anim: 'editor-slide-out', dir: 'normal' });
+  assert.equal(await moving.evaluate(() => UI.editor), null, 'closed at once for the app');
+  await moving.waitForTimeout(500);
+  assert.equal(await moving.locator('.overlay').count(), 0, 'gone after the motion');
+});
+await step('saving closes with the same motion', async () => {
+  await moving.evaluate(() => openEditor({ type: 'event', edit: S.events.find(e => e.repeat === 'none') }));
+  await moving.waitForTimeout(400);
+  await moving.click('#editorSave');
+  assert.equal(await moving.locator('.editor-leaving').count(), 1);
+  await moving.waitForTimeout(500);
+  assert.equal(await moving.locator('.overlay').count(), 0);
+});
+await step('the time budget: switching 7/30 days changes the chart, not the window (no replayed opening)', async () => {
+  await moving.evaluate(() => openBudget()); await moving.waitForTimeout(400);
+  const before = await moving.evaluate(() => { window.__win = document.querySelector('#budgetPage .overlay-window'); return document.querySelector('#bBody').innerHTML; });
+  await moving.click('#bSeg button[data-d="30"]');
+  assert.equal(await moving.evaluate(() => document.querySelector('#budgetPage .overlay-window') === window.__win), true, 'the same window');
+  assert.equal(await moving.evaluate(() => document.querySelector('#bSeg .on').dataset.d), '30');
+  await moving.evaluate(() => closeBudget());
+});
+await step('a phase dropdown: redraws do not replay its opening; closing plays it reversed', async () => {
+  await moving.evaluate(() => { $scene.scrollTop = 0; }); await moving.waitForTimeout(200);
+  await moving.locator('.ph-exp').first().click();
+  assert.equal(await moving.locator('.dropdown.opening').count(), 1, 'opens with the animation');
+  await moving.evaluate(() => renderAll());
+  assert.equal(await moving.locator('.dropdown.opening').count(), 0, 'a redraw does not animate it again');
+  await moving.locator('.ph-exp').first().click();
+  assert.equal(await moving.locator('.dropdown.closing').count(), 1, 'closes with the animation reversed');
+  await moving.waitForTimeout(400);
+  assert.equal(await moving.locator('.dropdown').count(), 0);
+});
 
 await browser.close(); server.close();
 console.log(failed ? `\n${failed} editor-phone test(s) FAILED` : '\nEditor-phone tests passed.');

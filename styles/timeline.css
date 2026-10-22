@@ -76,8 +76,10 @@
   padding:10px 14px; max-width:380px; min-width:220px;
   font-size:var(--fs-small); line-height:1.5; color:var(--fg-muted);
   border:1px solid var(--hairline);                        /* separated by an edge, not a shadow */
-  animation:appear .22s var(--spring);
 }
+.dropdown.opening{animation:appear .22s var(--soft)}
+.dropdown.closing{animation:disappear .18s var(--soft) forwards}
+@keyframes disappear{to{opacity:0; transform:scale(.94) translateY(8px)}}   /* "appear" backwards, under its own name */
 .dropdown b,.dropdown strong{color:var(--text)}
 .dropdown ul,.dropdown ol{padding-left:18px; margin:4px 0}
 .dropdown:empty::after{content:"Keine Beschreibung"; color:var(--fg-muted); font-style:italic}

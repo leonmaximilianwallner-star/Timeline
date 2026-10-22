@@ -113,7 +113,19 @@ function startPhaseCreate(e, fromHold=false){
 $tlWrap.addEventListener("click", e=>{
   const exp = e.target.closest("[data-expand]");
   if(exp){
-    setDevice(dv=>{ const id = exp.dataset.expand; dv.openPhases = dv.openPhases.includes(id) ? dv.openPhases.filter(x=>x!==id) : [...dv.openPhases, id]; });
+    const id = exp.dataset.expand, isOpen = device.openPhases.includes(id);
+    if(!isOpen){
+      UI.dropdownOpening = id;                                   // it opens with the animation…
+      setDevice(dv=>{ dv.openPhases = [...dv.openPhases, id]; });
+      UI.dropdownOpening = null;
+      return;
+    }
+    const close = ()=>setDevice(dv=>{ dv.openPhases = dv.openPhases.filter(x=>x!==id); });
+    const dd = document.querySelector(`.dropdown[data-dropdown="${id}"]`);
+    if(!dd || matchMedia("(prefers-reduced-motion: reduce)").matches) return close();
+    dd.classList.remove("opening"); dd.classList.add("closing");   // …and closes with the same animation, reversed (Max, 22 Oct)
+    let done = false; const once = ()=>{ if(!done){ done = true; close(); } };
+    dd.addEventListener("animationend", once, { once:true }); setTimeout(once, 400);   // closed even if the motion's end goes unnoticed
     return;
   }
   const phEl = e.target.closest(".phase");

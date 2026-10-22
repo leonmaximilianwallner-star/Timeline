@@ -187,9 +187,8 @@ function eventPointerDown(e, eventEl){
       mutate(s=>{
         const t = s.events.find(x=>x.id===ev.id);
         t.startMin = st.s; t.endMin = st.en;
-        if(dayDelta){                                     // series shifts as a whole, each day's todos with it
-          t.date = isoDate(addDays(parseISO(t.date), dayDelta));
-          t.todosByDate = shiftTodos(t.todosByDate, dayDelta);
+        if(dayDelta){                                     // series shifts as a whole: each day's todos, removed days and end with it
+          shiftSeries(t, dayDelta);
         }
       });
     }

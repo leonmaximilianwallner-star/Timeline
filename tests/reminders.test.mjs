@@ -28,13 +28,15 @@ function fakeDb(devices, eventsByUser){
 const phone = { endpoint: 'https://push.example/phone', user_id: 'u1', p256dh: 'x', auth: 'y', time_zone: VIE };
 
 const tests = {
-  'occursOn matches the app (core/repeat.js) for every repeat over two years'() {
+  'occursOn matches the app (core/repeat.js) for every repeat over two years, with an end and removed days too'() {
     const kinds = ['none', 'daily', 'weekly', 'weekdays', 'monthly'];
     const starts = ['2026-01-31', '2026-02-28', '2026-03-29', '2026-10-25', '2026-12-31'];
     for (const repeat of kinds) for (const date of starts) {
       for (let i = -3; i < 730; i++) {
         const day = addDaysISO(date, i);
         assert.equal(occursOn({ date, repeat }, day), app.occursOn({ date, repeat }, day), `${repeat} from ${date} on ${day}`);
+        const cut = { date, repeat, end: addDaysISO(date, 200), except: [addDaysISO(date, 7), addDaysISO(date, 31)] };   // ended, with removed days
+        assert.equal(occursOn(cut, day), app.occursOn(cut, day), `${repeat} from ${date} (ended, with removed days) on ${day}`);
       }
     }
   },

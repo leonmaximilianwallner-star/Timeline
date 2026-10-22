@@ -78,3 +78,5 @@
 
 .list :focus-visible, .rbtn:focus-visible, .swatch:focus-visible, .wide-btn:focus-visible{outline:2px solid var(--text); outline-offset:2px}
 .row:has(.row-pick:focus-visible){outline:2px solid var(--text); outline-offset:-2px; border-radius:var(--r-row)}
+/* typing into a row shows the cursor, not a frame (Max, 22 Oct: the lines around a todo being typed) */
+.list .row-input:focus, .list .row-input:focus-visible{outline:none}

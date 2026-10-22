@@ -345,7 +345,7 @@ supabase/
   functions/send-reminders/index.ts   sends due reminders by push (§5.5)
 
 docs/     ARCHITECTURE.md · RULEBOOK.md · DECISIONS.md · dictionary/
-tests/    vocabulary · fingerprint · data layer · merge · sync · reminders · push · push switch · the split's record
+tests/    vocabulary · fingerprint · data layer · merge · series · sync · reminders · push · push switch · edge pan · editor on a phone (and motion) · the split's record
           vendor/webpush.bundle.mjs: the push library, for the tests only
 package.json                lists the tools the tests use; the app itself needs no install
 ```
