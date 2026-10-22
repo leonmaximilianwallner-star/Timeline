@@ -50,6 +50,7 @@ const ICON = {
   export:  '<path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/>',
   import:  '<path d="M12 20V9"/><path d="M7 14l5-5 5 5"/><path d="M5 4h14"/>',
   moon:    '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
+  sun:     '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   columns: '<path d="M4 5h16v14H4z"/><path d="M9.3 5v14M14.7 5v14"/>',
   out:     '<path d="M15 4h4v16h-4"/><path d="M10 8l-4 4 4 4"/><path d="M6 12h10"/>',
 };
@@ -80,26 +81,30 @@ function openEditor(ctx){
   const projs = S.categories.filter(c=>c.start && c.end), cats = S.categories.filter(c=>!c.start && !c.end);
   const ov = document.createElement("div");
   ov.className = "overlay editor-overlay"; ov.id = "editorOverlay";
-  ov.innerHTML = `<div class="editor" role="dialog" aria-modal="true" aria-label="${KIND_WORD[ctx.type]} bearbeiten">
+  /* the categories, nearest to the header last: frei, then the categories, then the projects (top) */
+  const choices = [...projs, ...cats, { id:"", name:"Frei", color:FREE_COLOR }];
+  ov.innerHTML = `<div class="editor-stack">
+    <div class="cat-list" id="editorCatList" role="listbox" aria-label="Projekt oder Kategorie" hidden>${choices.map(c=>
+      `<button type="button" class="cat-item" role="option" data-pick-cat="${c.id}"><span class="row-dot" style="background:${c.color}"></span>${esc(c.name)}</button>`).join("")}</div>
+    <div class="editor" role="dialog" aria-modal="true" aria-label="${KIND_WORD[ctx.type]} bearbeiten">
     <span class="editor-grip" aria-hidden="true"></span>
     <div class="editor-header">
       <div class="editor-name">
-        <label class="editor-kind"><span id="editorKind"></span>${icon("down")}
-          <select id="fProj" aria-label="Projekt oder Kategorie">
-            <option value="">frei</option>
-            ${projs.length?`<optgroup label="Projekte">${projs.map(p=>`<option value="${p.id}" ${v.categoryId===p.id?"selected":""}>${esc(p.name)}</option>`).join("")}</optgroup>`:""}
-            ${cats.length?`<optgroup label="Kategorien">${cats.map(c=>`<option value="${c.id}" ${v.categoryId===c.id?"selected":""}>${esc(c.name)}</option>`).join("")}</optgroup>`:""}
-          </select></label>
-        <input id="fTitle" type="text" autocomplete="off" aria-label="Titel" placeholder="${ed ? "" : "Neue"+(ctx.type==="event"?"r Termin":ctx.type==="phase"?" Phase":"r Meilenstein")}" value="${esc(v.title||"")}">
+        <button type="button" class="editor-kind" id="editorKindBtn" aria-haspopup="listbox" aria-expanded="false" aria-controls="editorCatList"><span id="editorKind"></span><span class="kind-arrow">${icon("down")}</span></button>
+        <input type="hidden" id="fProj" value="${v.categoryId||""}">
+        <input id="fTitle" type="text" autocomplete="off" aria-label="Titel" placeholder="${KIND_WORD[ctx.type]}" value="${esc(v.title||"")}">
       </div>
       <button type="button" class="rbtn" id="editorDelete" title="Löschen" ${ed?"":"hidden"}>${icon("bin")}</button>
       ${ed?`<span class="rbtn-gap"></span>`:""}
       <button type="button" class="rbtn outline" id="editorClose" title="Schließen ohne Speichern (Esc)">${icon("close")}</button>
       <button type="button" class="rbtn fill" id="editorSave" title="Speichern (Strg+Enter)">${icon("done")}</button>
     </div>
-    <div class="editor-body" id="editorBody"></div></div>`;
+    <div class="editor-body" id="editorBody"></div></div></div>`;
   document.body.appendChild(ov);
-  ov.addEventListener("pointerdown", e=>{ if(e.target===ov) saveEditor(); });   // a tap outside saves; ✕ and Escape cancel (Max, 21 Oct)
+  ov.addEventListener("pointerdown", e=>{
+    if(catListOpen() && !e.target.closest("#editorCatList, #editorKindBtn")){ e.preventDefault(); closeCatList(); return; }   // the list closes first
+    if(e.target===ov || e.target.classList.contains("editor-stack")) saveEditor();   // a tap outside saves; ✕ and Escape cancel (Max, 21 Oct)
+  });
   ov.querySelector("#editorClose").onclick = ()=>closeEditor();   // not closeEditor itself: the click event would read as "instant"
   ov.querySelector("#editorSave").onclick = saveEditor;
   slideToClose(ov.querySelector(".editor"));
@@ -135,12 +140,42 @@ function slideToClose(box){
     header.addEventListener("pointermove", move); header.addEventListener("pointerup", up); header.addEventListener("pointercancel", up);
   });
 }
+/* the category list: above the editor where there is room (a phone, always), else below its label over the body */
+const catListOpen = ()=>{ const l = document.querySelector("#editorOverlay #editorCatList"); return !!l && !l.hidden && !l.classList.contains("leaving"); };
+function openCatList(){
+  const list = document.querySelector("#editorOverlay #editorCatList"), btn = document.getElementById("editorKindBtn");
+  if(!list) return;
+  list.hidden = false; list.classList.remove("leaving", "below");
+  /* it rises above the header; where there is too little room (a desktop's centred editor), the editor glides
+     down to make it, and back when the list closes. Only a screen too short for both gets the list below the label. */
+  const stack = list.parentElement, ed = stack.querySelector(".editor").getBoundingClientRect();
+  const need = list.offsetHeight + 16 - ed.top;
+  if(need > 0 && ed.bottom + need <= innerHeight - 8) stack.style.transform = `translateY(${need}px)`;
+  else if(need > 0) list.classList.add("below");
+  stack.closest(".overlay").classList.add("listing");             // the dim layer deepens: the list reads over the app
+  btn.setAttribute("aria-expanded", "true");
+}
+function closeCatList(){
+  const list = document.querySelector("#editorOverlay #editorCatList"), btn = document.getElementById("editorKindBtn");
+  if(!list || list.hidden) return;
+  btn.setAttribute("aria-expanded", "false");
+  list.parentElement.style.transform = "";
+  list.closest(".overlay").classList.remove("listing");
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches){ list.hidden = true; return; }
+  list.classList.add("leaving");                                       // closes the way it came (rulebook C.5)
+  const done = ()=>{ if(list.classList.contains("leaving")){ list.hidden = true; list.classList.remove("leaving"); } };
+  list.addEventListener("animationend", done, { once:true }); setTimeout(done, 300);
+}
+/* Escape closes what is open, innermost first */
+function editorEscape(){ if(catListOpen()){ closeCatList(); return; } closeEditor(); }
+
 /* closing plays the opening backwards, whatever closes it (Max, 22 Oct: the reverse works the same way).
    The leaving editor loses its id at once, so the app counts it as closed and a new one can open. */
 function closeEditor(instant){
   const ov = document.getElementById("editorOverlay");
   if(ov){
     ov.removeAttribute("id");
+    const list = ov.querySelector(".cat-list"); if(list) list.hidden = true;   // the list doesn't hang in the air while the editor leaves
     if(instant || matchMedia("(prefers-reduced-motion: reduce)").matches) ov.remove();
     else {
       ov.classList.add("editor-leaving");
@@ -200,14 +235,23 @@ function renderEditorBody(){
   }
   B.innerHTML = h;
 
-  /* the header: the thing's colour and the category's name */
+  /* the header: the thing's colour and its category's name ("Frei" without one) */
   const fProj = document.getElementById("fProj");
   const paint = ()=>{
     const c = cat(fProj.value || null);
     document.querySelector("#editorOverlay .editor").style.setProperty("--ed-colour", c.color);
-    document.getElementById("editorKind").textContent = fProj.value ? c.name : KIND_WORD[kind];
+    document.getElementById("editorKind").textContent = fProj.value ? c.name : "Frei";
+    document.querySelectorAll("#editorCatList .cat-item").forEach(b=>b.setAttribute("aria-selected", b.dataset.pickCat === fProj.value));
   };
   paint();
+  /* the category list rises from the header, over the app; no window of its own (Max, 22 Oct) */
+  document.getElementById("editorKindBtn").onclick = ()=> catListOpen() ? closeCatList() : openCatList();
+  document.querySelectorAll("#editorCatList .cat-item").forEach(b=>b.onclick = ()=>{
+    closeCatList();
+    if(fProj.value === b.dataset.pickCat) return;
+    fProj.value = b.dataset.pickCat;
+    fProj.dispatchEvent(new Event("change"));
+  });
   fProj.addEventListener("change", ()=>{
     paint();
     if(kind==="event" && !ed){

@@ -35,6 +35,20 @@ function recomputeRange(){
 }
 const dayIdx  = d => diffDays(UI.range.start, d);
 const idxDate = i => isoDate(addDays(parseISO(UI.range.start), i));
+/* the day view's height scale. From the day's start (a setting, 6:00 unless changed) an hour is HOUR_PX tall;
+   the night before it is thin (NIGHT_PX an hour): there, reachable, never in the way (Max, 22 Oct, "soft start").
+   Every time ↔ position on the day view goes through these two. */
+const NIGHT_PX = 13;                                             // a quarter of a day hour
+const dayStartMin = () => (device.dayStart ?? 6) * 60;
+function minToY(min){
+  const s = dayStartMin();
+  return min <= s ? min/60*NIGHT_PX : s/60*NIGHT_PX + (min - s)/60*HOUR_PX;
+}
+function yToMin(y){
+  const s = dayStartMin(), night = s/60*NIGHT_PX;
+  return y <= night ? y/NIGHT_PX*60 : s + (y - night)/HOUR_PX*60;
+}
+const gridHeight = () => minToY(HOUR_END*60);
 function dayPPD(){
   const vw = document.getElementById("scene").clientWidth || window.innerWidth;
   return Math.max(50, (vw - railW()) / device.density);

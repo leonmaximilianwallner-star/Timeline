@@ -8,7 +8,7 @@ document.addEventListener("keydown", e=>{
   const typing = /INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName) || document.activeElement?.isContentEditable;
   if(e.key==="Escape"){
     if(UI.budgetOpen) closeBudget();
-    else if(UI.editor) closeEditor();
+    else if(UI.editor) editorEscape();          // the category list first, then the editor
     else if(UI.settingsOpen) toggleSettings(false);
     else if(UI.addMode) setAddMode(false);
     return;

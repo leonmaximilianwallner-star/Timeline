@@ -62,7 +62,7 @@ function scrollToToday(animated){
   const i = dayIdx(todayISO());
   const x = Math.max(0, i*UI.dayPPD);
   const nowMin = new Date().getHours()*60 + new Date().getMinutes();
-  const yHour  = clamp((nowMin - HOUR_START*60 - 90)/60*HOUR_PX, 0, GRID_H);
+  const yHour  = clamp(minToY(Math.max(0, nowMin - 90)), 0, gridHeight());
   const y = $dayWrap.offsetTop + yHour;       // past the timeline band, into the grid
   $scene.scrollTo({ left:x, top:y, behavior:animated?"smooth":"auto" });
 }

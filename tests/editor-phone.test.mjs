@@ -34,7 +34,7 @@ const open = () => page.evaluate(() => { const ev = S.events.find(e => e.repeat 
 const pull = async (dy, ms) => {
   await page.waitForTimeout(300);                                     // the editor has finished rising
   const r = await page.locator('.editor-header').boundingBox();
-  const x = r.x + 40, y = r.y + 12;                                   // on the header, clear of its fields and buttons
+  const x = r.x + r.width / 2, y = r.y + 10;                          // at the grip: the top middle of the header
   await page.mouse.move(x, y); await page.mouse.down();
   const steps = 8;
   for (let i = 1; i <= steps; i++) { await page.mouse.move(x, y + dy * i / steps); await page.waitForTimeout(ms / steps); }
@@ -111,6 +111,42 @@ await step('1 hour in a wide column: the title, then the whole time', async () =
   assert.equal(await page.evaluate(() => { const el = renderEvent({ id:'x', title:'T', date:todayISO(), startMin:600, endMin:660, repeat:'none', reminderMin:null, todosByDate:{} }, todayISO(), 0, 180); return el.querySelector('.em').textContent; }), '10:00–11:00'); });
 await step('3 hours: title on several lines, time, todos; words break at syllables', async () => {
   const s = await shows(180); assert.ok(s.lines >= 4, `${s.lines} lines`); assert.equal(s.time, true); assert.equal(s.todos, true); assert.equal(s.hyphens, 'auto'); });
+
+await step('the category list rises above the editor: plain, arrow up when closed and down when open', async () => {
+  const id = await open(); await page.waitForTimeout(300);
+  const before = await page.evaluate(i => S.events.find(e => e.id === i).categoryId, id);
+  const pick = before === 'work' ? 'personal' : 'work';
+  const arrow = () => page.evaluate(() => getComputedStyle(document.querySelector('.kind-arrow')).transform);
+  const closedArrow = await arrow();
+  assert.equal(await page.locator('#editorCatList').isHidden(), true);
+  await page.click('#editorKindBtn'); await page.waitForTimeout(300);
+  assert.equal(await page.locator('#editorCatList').isVisible(), true);
+  assert.notEqual(await arrow(), closedArrow, 'the arrow turns');
+  const [list, ed] = await Promise.all([page.locator('#editorCatList').boundingBox(), page.locator('.editor').boundingBox()]);
+  assert.ok(list.y + list.height <= ed.y, 'above the editor');
+  assert.equal(await page.locator('.overlay').count(), 1, 'no window of its own');
+  const names = await page.locator('#editorCatList .cat-item').allTextContents();
+  assert.equal(names.at(-1), 'Frei', 'frei nearest to the header');
+  await page.click(`[data-pick-cat="${pick}"]`); await page.waitForTimeout(300);
+  assert.equal(await page.locator('#editorCatList').isHidden(), true, 'closes after picking');
+  assert.equal(await page.textContent('#editorKind'), await page.evaluate(p => cat(p).name, pick));
+  assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('#editorOverlay .editor')).getPropertyValue('--ed-colour').trim()), await page.evaluate(p => cat(p).color, pick), 'the header takes the colour');
+  await page.click('#editorKindBtn');
+  await page.mouse.click(30, 60); await page.waitForTimeout(300);                  // a tap on the dim layer closes the list, not the editor
+  assert.equal(await page.locator('#editorCatList').isHidden(), true);
+  assert.equal(await page.locator('#editorOverlay').count(), 1, 'the editor stays');
+  await page.click('#editorKindBtn'); await page.keyboard.press('Escape'); await page.waitForTimeout(300);
+  assert.equal(await page.locator('#editorCatList').isHidden(), true, 'Escape: the list first');
+  assert.equal(await page.locator('#editorOverlay').count(), 1);
+  await page.click('#editorClose');                                                  // cancelled: the category stays as it was
+  assert.equal(await page.evaluate(i => S.events.find(e => e.id === i).categoryId, id), before);
+});
+await step('a new thing: the overline says Frei, the title waits with the kind as its placeholder', async () => {
+  await page.evaluate(() => openEditor({ type: 'event', initial: { date: todayISO(), startMin: 600, endMin: 660 } }));
+  assert.equal(await page.textContent('#editorKind'), 'Frei');
+  assert.equal(await page.getAttribute('#fTitle', 'placeholder'), 'Termin');
+  await page.evaluate(() => closeEditor(true));
+});
 
 /* motion: with animations on, as on a real phone */
 const moving = await (await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true })).newPage();

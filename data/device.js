@@ -3,12 +3,13 @@
 /* ════════════════════════════════════════════════════════════
    theme       dark / light — chosen per device
    density     3 / 5 / 7 days across the day view — a phone wants fewer than a laptop
+   dayStart    the hour the day view's day starts; the night before it is drawn thin (views/range.js)
    openPhases  ids of phases whose dropdown is open on the timeline
    syncSentUpTo / syncSeenUpTo  how far this device has sent and received (data/sync.js)
    Changes here are not undoable and don't count as changes to the plan.
    ════════════════════════════════════════════════════════════ */
 function loadDevice(){
-  const fallback = { theme:"dark", density:5, openPhases:[], syncSentUpTo:null, syncSeenUpTo:null };
+  const fallback = { theme:"dark", density:5, dayStart:6, openPhases:[], syncSentUpTo:null, syncSeenUpTo:null };
   try{
     const raw = localStorage.getItem(DEVICE_KEY);
     if(raw) return Object.assign(fallback, JSON.parse(raw));

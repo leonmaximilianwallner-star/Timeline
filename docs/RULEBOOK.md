@@ -310,7 +310,7 @@ fläche → idee
 popover → todoPanel
 pop → todoPanel (JavaScript's own list method .pop() is exempt)
 popup → editor / panel
-modal → editor (the HTML attribute `aria-modal` is exempt: it is the browser's word, for screen readers)
+modal → editor (the HTML attributes `aria-modal` and `aria-expanded` are exempt: they are the browser's words, for screen readers)
 draft → editor (the window) / initial (a new thing's starting values)
 details → body / dropdown
 bubble → dropdown
@@ -433,8 +433,7 @@ The gate, the store and sync are defined in `ARCHITECTURE.md` §4–5. The rules
 - **Single day view** — not designed; no name yet.
 - **The rest of the design spec** (§1 global rules outside the reworked sections, §3–5, §8.1–8.3, §8.5–8.6, §8.9) — not yet done. **Claude**
 - **Contrast** — white text on amber, green, blue, pink and grey fills is below 4.5:1. **Max, 22 Oct:** white stays (the whole design points to it, and events and phases already do it); if it fails the eye test in the editor headers, it is revisited.
-- **The day view's hours** — a setting for where the day starts (e.g. 6:00 instead of 0:00) to save space. Open: what an event before the start shows. *(Max, 22 Oct; next session)*
-- **The editor header** — the title as inline text and the category as a drop-up list over it. *(Max, 22 Oct; next session)*
+- **Repeat and reminder pickers** — still the phone's own pickers (a window each). Same list-in-place treatment as the categories? *(Max to decide after feeling the category list)*
 - **A full-screen lookup view** of an event (pulled up past a resistance), and layered squircle transitions. *(Max, 22 Oct; concept: design first)*
 
 ---
@@ -463,8 +462,11 @@ The gate, the store and sync are defined in `ARCHITECTURE.md` §4–5. The rules
 - **A list**: one rounded surface (radius 16) of rows. **A row** is 44px: an icon (20px, muted), the label, the value at the right (muted), a chevron if it opens a page. Dividers between rows start after the icon.
 - **A row's value is changed in the row**: tapping it opens the phone's own picker (a native select over the row), types into it, or flips a switch. A row with a chevron opens a page in the same panel; a back arrow returns.
 - **The one big number**: each panel may have one thing set large (20px, semibold, tabular figures): the time of an event, the days left of a project. Under it, the same in words (B.4).
+- **The editor's header is one bar** (**Max**, 22 Oct): the overline is the category ("Frei" without one), the title is typed in place, its placeholder is the kind ("Termin"). No separate heading.
+- **Choosing the category: a list that rises from the header**, over the app, plain text with a coloured dot each, the current one ringed, "Frei" nearest to the header (**Max**, 22 Oct: no window for every button). The arrow points up while it is closed, down while it is open. The dim layer deepens while it is open; a tap on it, or Escape, closes the list before anything else. Where there is too little room above (a desktop), the editor glides down to make room, and back.
 - **Header actions**, right to left: done (filled round button), close without saving (outlined), a gap, delete (plain). In settings, changes apply at once, so there is only close (or back); creating something new has a done.
 - **Round buttons: one size, three looks.** 36px everywhere: **plain** (an icon; the app header's buttons, delete), **outlined** (close, cancel), **filled** (done; the app header's button while its panel is open). The one exception is the **add button, 44px** (`--float-btn`): it floats alone over the content and is used with a thumb. It is filled like done; in add mode it is outlined like cancel. Icons are 20px, stroke 1.5.
+- **The day view's night is thin** (**Max**, 22 Oct, "soft start"): from the day's start (a setting per device, `dayStart`, 6:00 unless changed; 0:00 = the whole day) an hour is 52px; before it, 13px, a darker band with only 00:00 marked. Nothing is hidden and scrolling stays the phone's own: a hard stop would fight its momentum and the day snapping. All time ↔ height goes through `minToY` / `yToMin` (`views/range.js`).
 - **Day view, an event shows what its height holds** (mockup "Detail nach Höhe"): lines of 16px; under one line just its colour; then the title (as many lines as are left, words broken at syllables), the time (in a narrow column only the start), the todo count. Small line icons for repeat and reminder, never emoji.
 
 ## C.4 Measures (tokens in `styles/tokens.css`)

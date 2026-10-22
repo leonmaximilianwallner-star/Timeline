@@ -144,7 +144,7 @@ const tests = {
     let m = (await data(page)).milestones.find(x => x.title === 'Tragwerk Abgabe');
     assert.equal(m.note, '40 Punkte'); assert.equal(m.categoryId, null); assert.equal(m.final, false);
     await page.evaluate(id => openEditor({ type: 'milestone', edit: S.milestones.find(x => x.id === id) }), m.id);
-    await page.selectOption('#fProj', 'seminar');
+    await page.click('#editorKindBtn'); await page.click('[data-pick-cat="seminar"]');   // the category list
     await page.check('#fFinal');
     await page.click('#editorSave'); await page.waitForTimeout(200);
     m = (await data(page)).milestones.find(x => x.id === m.id);
@@ -186,6 +186,16 @@ const tests = {
     assert.equal(ev.todosByDate['2026-10-21'].find(t => t.text === 'Frage stellen').state, 'postponed');
     assert.deepEqual(await page.evaluate(i => todosOf(S.events.find(e => e.id === i), '2026-11-04'), id), []);   // one step only
   },
+  async 'on a desktop the category list rises above the editor too: the editor glides down to make room'(page) {
+    await page.locator('.event').nth(1).click(); await page.waitForTimeout(300);
+    await page.click('#editorKindBtn'); await page.waitForTimeout(400);
+    const [list, ed] = await Promise.all([page.locator('#editorCatList').boundingBox(), page.locator('#editorOverlay .editor').boundingBox()]);
+    assert.ok(list.y >= 0 && list.y + list.height <= ed.y, `list ${Math.round(list.y)}–${Math.round(list.y + list.height)}, editor from ${Math.round(ed.y)}`);
+    assert.ok(ed.y + ed.height <= 900, 'the editor stays on screen');
+    await page.click('#editorKindBtn'); await page.waitForTimeout(400);
+    assert.equal(await page.evaluate(() => document.querySelector('#editorOverlay .editor-stack').style.transform), '', 'and glides back');
+    await page.keyboard.press('Escape');
+  },
   async 'deleting from a series asks: this occurrence only, or this and all following'(page) {
     const id = await page.evaluate(() => S.events.find(e => e.title === 'Tutorium').id);
     await page.locator(`.event[data-ev="${id}"][data-date="2026-10-28"]`).click();
@@ -219,7 +229,7 @@ const tests = {
     await page.evaluate(() => openEditor({ type: 'event', initial: { date: '2026-10-23', startMin: 600, endMin: 660 } }));
     await page.fill('#fTitle', 'Krit Entwurf');
     await page.fill('#fStart', '13:00'); await page.fill('#fEnd', '14:30');
-    await page.selectOption('#fProj', 'seminar');
+    await page.click('#editorKindBtn'); await page.click('[data-pick-cat="seminar"]');   // the category list
     assert.equal(await page.inputValue('#fTitle'), 'Krit Entwurf');
     assert.equal(await page.inputValue('#fStart'), '13:00');
     assert.equal(await page.inputValue('#fEnd'), '14:30');

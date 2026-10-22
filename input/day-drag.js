@@ -12,7 +12,7 @@ $dayWrap.addEventListener("pointermove", e=>{
   const r = grid.getBoundingClientRect();
   if(e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom){ hideHover(); return; }
   const p = gridPos(e);
-  const y = (p.min - HOUR_START*60)/60*HOUR_PX;
+  const y = minToY(p.min);
   const hl = document.getElementById("hoverLine"), lab = document.getElementById("hoverLab");
   hl.style.display=""; hl.style.top = y+"px";
   lab.style.display=""; lab.style.top = y+"px"; lab.textContent = fmtMin(p.min);
@@ -87,7 +87,7 @@ function drawCreatePreview(grid, d){
     }
   }
   const s = Math.min(d.a,d.b), e = Math.max(d.a,d.b);
-  const y1 = (s-HOUR_START*60)/60*HOUR_PX, y2 = (e-HOUR_START*60)/60*HOUR_PX;
+  const y1 = minToY(s), y2 = minToY(e);
   d.prev.style.cssText += `;left:${d.day*UI.dayPPD+4}px;width:${UI.dayPPD-8}px;top:${y1}px;height:${Math.max(y2-y1,4)}px`;
   /* cssText reset wipes inline border/background — re-apply if colored */
   if(d.color){
