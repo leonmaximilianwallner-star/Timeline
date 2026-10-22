@@ -10,6 +10,7 @@ const UI = {
   addMode:false, range:{ start:null, days:0 },
   undo:[], redo:[],
   settingsOpen:false, settingsForm:null, budgetOpen:false, budgetDays:7,
+  dropdownOpening:null,  // the phase whose dropdown is opening right now: only it animates (views/timeline/render.js)
   editor:null,          // the open editor's context
   dragLive:false,
 };

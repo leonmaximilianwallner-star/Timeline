@@ -184,6 +184,7 @@ function wireSettings(page, c){
     });
   }
 
+  $set.querySelectorAll(".when input").forEach(inp=>inp.addEventListener("click", ()=>{ try{ inp.showPicker(); }catch(_){} }));   // as in the editor
   if(page.name==="colour"){
     const id = c.id, isProject = !!(c.start && c.end);
     const change = fn => { mutate(s=>{ const x = s.categories.find(k=>k.id===id); if(x) fn(x); }); renderSettings(); };

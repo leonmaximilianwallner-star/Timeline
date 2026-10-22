@@ -120,7 +120,9 @@ function appendPhaseLanes(frag, phases, W){
         row.right = x + width;
         const anchor = document.createElement("div"); anchor.className="dropdown-anchor";
         anchor.style.marginLeft = x+"px"; anchor.style.width = width+"px";
-        const bb = document.createElement("div"); bb.className="dropdown";
+        const bb = document.createElement("div");
+        bb.className = "dropdown" + (UI.dropdownOpening===ph.id ? " opening" : "");   // only the one just opened animates: redraws don't replay it
+        bb.dataset.dropdown = ph.id;
         bb.style.borderTopColor = cat(ph.categoryId).color;
         bb.innerHTML = sanitize(ph.details||"");
         anchor.appendChild(bb); row.el.appendChild(anchor);

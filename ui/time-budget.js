@@ -5,7 +5,7 @@
    fed by occurrences (incl. repeats), not by plans
    ════════════════════════════════════════════════════════════ */
 function openBudget(){
-  closeBudget();
+  closeBudget(true);
   UI.budgetOpen = true; document.getElementById("btnBudget").classList.add("open");
   const ov = document.createElement("div"); ov.className="overlay"; ov.id="budgetPage";
   ov.innerHTML = `<div class="overlay-window"><div class="overlay-window-header"><h2>Zeitbudget</h2>
@@ -14,15 +14,28 @@ function openBudget(){
       <button data-d="7"  class="${UI.budgetDays===7?"on":""}">7 Tage</button>
       <button data-d="30" class="${UI.budgetDays===30?"on":""}">30 Tage</button></div>
       <div id="bBody"></div>
-      <div class="thint">Gemessen wird tatsächlich verplante Zeit aus Terminen (inkl. Wiederholungen) — nicht Phasen oder Pläne.</div>
+      <div class="hint">Gemessen wird tatsächlich verplante Zeit aus Terminen (inkl. Wiederholungen) — nicht Phasen oder Pläne.</div>
     </div></div>`;
   document.body.appendChild(ov);
   ov.addEventListener("pointerdown", e=>{ if(e.target===ov) closeBudget(); });
-  ov.querySelector("#bClose").onclick = closeBudget;
-  ov.querySelectorAll("#bSeg button").forEach(b=>b.onclick=()=>{ UI.budgetDays=+b.dataset.d; openBudget(); });
+  ov.querySelector("#bClose").onclick = ()=>closeBudget();
+  /* switching the span changes the chart, not the window: rebuilding it replayed its opening (the stutter) */
+  ov.querySelectorAll("#bSeg button").forEach(b=>b.onclick=()=>{
+    UI.budgetDays=+b.dataset.d;
+    ov.querySelectorAll("#bSeg button").forEach(x=>x.classList.toggle("on", x===b));
+    renderBudgetBody();
+  });
   renderBudgetBody();
 }
-function closeBudget(){ const o=document.getElementById("budgetPage"); if(o) o.remove(); UI.budgetOpen=false; document.getElementById("btnBudget").classList.remove("open"); }
+function closeBudget(instant){
+  const o = document.getElementById("budgetPage");
+  if(o){
+    o.removeAttribute("id");                                  // closed for the app at once; the motion plays out (as the editor)
+    if(instant || matchMedia("(prefers-reduced-motion: reduce)").matches) o.remove();
+    else { o.classList.add("editor-leaving"); setTimeout(()=>o.remove(), 220); }
+  }
+  UI.budgetOpen=false; document.getElementById("btnBudget").classList.remove("open");
+}
 function renderBudgetBody(){
   const N = UI.budgetDays, to = todayISO(), from = isoDate(addDays(parseISO(to), -(N-1)));
   const sums = new Map();

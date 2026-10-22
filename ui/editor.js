@@ -68,7 +68,7 @@ const REMINDERS = [["","Keine"],["0","Zum Start"],["5","5 min vorher"],["15","15
 const KIND_WORD = { event:"Termin", phase:"Phase", milestone:"Meilenstein" };
 
 function openEditor(ctx){
-  closeEditor();
+  closeEditor(true);
   UI.editor = ctx;
   const ed = ctx.edit;
   if(ctx.type==="event"){
@@ -100,10 +100,13 @@ function openEditor(ctx){
     <div class="editor-body" id="editorBody"></div></div>`;
   document.body.appendChild(ov);
   ov.addEventListener("pointerdown", e=>{ if(e.target===ov) saveEditor(); });   // a tap outside saves; ✕ and Escape cancel (Max, 21 Oct)
-  ov.querySelector("#editorClose").onclick = closeEditor;
+  ov.querySelector("#editorClose").onclick = ()=>closeEditor();   // not closeEditor itself: the click event would read as "instant"
   ov.querySelector("#editorSave").onclick = saveEditor;
   slideToClose(ov.querySelector(".editor"));
   renderEditorBody();
+  /* the editor keeps the height it opened with: what is added later scrolls inside its body (Max, 22 Oct) */
+  const box = ov.querySelector(".editor");
+  box.style.height = box.offsetHeight + "px";            // layout height: not scaled by the opening animation
 }
 /* on a phone the editor sits at the bottom: pulling its header down closes it without saving, like ✕ (Max, 22 Oct).
    Far enough (a third of the way) or fast enough, it goes; otherwise it springs back. */
@@ -126,15 +129,25 @@ function slideToClose(box){
       box.style.transition = "transform .22s var(--soft)";
       if(dy > Math.min(SLIDE_CLOSE_PX, box.offsetHeight/3) || (dy > 24 && speed > SLIDE_FLICK)){
         box.style.transform = "translateY(100%)";
-        box.addEventListener("transitionend", ()=>closeEditor(), { once:true });
+        box.addEventListener("transitionend", ()=>closeEditor(true), { once:true });   // already slid out
       } else box.style.transform = "";
     };
     header.addEventListener("pointermove", move); header.addEventListener("pointerup", up); header.addEventListener("pointercancel", up);
   });
 }
-function closeEditor(){
+/* closing plays the opening backwards, whatever closes it (Max, 22 Oct: the reverse works the same way).
+   The leaving editor loses its id at once, so the app counts it as closed and a new one can open. */
+function closeEditor(instant){
   const ov = document.getElementById("editorOverlay");
-  if(ov) ov.remove();
+  if(ov){
+    ov.removeAttribute("id");
+    if(instant || matchMedia("(prefers-reduced-motion: reduce)").matches) ov.remove();
+    else {
+      ov.classList.add("editor-leaving");
+      ov.querySelector(".editor").addEventListener("animationend", ()=>ov.remove(), { once:true });
+      setTimeout(()=>ov.remove(), 500);                     // never left behind, even if the motion's end goes unnoticed
+    }
+  }
   if(UI.editor && UI.editor.preview) clearPreview(UI.editor.preview);   // preview persisted behind the editor until now
   UI.editor = null;
 }
@@ -191,7 +204,7 @@ function renderEditorBody(){
   const fProj = document.getElementById("fProj");
   const paint = ()=>{
     const c = cat(fProj.value || null);
-    document.querySelector(".editor").style.setProperty("--ed-colour", c.color);
+    document.querySelector("#editorOverlay .editor").style.setProperty("--ed-colour", c.color);
     document.getElementById("editorKind").textContent = fProj.value ? c.name : KIND_WORD[kind];
   };
   paint();
@@ -226,6 +239,8 @@ function renderEditorBody(){
   };
   words();
   B.addEventListener("input", words); B.addEventListener("change", words);
+  /* a click on a time or date opens its picker, instead of putting the cursor into its digits (Max, 22 Oct) */
+  B.querySelectorAll(".when input").forEach(inp=>inp.addEventListener("click", ()=>{ try{ inp.showPicker(); }catch(_){} }));
 
   /* the phase's text tools */
   B.querySelectorAll(".text-tools button").forEach(b=>b.onclick=e=>{
@@ -253,7 +268,7 @@ function renderEditorBody(){
     if(!ed) return;
     const before = allDone(todosOf(S.events.find(x=>x.id===ed.id) || ed, ctx.occurrence));
     mutate(st=>{ const e2 = st.events.find(x=>x.id===ed.id); if(e2) setTodosOf(e2, ctx.occurrence, JSON.parse(JSON.stringify(ctx.todos))); });
-    if(!before && allDone(ctx.todos)) celebrate(ed, document.querySelector(".editor").getBoundingClientRect());
+    if(!before && allDone(ctx.todos)) celebrate(ed, document.querySelector("#editorOverlay .editor").getBoundingClientRect());
   }
   const newTodo = B.querySelector("#fNewTodo");
   if(newTodo) newTodo.addEventListener("keydown", e=>{
@@ -262,6 +277,7 @@ function renderEditorBody(){
     const txt = newTodo.value.trim(); if(!txt) return;
     ctx.todos.push({ id:uid(), text:txt, state:"open" }); newTodo.value="";
     B.querySelector("#editorTodos").insertAdjacentHTML("beforeend", todoRowHTML(ctx.todos[ctx.todos.length-1]));
+    newTodo.scrollIntoView({ block:"nearest" });       // the next one is typed where the last one went
     todosChanged();
   });
   const tl = B.querySelector("#editorTodos");
@@ -284,14 +300,39 @@ function renderEditorBody(){
   const del = document.getElementById("editorDelete");
   del.onclick = ()=>{
     const k = ctx.type;
+    if(k==="event" && ed.repeat && ed.repeat!=="none"){ askSeriesDelete(); return; }   // one occurrence, or this and the following (Max, 22 Oct)
     mutate(s=>{
       if(k==="event") s.events = s.events.filter(x=>x.id!==ed.id);
       else if(k==="phase") s.phases = s.phases.filter(x=>x.id!==ed.id);
       else if(k==="milestone") s.milestones = s.milestones.filter(x=>x.id!==ed.id);
     });
-    toast(k==="event" && ed.repeat && ed.repeat!=="none" ? "Serie gelöscht" : "Gelöscht");
+    toast("Gelöscht");
     closeEditor();
   };
+  /* a repeating event: the body gives way to the choice; Abbrechen brings it back as it was */
+  function askSeriesDelete(){
+    if(B.querySelector(".delete-choice")) return;
+    const day = ctx.occurrence, first = day <= ed.date;
+    const d = parseISO(day), when = `${WD[d.getDay()]}, ${d.getDate()}. ${MONTHS[d.getMonth()].slice(0,3)}.`;
+    B.classList.add("choosing");
+    B.insertAdjacentHTML("afterbegin", `<div class="part delete-choice">
+      <h3 class="overline" style="padding:0 4px">Wiederholung löschen</h3>
+      <div class="list">
+        ${rowHTML({ icon:"bin", label:"Nur diesen Termin", value:when, cls:"danger", id:"editorDeleteOne" })}
+        ${rowHTML({ icon:"bin", label: first ? "Ganze Serie" : "Auch alle folgenden", value: first ? "" : "ab "+when, cls:"danger", id:"editorDeleteFollowing" })}
+      </div>
+      <div class="list">${rowHTML({ label:"Abbrechen", id:"editorDeleteCancel" })}</div></div>`);
+    B.scrollTop = 0;
+    const go = following => {
+      let what = null;
+      mutate(s=>{ what = deleteOccurrence(s, ed.id, day, following); });
+      toast(what==="one" ? "Termin gelöscht" : what==="following" ? "Ab hier gelöscht" : "Serie gelöscht");
+      closeEditor();
+    };
+    B.querySelector("#editorDeleteOne").onclick = ()=>go(false);
+    B.querySelector("#editorDeleteFollowing").onclick = ()=>go(true);
+    B.querySelector("#editorDeleteCancel").onclick = ()=>{ B.querySelector(".delete-choice").remove(); B.classList.remove("choosing"); };
+  }
   const f = document.getElementById("fTitle");
   f.addEventListener("keydown", ev=>{ if(ev.key==="Enter"){ ev.preventDefault(); if(ev.ctrlKey||ev.metaKey) saveEditor(); } });
   /* never typing mode by itself on a phone: the keyboard would push the editor up for a guess (Max, 22 Oct).
@@ -323,11 +364,16 @@ function saveEditor(){
     if(data.repeat === "none") byDate = {};                        // a plain event has one day: its own
     byDate[data.repeat === "none" ? data.date : day] = ctx.todos;
     data.todosByDate = JSON.parse(JSON.stringify(byDate));
+    /* a series' end and removed days move with its start; a plain event has neither */
+    const moved = d => isoDate(addDays(parseISO(d), shift));
+    data.end    = data.repeat !== "none" && ed && ed.end ? moved(ed.end) : undefined;
+    data.except = data.repeat !== "none" && ed && ed.except ? ed.except.map(moved) : undefined;
+    if(data.end === undefined) delete data.end; if(data.except === undefined) delete data.except;
     if(data.reminderMin!=null) requestNotifPermission();
     const allDone = list => list.length>0 && list.every(t=>t.state==="done");
     const finished = !ed && allDone(ctx.todos);       // a new event born finished; a stored one celebrated at the tick
-    const where = document.querySelector(".editor").getBoundingClientRect();
-    mutate(st=>{ if(ed) Object.assign(st.events.find(x=>x.id===ed.id), data);
+    const where = document.querySelector("#editorOverlay .editor").getBoundingClientRect();
+    mutate(st=>{ if(ed){ const t = st.events.find(x=>x.id===ed.id); delete t.end; delete t.except; Object.assign(t, data); }
                  else st.events.push({ id:uid(), ...data }); });
     if(finished) celebrate(data, where);
     if(UI.addMode) setAddMode(false);                 // add-mode auto-exits after one creation

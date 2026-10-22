@@ -10,7 +10,7 @@
 .overlay-window{
   background:var(--raised); border:1px solid var(--hairline); border-radius:var(--r-float);
   width:min(480px,100%); max-height:86vh; overflow:auto;
-  animation:appear .22s var(--spring);
+  animation:editor-rise .26s var(--soft);
 }
 .overlay-window-header{display:flex; align-items:center; gap:8px; padding:16px 16px 12px 20px}
 .overlay-window-header h2{margin:0; font-size:var(--fs-title); line-height:26px; font-weight:600; flex:1}
@@ -27,7 +27,7 @@
   width:min(480px,100%); max-height:min(720px, calc(100vh - 36px)); display:flex; flex-direction:column;
   background:var(--ed-colour, var(--c-gray)); border:1px solid var(--ed-colour, var(--c-gray));
   border-radius:var(--r-float); overflow:hidden;
-  animation:appear .22s var(--spring); transition:background .2s, border-color .2s;
+  animation:editor-rise .26s var(--soft); transition:background .2s, border-color .2s;
 }
 .editor-header{display:flex; align-items:center; gap:8px; padding:16px 16px 20px 20px; color:var(--ink)}
 .editor-name{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px}
@@ -42,6 +42,7 @@
   flex:1; min-height:0; overflow:auto; padding:20px 16px; display:flex; flex-direction:column; gap:24px;
   background:var(--raised); border-radius:var(--r-float) var(--r-float) 0 0; color:var(--text);
 }
+.editor-body > *{flex-shrink:0}                        /* never squeezed: the body scrolls instead (a full list hid repeat and reminder) */
 /* the time: the one big number of the editor, then the day in words */
 .when{padding:0 4px; display:flex; flex-direction:column; gap:2px}
 .when-top{display:flex; align-items:baseline; justify-content:space-between; gap:12px}
@@ -62,12 +63,27 @@ html[data-theme="light"] .when input{color-scheme:light}
 .rte{min-height:84px; max-height:220px; overflow:auto; padding:8px 16px 12px; font-size:14px; line-height:20px; outline:none}
 .rte ul,.rte ol{padding-left:18px}
 
+/* deleting from a series: the choice takes the body's place until chosen or cancelled */
+.editor-body.choosing > :not(.delete-choice){display:none}
+.delete-choice{display:flex; flex-direction:column; gap:8px}
+
 /* phone: the editor rises from the bottom, full width */
 .editor{position:relative}
+/* the editor rises in and sinks out the same way (desktop: a short rise and fade; phone: from the bottom edge) */
+/* the closing keyframes mirror the opening ones under their own names: a browser restarts an animation only when its name changes */
+@keyframes editor-rise{from{opacity:0; transform:translateY(24px)}}
+@keyframes editor-sink{to{opacity:0; transform:translateY(24px)}}
+@keyframes editor-slide{from{transform:translateY(100%)}}
+@keyframes editor-slide-out{to{transform:translateY(100%)}}
+@keyframes fade-out{to{opacity:0}}
+.editor-leaving{animation:fade-out .2s ease forwards; pointer-events:none}
+.editor-leaving .overlay-window{animation:editor-sink .2s var(--soft) forwards}   /* the time budget closes the same way */
+.editor-leaving .editor{animation:editor-sink .2s var(--soft) forwards}
 .editor-grip{display:none}
 @media (max-width:600px){
   .overlay.editor-overlay{align-items:flex-end; padding:0}
-  .editor{width:100%; max-height:92vh; border-radius:var(--r-float) var(--r-float) 0 0}
+  .editor{width:100%; max-height:92vh; border-radius:var(--r-float) var(--r-float) 0 0; animation:editor-slide .3s var(--soft)}
+  .editor-leaving .editor{animation:editor-slide-out .24s var(--soft) forwards}
   .editor-header{touch-action:none; padding-top:20px}                      /* pulled down, it closes (ui/editor.js slideToClose) */
   .editor-grip{display:block; position:absolute; left:50%; top:8px; width:36px; height:4px; margin-left:-18px;
     border-radius:9999px; background:var(--ink); opacity:.45; pointer-events:none}

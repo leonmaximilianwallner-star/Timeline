@@ -16,6 +16,8 @@ export const addDaysISO = (iso, n) => { const d = parseISO(iso); d.setUTCDate(d.
 /* does the event occur on this day? — the same rule as core/repeat.js occursOn (tests/reminders.test.mjs compares them) */
 export function occursOn(ev, dateISO){
   if(dateISO < ev.date) return false;
+  if(ev.end && dateISO >= ev.end) return false;              // the series ended
+  if(ev.except && ev.except.includes(dateISO)) return false; // this occurrence was deleted
   if(ev.repeat === "none" || !ev.repeat) return ev.date === dateISO;
   const base = parseISO(ev.date), d = parseISO(dateISO);
   switch(ev.repeat){

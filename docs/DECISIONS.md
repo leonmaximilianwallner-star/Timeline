@@ -119,3 +119,13 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **One token set.** The old near-duplicate colours merged into the mockup's; the faint grey (3:1) is gone, so hour and weekday labels read better. Five font sizes, weights up to 600, radii 8 · 16 · 24 · round. *Claude*
 - **Events show what their height holds**, words broken at syllables (the browser's German hyphenation), the start time alone in narrow columns, line icons instead of emoji. *Max (the problem); Claude (from the mockup's "Detail nach Höhe")*
 - **Not checked here:** hyphenation (the test browser lacks the German dictionary). Max checks on the phone. *Claude*
+
+## 22 Oct 2026 — series, the editor's body, motion (pull request #14)
+
+- **Max's test notes, triaged:** what breaks or annoys daily use now (the todo overflow, series deletion, the stutter, the time field, motion); what needs a design decision next session (the editor header with the category drop-up; the day view's hours); what is a concept to design first (the full-screen lookup view). *Claude (triage); Max (notes)*
+- **Deleting from a series asks: this occurrence, or this and all following.** Stored as `except` (removed days) and `end` (exclusive) on the series, read only by `occursOn`, so every view and the reminder server agree. *Max (the feature); Claude (the storage)*
+- **The editor keeps the height it opened with; its body scrolls.** A full todo list had squeezed repeat and reminder to 0px (a flex layout let them shrink). *Max (found); Claude (cause)*
+- **Typing into a row shows the cursor, not a frame.** *Max*
+- **Whatever opens with a motion closes with it, reversed** (rulebook C.5): editor, time budget, phase dropdown. Redraws never replay an opening. *Max*
+- **A click on a time or date opens its picker.** *Max*
+- **Found on the way:** the ✕ button handed its click to the close function as "close instantly", which would have skipped the closing motion. Fixed and tested. *Claude*

@@ -162,6 +162,8 @@ The dot on a thing's edge, dragged onto the timeline to give it a date. **Never 
 
 **Repeat** · *Wiederholung* · `repeat` · `none` *Keine* · `daily` *Täglich* · `weekly` *Wöchentlich* · `monthly` *Monatlich* · `weekdays` *Werktags*
 A rule that makes one event occur on many days. Each day it appears is an **occurrence** (`occurrence`).
+A repeating event is a **series**. A series may **end** (`end`: the day after its last occurrence, exclusive like every stored end) and may leave out single days (`except`: deleted occurrences). Both are read only by `occursOn` (`core/repeat.js`, and its copy on the server), so every view agrees.
+**Deleting from a series** (**Max**, 22 Oct): the bin asks *Nur diesen Termin* (the day goes into `except`) or *Auch alle folgenden* (the series ends the day before; from the first occurrence, *Ganze Serie*). Moving a series moves its `except` days and its `end` with it (`shiftSeries`).
 
 **Reminder** · *Erinnerung* · `reminderMin`
 Minutes before an event's start when a notification fires. **Never say:** alarm.
@@ -431,7 +433,9 @@ The gate, the store and sync are defined in `ARCHITECTURE.md` §4–5. The rules
 - **Single day view** — not designed; no name yet.
 - **The rest of the design spec** (§1 global rules outside the reworked sections, §3–5, §8.1–8.3, §8.5–8.6, §8.9) — not yet done. **Claude**
 - **Contrast** — white text on amber, green, blue, pink and grey fills is below 4.5:1. **Max, 22 Oct:** white stays (the whole design points to it, and events and phases already do it); if it fails the eye test in the editor headers, it is revisited.
-- **Deleting one occurrence** of a repeating event — today, deleting deletes the whole series ("Serie gelöscht"). Calendars usually ask "this one or all". **Claude** *(noted 21 Oct)*
+- **The day view's hours** — a setting for where the day starts (e.g. 6:00 instead of 0:00) to save space. Open: what an event before the start shows. *(Max, 22 Oct; next session)*
+- **The editor header** — the title as inline text and the category as a drop-up list over it. *(Max, 22 Oct; next session)*
+- **A full-screen lookup view** of an event (pulled up past a resistance), and layered squircle transitions. *(Max, 22 Oct; concept: design first)*
 
 ---
 
@@ -470,7 +474,15 @@ The gate, the store and sync are defined in `ARCHITECTURE.md` §4–5. The rules
 - Type: DM Sans only. Numbers in tabular figures, never a monospace font (**Max**). **Five sizes** (`--fs-…`): 11 labels and overlines (uppercase), 12 small text (events, hints), 14 body and rows, 16 lead, 20 names and the big number; plus 28 for the celebration only. Weights 400 · 500 · 600, never 700.
 - Radii: 8 events · 16 lists · 24 floating panels · round. Nothing else.
 
-## C.5 Not yet in this design *(the whole-app pass)*
+## C.5 Motion
+
+- **Whatever opens with a motion closes with the same motion, reversed**, by every route (✓, ✕, a tap outside, Escape, a pull). **Max**, 22 Oct.
+- The editor: on a phone it slides up from the bottom edge and back down; on a desktop it rises 24px as it fades in, and sinks as it fades out. The time budget moves as the editor on a desktop. The settings slide in from the side and back. A phase dropdown unfolds and folds back.
+- **Only a change of state animates.** Redrawing what is already open never replays its opening (the stutter of the time budget and the dropdown, 22 Oct). Easing `--soft`, no overshoot: an overshoot played backwards looks wrong.
+- A closing animation has its own keyframes (e.g. `editor-sink` for `editor-rise`): a browser restarts an animation only when its name changes.
+- **The editor keeps the height it opened with**; what is added later scrolls inside its body.
+
+## C.6 Not yet in this design *(the whole-app pass)*
 
 - The timeline view (phases, dropdowns, milestone chips) has the new colours, type and edges, but not yet its own design pass.
 - The time budget has the new frame; its content (donut, legend) is still the older look.

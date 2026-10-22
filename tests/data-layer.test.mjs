@@ -186,6 +186,24 @@ const tests = {
     assert.equal(ev.todosByDate['2026-10-21'].find(t => t.text === 'Frage stellen').state, 'postponed');
     assert.deepEqual(await page.evaluate(i => todosOf(S.events.find(e => e.id === i), '2026-11-04'), id), []);   // one step only
   },
+  async 'deleting from a series asks: this occurrence only, or this and all following'(page) {
+    const id = await page.evaluate(() => S.events.find(e => e.title === 'Tutorium').id);
+    await page.locator(`.event[data-ev="${id}"][data-date="2026-10-28"]`).click();
+    await page.click('#editorDelete');
+    assert.equal(await page.locator('.delete-choice').count(), 1, 'the choice, inside the editor');
+    await page.click('#editorDeleteCancel');                                  // cancel: nothing deleted, the body is back
+    assert.ok(await page.locator('.editor-body .list').first().isVisible());
+    await page.click('#editorDelete'); await page.click('#editorDeleteOne'); await page.waitForTimeout(200);
+    const on = d => page.evaluate(([i, d]) => occursOn(S.events.find(e => e.id === i), d), [id, d]);
+    assert.deepEqual([await on('2026-10-21'), await on('2026-10-28'), await on('2026-11-04')], [true, false, true]);
+    assert.equal(await page.locator(`.event[data-ev="${id}"][data-date="2026-10-28"]`).count(), 0, 'gone from the day view');
+    await page.locator(`.event[data-ev="${id}"][data-date="2026-10-21"]`).click();   // from the first occurrence: the whole series
+    await page.click('#editorDelete');
+    assert.equal(await page.locator('#editorDeleteFollowing .row-label').textContent(), 'Ganze Serie');
+    await page.click('#editorDeleteCancel'); await page.keyboard.press('Escape');
+    await page.click('#btnUndo'); await page.waitForTimeout(200);              // undo brings the occurrence back
+    assert.equal(await on('2026-10-28'), true);
+  },
   async 'moving a repeating event moves every day\'s todos with it'(page) {
     const id = await page.evaluate(() => S.events.find(e => e.title === 'Tutorium').id);
     const before = (await data(page)).events.find(e => e.id === id);
