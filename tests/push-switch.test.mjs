@@ -21,12 +21,15 @@ const APP = `http://127.0.0.1:${server.address().port}/`;
 
 /* the simulated Supabase: login, an empty records table, and push_devices */
 const devices = new Map(), calls = [];
+let tableMissing = false;                     // as on 29 Oct: push.sql's tables not created
 async function supabase(route) {
   const req = route.request(), url = new URL(req.url()), path = url.pathname;
   const json = (status, body) => route.fulfill({ status, contentType: 'application/json', body: body === undefined ? '' : JSON.stringify(body) });
   if (path === '/auth/v1/token') return json(200, { access_token: 'token-max', refresh_token: 'refresh-max', expires_in: 3600, user: { id: 'u-max', email: 'max@example.com' } });
   assert.equal(req.headers()['authorization'], 'Bearer token-max');
   if (path === '/rest/v1/records') return req.method() === 'GET' ? json(200, []) : json(201);
+  if (path === '/rest/v1/push_devices' && tableMissing)
+    return json(404, { code: 'PGRST205', details: null, hint: null, message: "Could not find the table 'public.push_devices' in the schema cache" });
   if (path === '/rest/v1/push_devices') {
     calls.push(req.method());
     if (req.method() === 'POST') {
@@ -134,6 +137,32 @@ await step('with push off, the app reminds through the service worker', async ()
   }));
   assert.ok(shown, 'a notification was shown');
   assert.equal(shown[0], 'Jetzt');
+});
+await step('the server without its tables: a clear message, not the raw error; the switch stays off', async () => {
+  tableMissing = true;
+  await page.click('#sPush');
+  await page.waitForFunction(() => /noch nicht eingerichtet/.test(document.getElementById('pushStatus').textContent));
+  assert.doesNotMatch(await page.textContent('#pushStatus'), /PGRST205|\{/);
+  assert.equal(await page.locator('#sPush').isChecked(), false);
+  tableMissing = false;
+  await page.click('#sPush');
+  await page.waitForFunction(() => /^An:/.test(document.getElementById('pushStatus').textContent));
+});
+await step('on stays on: if the browser drops the subscription, the next start renews it', async () => {
+  await page.evaluate(() => localStorage.removeItem('fake.sub'));        // the browser dropped it
+  devices.clear();
+  await page.reload();
+  await page.waitForFunction(() => pushState.on === true);
+  assert.ok(devices.has('https://push.example/device-1'), 'registered with the server again');
+  await page.evaluate(() => toggleSettings(true));
+  assert.equal(await page.locator('#sPush').isChecked(), true);
+});
+await step('switched off, it stays off after a start', async () => {
+  await page.click('#sPush');
+  await page.waitForFunction(() => /^Aus:/.test(document.getElementById('pushStatus').textContent));
+  await page.reload(); await page.waitForTimeout(600);
+  assert.equal(await page.evaluate(() => pushState.on), false);
+  await page.evaluate(() => toggleSettings(true));                   // (left off, as the next test expects)
 });
 await step('signing out with push on switches it off first', async () => {
   await page.click('#sPush');

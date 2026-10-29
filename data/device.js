@@ -6,6 +6,7 @@
    dayStart    the hour the day view's day starts; the night before it is drawn thin (views/range.js)
    openPhases  ids of phases whose dropdown is open on the timeline
    syncSentUpTo / syncSeenUpTo  how far this device has sent and received (data/sync.js)
+   pushWanted  push reminders were switched on here: if the browser drops the subscription, it is renewed (reminders.js)
    Changes here are not undoable and don't count as changes to the plan.
    ════════════════════════════════════════════════════════════ */
 function loadDevice(){
