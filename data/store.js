@@ -10,6 +10,7 @@ const UI = {
   addMode:false, range:{ start:null, days:0 },
   undo:[], redo:[],
   settingsOpen:false, settingsForm:null, budgetOpen:false, budgetDays:7,
+  dayTodos:null,         // the open day's todos panel: { date, newCat } (ui/day-todos.js)
   dropdownOpening:null,  // the phase whose dropdown is opening right now: only it animates (views/timeline/render.js)
   editor:null,          // the open editor's context
   dragLive:false,
@@ -66,6 +67,10 @@ function toCurrentShape(d, takeDeviceState){
       ev.updatedAt = now;
     });
     d.version = 5;
+  }
+  if(d.version < 6){                                       // version 6 (29 Oct): todos without an event, on a day
+    d.dayTodos = d.dayTodos || [];
+    d.version = 6;
   }
   RECORD_LISTS.forEach(list => (d[list]||[]).forEach(r => { if(!r.updatedAt) r.updatedAt = now; }));
   d.deleted = d.deleted || {};

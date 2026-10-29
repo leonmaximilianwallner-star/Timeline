@@ -167,6 +167,60 @@ for (const n of [3, 8, 20]) await step(`with ${n} todos the category list still 
   await page.evaluate(() => { const ev = S.events.find(e => e.title === 'Tutorium'); setTodosOf(ev, ev.date, []); closeEditor(true); });
 });
 
+/* todos of a day, without an event */
+await step('a tap on a day opens its todos; a new one gets the chosen category and its dot appears', async () => {
+  await page.evaluate(() => { $scene.scrollTop = $dayWrap.offsetTop; });
+  await page.click('.dh[data-day="2026-10-22"]'); await page.waitForTimeout(300);
+  assert.equal(await page.locator('#dayTodoOverlay').count(), 1);
+  assert.notEqual(await page.evaluate(() => document.activeElement.id), 'fNewDayTodo', 'no keyboard by itself on a phone');
+  await page.click('#dayTodoCat'); await page.waitForTimeout(300);
+  await page.click('#dayCatList [data-pick-cat="work"]'); await page.waitForTimeout(300);
+  await page.fill('#fNewDayTodo', 'Modell fotografieren'); await page.press('#fNewDayTodo', 'Enter');
+  const t = await page.evaluate(() => S.dayTodos.find(x => x.text === 'Modell fotografieren'));
+  assert.deepEqual([t.date, t.categoryId, t.state], ['2026-10-22', 'work', 'open']);
+  assert.equal(await page.locator('.dh[data-day="2026-10-22"] .dh-dot').count(), 1, 'its dot');
+  assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector('.dh[data-day="2026-10-22"] .dh-dot')).backgroundColor), await page.evaluate(() => { const d = document.createElement('div'); d.style.color = cat('work').color; document.body.appendChild(d); const c = getComputedStyle(d).color; d.remove(); return c; }));
+});
+await step('ticking applies at once; a day with only done todos has no dot', async () => {
+  await page.locator('#dayTodoList .tcheck').first().click();
+  assert.equal(await page.evaluate(() => S.dayTodos.find(x => x.text === 'Modell fotografieren').state), 'done');
+  assert.equal(await page.locator('.dh[data-day="2026-10-22"] .dh-dot').count(), 0);
+  await page.locator('#dayTodoList .tcheck').first().click(); await page.locator('#dayTodoList .tcheck').first().click();   // done → cancelled → open
+});
+await step('holding a todo moves it to tomorrow; undo brings it back', async () => {
+  const row = page.locator('#dayTodoList .todoRow', { hasText: 'Modell fotografieren' });
+  const r = await row.locator('.tx').boundingBox();
+  await page.touchscreen.tap(r.x + 5, r.y + 5);                                   // (a tap does nothing)
+  await row.locator('.tx').dispatchEvent('pointerdown', { pointerType: 'touch', clientX: r.x + 5, clientY: r.y + 5 });
+  await page.waitForTimeout(650);
+  assert.equal(await page.evaluate(() => S.dayTodos.find(x => x.text === 'Modell fotografieren').date), '2026-10-23', 'tomorrow');
+  assert.equal(await page.locator('#dayTodoList .todoRow').count(), 0, 'gone from this day');
+  await page.evaluate(() => undo()); await page.waitForTimeout(100);
+  assert.equal(await page.evaluate(() => S.dayTodos.find(x => x.text === 'Modell fotografieren').date), '2026-10-22');
+});
+await step('pulled down, the day panel closes; Escape too', async () => {
+  await pull(260, 300);
+  assert.equal(await page.locator('#dayTodoOverlay').count(), 0);
+  await page.click('.dh[data-day="2026-10-22"]'); await page.waitForTimeout(300);
+  await page.keyboard.press('Escape'); await page.waitForTimeout(300);
+  assert.equal(await page.locator('#dayTodoOverlay').count(), 0);
+});
+await step('an open todo of an earlier day comes along to today, marked with its day', async () => {
+  await page.evaluate(() => mutate(s => { s.dayTodos.push({ id: 'old', text: 'Buch verlängern', state: 'open', date: '2026-10-19', categoryId: null }); }));
+  await page.click('.dh[data-day="2026-10-21"]'); await page.waitForTimeout(300);           // today in this test
+  const earlier = await page.locator('#dayTodoBody .part').nth(1).textContent();
+  assert.match(earlier, /Von früheren Tagen/); assert.match(earlier, /Buch verlängern/); assert.match(earlier, /Mo, 19\.10\./);
+  assert.equal(await page.locator('.dh[data-day="2026-10-21"] .dh-dot').count(), 1, 'it gives today a dot');
+  await page.locator('#dayTodoBody .todoRow', { hasText: 'Buch verlängern' }).locator('.tcheck').click();
+  assert.equal(await page.locator('#dayTodoBody .todoRow', { hasText: 'Buch verlängern' }).count(), 0, 'ticked, it stays behind on its day');
+  await page.keyboard.press('Escape');
+});
+await step('more than three categories: three dots and a "+"', async () => {
+  await page.evaluate(() => mutate(s => { ['work', 'personal', 'seminar', 'tests'].forEach((c, i) => s.dayTodos.push({ id: 'm' + i, text: c, state: 'open', date: '2026-10-24', categoryId: c })); }));
+  assert.equal(await page.locator('.dh[data-day="2026-10-24"] .dh-dot').count(), 3);
+  assert.equal(await page.locator('.dh[data-day="2026-10-24"] .dh-more').count(), 1);
+});
+
 /* motion: with animations on, as on a real phone */
 const moving = await (await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true })).newPage();
 await moving.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());

@@ -336,6 +336,7 @@ ui/
   editor.js                 editor and its todo list
   time-budget.js            time budget
   settings.js               settings: one panel, four pages (main, a colour, new, sync)
+  day-todos.js              todos of a day without an event: the dots in the day header, the day's panel
 
 styles/   tokens · base · timeline · day · add-button · lists (rows, overlines, switches: shared by editor and settings) · editor · todos (todo rows, the celebration) · settings · time-budget · toast · device · loader
 

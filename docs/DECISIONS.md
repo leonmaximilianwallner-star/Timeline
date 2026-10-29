@@ -146,3 +146,11 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **The error "Could not find the table public.push_devices":** push.sql's tables were never created. Likely cause: run as one script, a failing extension line undid all of it. push.sql is now safe to run again and in two parts (tables first, the schedule second). *Max (found); Claude (cause, fix)*
 - **On stays on:** the device remembers that push was wanted; if the browser drops the subscription on its own, the next start renews it. Only "Ausschalten" or signing out forgets it. *Max*
 - **Server errors appear in words**, not as raw JSON. *Claude*
+## 29 Oct 2026 — todos without events (pull request #18)
+
+- **A todo can stand on a day without an event**, as events stand without phases and phases without projects: the user builds as much structure as they want, none is forced. *Max*
+- **Shown as up to three dots under the weekday** (one per category with open todos, then "+"), a tap on the day opens its todos in the editor's shell. *Max (dots, place, at most three); Claude (the whole header cell as tap target, the panel)*
+- **Open todos of past days come along to today** until ticked, keeping their own day. *Max*
+- **Day todos first; undated ones later**, with the canvas. *Max*
+- **Stored as their own records** (`dayTodos`, data version 6), synced like the rest; an older app version leaves them on the server untouched. Changes apply at once and undo, as todos in the editor. *Claude*
+- **Holding a day todo moves it to tomorrow** (a right click on a desktop): a phone has no right click. *Claude*

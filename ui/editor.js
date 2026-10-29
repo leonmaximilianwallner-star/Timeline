@@ -116,7 +116,7 @@ function openEditor(ctx){
 /* on a phone the editor sits at the bottom: pulling its header down closes it without saving, like ✕ (Max, 22 Oct).
    Far enough (a third of the way) or fast enough, it goes; otherwise it springs back. */
 const SLIDE_CLOSE_PX = 120, SLIDE_FLICK = 0.4;       // px; px per ms (400 px/s: a deliberate fling, as bottom panels on phones)
-function slideToClose(box){
+function slideToClose(box, close = ()=>closeEditor(true)){
   const header = box.querySelector(".editor-header");
   header.addEventListener("pointerdown", e=>{
     if(!matchMedia("(max-width:600px)").matches || e.target.closest("input, select, button, label")) return;
@@ -134,16 +134,19 @@ function slideToClose(box){
       box.style.transition = "transform .22s var(--soft)";
       if(dy > Math.min(SLIDE_CLOSE_PX, box.offsetHeight/3) || (dy > 24 && speed > SLIDE_FLICK)){
         box.style.transform = "translateY(100%)";
-        box.addEventListener("transitionend", ()=>closeEditor(true), { once:true });   // already slid out
+        box.addEventListener("transitionend", ()=>close(), { once:true });   // already slid out
       } else box.style.transform = "";
     };
     header.addEventListener("pointermove", move); header.addEventListener("pointerup", up); header.addEventListener("pointercancel", up);
   });
 }
 /* the category list: it always rises above the editor's header (the editor glides down to make room) */
-const catListOpen = ()=>{ const l = document.querySelector("#editorOverlay #editorCatList"); return !!l && !l.hidden && !l.classList.contains("leaving"); };
-function openCatList(){
-  const list = document.querySelector("#editorOverlay #editorCatList"), btn = document.getElementById("editorKindBtn");
+const catListOpen = ()=>riseListOpen(document.querySelector("#editorOverlay #editorCatList"));
+function openCatList(){ riseList(document.querySelector("#editorOverlay #editorCatList"), document.getElementById("editorKindBtn")); }
+function closeCatList(){ sinkList(document.querySelector("#editorOverlay #editorCatList"), document.getElementById("editorKindBtn")); }
+/* a list rising above a panel's header (the editor's categories, a day's categories): shared by both */
+const riseListOpen = list => !!list && !list.hidden && !list.classList.contains("leaving");
+function riseList(list, btn){
   if(!list) return;
   list.hidden = false; list.classList.remove("leaving"); list.style.maxHeight = "";
   /* it always rises above the header. Where there is too little room, the editor glides down to make it, as far as
@@ -157,12 +160,11 @@ function openCatList(){
   if(glide > 0) stack.style.transform = `translateY(${glide}px)`;
   if(need > glide) list.style.maxHeight = (ed.top + glide - 16) + "px";
   stack.closest(".overlay").classList.add("listing");             // the dim layer deepens: the list reads over the app
-  btn.setAttribute("aria-expanded", "true");
+  if(btn) btn.setAttribute("aria-expanded", "true");
 }
-function closeCatList(){
-  const list = document.querySelector("#editorOverlay #editorCatList"), btn = document.getElementById("editorKindBtn");
+function sinkList(list, btn){
   if(!list || list.hidden) return;
-  btn.setAttribute("aria-expanded", "false");
+  if(btn) btn.setAttribute("aria-expanded", "false");
   list.parentElement.style.transform = "";
   list.closest(".overlay").classList.remove("listing");
   if(matchMedia("(prefers-reduced-motion: reduce)").matches){ list.hidden = true; return; }
@@ -173,20 +175,21 @@ function closeCatList(){
 /* Escape closes what is open, innermost first */
 function editorEscape(){ if(catListOpen()){ closeCatList(); return; } closeEditor(); }
 
+/* a panel in the editor's shell leaves: it loses its id at once (closed for the app, a new one can open),
+   then plays its opening backwards and goes. Shared by the editor and a day's todos. */
+function leaveOverlay(ov, instant){
+  if(!ov) return;
+  ov.removeAttribute("id");
+  const list = ov.querySelector(".cat-list"); if(list) list.hidden = true;   // the list doesn't hang in the air while it leaves
+  if(instant || matchMedia("(prefers-reduced-motion: reduce)").matches){ ov.remove(); return; }
+  ov.classList.add("editor-leaving");
+  ov.querySelector(".editor").addEventListener("animationend", ()=>ov.remove(), { once:true });
+  setTimeout(()=>ov.remove(), 500);                       // never left behind, even if the motion's end goes unnoticed
+}
 /* closing plays the opening backwards, whatever closes it (Max, 22 Oct: the reverse works the same way).
    The leaving editor loses its id at once, so the app counts it as closed and a new one can open. */
 function closeEditor(instant){
-  const ov = document.getElementById("editorOverlay");
-  if(ov){
-    ov.removeAttribute("id");
-    const list = ov.querySelector(".cat-list"); if(list) list.hidden = true;   // the list doesn't hang in the air while the editor leaves
-    if(instant || matchMedia("(prefers-reduced-motion: reduce)").matches) ov.remove();
-    else {
-      ov.classList.add("editor-leaving");
-      ov.querySelector(".editor").addEventListener("animationend", ()=>ov.remove(), { once:true });
-      setTimeout(()=>ov.remove(), 500);                     // never left behind, even if the motion's end goes unnoticed
-    }
-  }
+  leaveOverlay(document.getElementById("editorOverlay"), instant);
   if(UI.editor && UI.editor.preview) clearPreview(UI.editor.preview);   // preview persisted behind the editor until now
   UI.editor = null;
 }

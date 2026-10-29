@@ -103,6 +103,7 @@ In the app: `events` records, drawn by `renderEvent` with class `.event`.
 
 **Todo** · *Todo* · `todo` · an entry in one day's list of an event: `todosByDate[day]`
 The smallest action. Lives in **one occurrence** of an event, never in a whole series (**Max**, 21 Oct): a weekly crit's todos for this week are not next week's. A repeating event's later occurrences start empty. Has a state (A.7). Read with `todosOf(event, day)`, written with `setTodosOf` (`core/todos.js`). **Not:** a step. **Never say:** subtask, task, check item.
+A todo can also stand alone, on a **day** without an event: a **day todo** (`dayTodos`, **Max**, 29 Oct), as events stand without phases and phases without projects. It has a day, no time, and a category (or frei). The day header shows up to three dots for the categories of a day's open todos, then "+". A tap on a day opens its todos. **Open day todos of past days come along to today** until ticked, keeping their own day (**Max**). Holding one (or a right click) moves it to tomorrow. Read with `dayTodosOn(plan, day, today)` (`core/todos.js`). Undated todos ("irgendwann") are not part of it yet (**Max**: later, with the canvas).
 
 ---
 
@@ -433,6 +434,7 @@ The gate, the store and sync are defined in `ARCHITECTURE.md` §4–5. The rules
 - **Single day view** — not designed; no name yet.
 - **The rest of the design spec** (§1 global rules outside the reworked sections, §3–5, §8.1–8.3, §8.5–8.6, §8.9) — not yet done. **Claude**
 - **Contrast** — white text on amber, green, blue, pink and grey fills is below 4.5:1. **Max, 22 Oct:** white stays (the whole design points to it, and events and phases already do it); if it fails the eye test in the editor headers, it is revisited.
+- **Day todos, next steps** — changing an existing day todo's category; dragging one into the day view to give it a time (it becomes an event?); an undated list. *(29 Oct)*
 - **Repeat and reminder pickers** — still the phone's own pickers (a window each). Same list-in-place treatment as the categories? *(Max to decide after feeling the category list)*
 - **A full-screen lookup view** of an event (pulled up past a resistance), and layered squircle transitions. *(Max, 22 Oct; concept: design first)*
 

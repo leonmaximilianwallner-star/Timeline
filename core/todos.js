@@ -33,3 +33,17 @@ function shiftTodos(byDate, days){
   Object.entries(byDate || {}).forEach(([d, list]) => { out[isoDate(addDays(parseISO(d), days))] = list; });
   return out;
 }
+
+/* ── todos of a day, without an event (S.dayTodos; Max, 29 Oct) ──────────────────────────
+   { id, text, state, date, categoryId }. A day shows its own; today also shows the open ones of
+   past days, which come along until ticked (they keep their own date). */
+const isOpenTodo = t => t.state === "open" || t.state === "postponed";
+function dayTodosOn(plan, dateISO, todayIso){
+  const own = (plan.dayTodos || []).filter(t => t.date === dateISO);
+  if(dateISO !== todayIso) return own;
+  return own.concat((plan.dayTodos || []).filter(t => t.date < todayIso && isOpenTodo(t)).sort((a, b) => a.date < b.date ? -1 : 1));
+}
+/* the categories of a day's open todos, in order of first appearance, for its dots (null = frei) */
+function dayTodoCategories(plan, dateISO, todayIso){
+  return [...new Set(dayTodosOn(plan, dateISO, todayIso).filter(isOpenTodo).map(t => t.categoryId || null))];
+}
