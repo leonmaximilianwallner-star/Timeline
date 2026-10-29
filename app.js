@@ -2,13 +2,14 @@
 "use strict";
 /* ════════════════════════════════════════════════════════════
    keyboard + escape hatches — the "never stuck" principle
-   layer order: time budget > editor > settings > add mode
+   layer order: time budget > editor > a day's todos > settings > add mode
    ════════════════════════════════════════════════════════════ */
 document.addEventListener("keydown", e=>{
   const typing = /INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName) || document.activeElement?.isContentEditable;
   if(e.key==="Escape"){
     if(UI.budgetOpen) closeBudget();
     else if(UI.editor) editorEscape();          // the category list first, then the editor
+    else if(UI.dayTodos) dayTodosEscape();      // a day's todos: its category list first
     else if(UI.settingsOpen) toggleSettings(false);
     else if(UI.addMode) setAddMode(false);
     return;

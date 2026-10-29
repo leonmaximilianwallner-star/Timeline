@@ -4,7 +4,7 @@
   "description": "Timeline planning app. The app itself needs no install or build; this file only lists the tools the tests use.",
   "type": "module",
   "scripts": {
-    "test": "node tests/asset-version.mjs && node tests/vocabulary.test.mjs && node tests/changes.test.mjs && node tests/merge.test.mjs && node tests/series.test.mjs && node tests/data-layer.test.mjs && node tests/sync.test.mjs && node --import ./tests/vendor/hooks.mjs --experimental-strip-types --no-warnings tests/reminders.test.mjs && node --import ./tests/vendor/hooks.mjs --experimental-strip-types --no-warnings tests/push.test.mjs && node tests/push-switch.test.mjs && node tests/edge-pan.test.mjs && node tests/editor-phone.test.mjs && node tests/fingerprint.mjs main"
+    "test": "node tests/asset-version.mjs && node tests/vocabulary.test.mjs && node tests/changes.test.mjs && node tests/merge.test.mjs && node tests/series.test.mjs && node tests/day-todos.test.mjs && node tests/data-layer.test.mjs && node tests/sync.test.mjs && node --import ./tests/vendor/hooks.mjs --experimental-strip-types --no-warnings tests/reminders.test.mjs && node --import ./tests/vendor/hooks.mjs --experimental-strip-types --no-warnings tests/push.test.mjs && node tests/push-switch.test.mjs && node tests/edge-pan.test.mjs && node tests/editor-phone.test.mjs && node tests/fingerprint.mjs main"
   },
   "devDependencies": {
     "playwright": "1.56.0",

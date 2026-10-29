@@ -14,14 +14,15 @@ function renderDays(){
   const corner = document.createElement("div");
   corner.id = "dayHeadCorner";
   corner.className = "dh";
-  corner.innerHTML = `<span class="dw">KW</span><span class="dn" id="kwNum"></span>`;
+  corner.innerHTML = `<span class="dw">KW</span><span class="dn" id="kwNum"></span><span class="dh-dots"></span>`;
   head.appendChild(corner);
   for(let i=0;i<days;i++){
     const dIso = idxDate(i), d = parseISO(dIso);
     const el = document.createElement("div");
     el.className = "dh"+(dIso===today?" today":"")+((d.getDay()===0||d.getDay()===6)?" weekend":"");
     el.style.width = ppd+"px";
-    el.innerHTML = `<span class="dw">${WD[d.getDay()]}</span><span class="dn">${d.getDate()}</span>`;
+    el.dataset.day = dIso; el.setAttribute("role", "button"); el.title = "Todos dieses Tages";
+    el.innerHTML = `<span class="dw">${WD[d.getDay()]}</span><span class="dn">${d.getDate()}</span><span class="dh-dots">${dayDotsHTML(dIso)}</span>`;
     head.appendChild(el);
   }
   inner.appendChild(head);

@@ -79,3 +79,11 @@
 
 /* the thin night before the day's start (views/range.js): darker, without hour lines */
 .night{position:absolute; left:0; right:0; top:0; background:var(--night); border-bottom:1px solid var(--hairline); pointer-events:none}
+
+/* a day's todos (ui/day-todos.js): up to three dots under the date, one per category with open todos.
+   The row is always there, empty or not, so the header never changes height; the whole cell is the tap target. */
+.dh[data-day]{cursor:pointer}
+.dh[data-day]:hover .dn{color:var(--text)}
+.dh-dots{height:8px; margin-top:2px; display:flex; align-items:center; gap:3px}
+.dh-dot{width:6px; height:6px; border-radius:9999px}
+.dh-more{font-size:var(--fs-label); line-height:8px; font-weight:600; color:var(--fg-muted)}

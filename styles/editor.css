@@ -82,6 +82,15 @@ html[data-theme="light"] .when input{color-scheme:light}
 .rte{min-height:84px; max-height:220px; overflow:auto; padding:8px 16px 12px; font-size:14px; line-height:20px; outline:none}
 .rte ul,.rte ol{padding-left:18px}
 
+/* a panel without a colour of its own (a day's todos): the header on the list surface */
+.editor.neutral{--ink:var(--text); background:var(--surface); border-color:var(--hairline)}
+.editor.neutral .set-title{margin:0; font-size:var(--fs-title); line-height:26px; font-weight:600}
+/* a day todo: its circle in its category's colour */
+.todoRow.day-todo .tcheck{border-color:var(--cat); color:#ededec}
+.todoRow.day-todo[data-state="done"] .tcheck, .todoRow.day-todo[data-state="cancelled"] .tcheck{background:var(--cat); border-color:var(--cat)}
+.day-todo-cat{padding:0; border:0; background:transparent; cursor:pointer; width:20px; height:20px}
+.day-todo-cat::after{content:""; position:absolute; width:44px; height:44px}             /* the tap target */
+
 /* deleting from a series: the choice takes the body's place until chosen or cancelled */
 .editor-body.choosing > :not(.delete-choice){display:none}
 .delete-choice{display:flex; flex-direction:column; gap:8px}
