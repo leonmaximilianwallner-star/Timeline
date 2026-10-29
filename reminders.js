@@ -36,8 +36,16 @@ async function enablePush(){
   await navigator.serviceWorker.ready;
   const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(PUSH_KEY) });
   try{ await registerPushDevice(sub); }
-  catch(e){ await sub.unsubscribe().catch(()=>{}); throw e; }
+  catch(e){ await sub.unsubscribe().catch(()=>{}); throw serverMessage(e); }
   pushState.on = true;
+  setDevice(dv=>{ dv.pushWanted = true; });           // remembered: on stays on (Max, 29 Oct)
+}
+/* what a failed request means, in words */
+function serverMessage(e){
+  const text = String(e && e.message || e);
+  if(/PGRST205|push_devices/.test(text)) return new Error("Push ist am Server noch nicht eingerichtet: supabase/push.sql, Teil 1, im SQL Editor ausführen.");
+  if(e instanceof TypeError) return new Error("Keine Verbindung");
+  return e;
 }
 async function disablePush(){
   const reg = await worker, sub = reg && await reg.pushManager.getSubscription();
@@ -46,11 +54,21 @@ async function disablePush(){
     await sub.unsubscribe();
   }
   pushState.on = false;
+  setDevice(dv=>{ dv.pushWanted = false; });          // only switching off (or signing out) forgets the wish
 }
+/* on start: push is on if the browser holds the subscription. If the browser dropped it on its own (it renews
+   them; a phone may drop them), and push was wanted here, it subscribes again quietly: on stays on. */
 async function checkPush(){
-  const reg = await worker, sub = reg && await reg.pushManager.getSubscription();
+  const reg = await worker;
+  let sub = reg && await reg.pushManager.getSubscription();
+  if(!sub && reg && device.pushWanted && login && Notification.permission === "granted"){
+    try{
+      sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(PUSH_KEY) });
+    }catch(e){ console.warn("push renew", e); }
+  }
   pushState.on = !!sub;
-  if(sub && login) registerPushDevice(sub).catch(e=>console.warn("push device", e));
+  if(sub && !device.pushWanted) setDevice(dv=>{ dv.pushWanted = true; });   // switched on before 29 Oct: remember it now
+  if(sub && login) registerPushDevice(sub).catch(e=>{ console.warn("push device", e); setPushState(serverMessage(e).message); });
   setPushState("");
 }
 
@@ -72,7 +90,7 @@ function togglePush(){
   pushState.busy = true; setPushState(pushState.on ? "Wird ausgeschaltet …" : "Wird eingeschaltet …");
   (pushState.on ? disablePush() : enablePush())
     .then(()=>{ pushState.busy = false; setPushState(""); })
-    .catch(e=>{ pushState.busy = false; setPushState(e instanceof TypeError ? "Keine Verbindung" : e.message); });
+    .catch(e=>{ pushState.busy = false; setPushState(serverMessage(e).message); });
 }
 
 /* ── in the app (push off) ─────────────────────────────────── */

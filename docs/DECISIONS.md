@@ -140,3 +140,9 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 
 - **Found by Max on his phone:** the list opened downward on a grey surface. Cause: a fallback for "not enough room above", which a phone editor with a few todos always hit. The test and the screenshots covered only an editor without todos. *Max (found); Claude (cause, own mistake)*
 - **Fix:** the editor glides down as far as its header if needed; the list always rises, and scrolls if longer than the room. The fallback is gone. Tested with 0, 3, 8 and 20 todos; the new tests fail on the previous code. *Claude*
+
+## 29 Oct 2026 — push: the setup that didn't take, and "on stays on" (pull request #17)
+
+- **The error "Could not find the table public.push_devices":** push.sql's tables were never created. Likely cause: run as one script, a failing extension line undid all of it. push.sql is now safe to run again and in two parts (tables first, the schedule second). *Max (found); Claude (cause, fix)*
+- **On stays on:** the device remembers that push was wanted; if the browser drops the subscription on its own, the next start renews it. Only "Ausschalten" or signing out forgets it. *Max*
+- **Server errors appear in words**, not as raw JSON. *Claude*
