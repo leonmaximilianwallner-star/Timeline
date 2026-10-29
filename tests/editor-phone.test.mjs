@@ -148,6 +148,25 @@ await step('a new thing: the overline says Frei, the title waits with the kind a
   await page.evaluate(() => closeEditor(true));
 });
 
+for (const n of [3, 8, 20]) await step(`with ${n} todos the category list still rises above the header, fully on screen; the header stays visible`, async () => {
+  await page.evaluate(n => { const ev = S.events.find(e => e.title === 'Tutorium');
+    setTodosOf(ev, ev.date, Array.from({ length: n }, (_, i) => ({ id: 't' + i, text: 'Todo ' + i, state: 'open' })));
+    openEditor({ type: 'event', edit: ev }); }, n);
+  await page.waitForTimeout(300);
+  await page.click('#editorKindBtn'); await page.waitForTimeout(400);
+  const r = await page.evaluate(() => {
+    const l = document.getElementById('editorCatList').getBoundingClientRect(), h = document.querySelector('#editorOverlay .editor-header').getBoundingClientRect();
+    const items = [...document.querySelectorAll('#editorCatList .cat-item')];
+    return { listTop: l.top, listBottom: l.bottom, headerTop: h.top, headerBottom: h.bottom, scrolls: document.getElementById('editorCatList').scrollHeight > document.getElementById('editorCatList').clientHeight, n: items.length };
+  });
+  assert.ok(r.listTop >= 0 && r.listBottom <= r.headerTop, `list ${Math.round(r.listTop)}–${Math.round(r.listBottom)}, header from ${Math.round(r.headerTop)}`);
+  assert.ok(r.headerBottom <= 844 + 1, 'the header stays on screen');
+  assert.equal(r.scrolls, false, 'all categories fit on a phone');
+  await page.click('[data-pick-cat="work"]'); await page.waitForTimeout(400);
+  assert.equal(await page.evaluate(() => document.querySelector('#editorOverlay .editor-stack').style.transform), '', 'the editor glides back');
+  await page.evaluate(() => { const ev = S.events.find(e => e.title === 'Tutorium'); setTodosOf(ev, ev.date, []); closeEditor(true); });
+});
+
 /* motion: with animations on, as on a real phone */
 const moving = await (await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true })).newPage();
 await moving.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());

@@ -135,3 +135,8 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **The category list rises from the editor's header**, plain text over the deepened dim layer, as Max drew it; no window of its own. On a desktop the editor glides down to make room, so the list rises everywhere. *Max (the idea, the place); Claude (the room)*
 - **One header bar:** the overline is the category ("Frei" without), the title's placeholder is the kind ("Termin"). The old "TERMIN" over "Neuer Termin" said the same thing twice. *Max*
 - **The soft start is a thin night, not a stop.** Hours before the day's start (6:00 by default, a setting) are a quarter tall. A stop you can push past would fight native scrolling (Max suspected it). Proven: at 0:00 the day view is pixel-identical to before. *Max (soft start); Claude (thin, not stopped)*
+
+## 29 Oct 2026 — the category list always rises (pull request #16)
+
+- **Found by Max on his phone:** the list opened downward on a grey surface. Cause: a fallback for "not enough room above", which a phone editor with a few todos always hit. The test and the screenshots covered only an editor without todos. *Max (found); Claude (cause, own mistake)*
+- **Fix:** the editor glides down as far as its header if needed; the list always rises, and scrolls if longer than the room. The fallback is gone. Tested with 0, 3, 8 and 20 todos; the new tests fail on the previous code. *Claude*
