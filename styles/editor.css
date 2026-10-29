@@ -53,8 +53,7 @@
 .cat-list.leaving{animation:cat-sink .16s var(--soft) forwards}
 @keyframes cat-rise{from{opacity:0; transform:translateY(8px)}}
 @keyframes cat-sink{to{opacity:0; transform:translateY(8px)}}
-/* no room above (a desktop, the editor high up): below its label, over the body, as a list on its own surface */
-.cat-list.below{bottom:auto; top:56px; z-index:2; padding:4px; background:var(--surface); border:1px solid var(--hairline); border-radius:var(--r-row)}
+.cat-list{overflow-y:auto; overscroll-behavior:contain}                    /* a long list on a short screen scrolls */
 #fTitle{min-width:0; height:26px; padding:0; border:0; outline:none; background:transparent; color:var(--ink);
   font:inherit; font-size:20px; line-height:26px; font-weight:600}
 #fTitle::placeholder{color:var(--ink); opacity:.6}

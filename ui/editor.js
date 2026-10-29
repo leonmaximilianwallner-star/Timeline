@@ -140,18 +140,22 @@ function slideToClose(box){
     header.addEventListener("pointermove", move); header.addEventListener("pointerup", up); header.addEventListener("pointercancel", up);
   });
 }
-/* the category list: above the editor where there is room (a phone, always), else below its label over the body */
+/* the category list: it always rises above the editor's header (the editor glides down to make room) */
 const catListOpen = ()=>{ const l = document.querySelector("#editorOverlay #editorCatList"); return !!l && !l.hidden && !l.classList.contains("leaving"); };
 function openCatList(){
   const list = document.querySelector("#editorOverlay #editorCatList"), btn = document.getElementById("editorKindBtn");
   if(!list) return;
-  list.hidden = false; list.classList.remove("leaving", "below");
-  /* it rises above the header; where there is too little room (a desktop's centred editor), the editor glides
-     down to make it, and back when the list closes. Only a screen too short for both gets the list below the label. */
-  const stack = list.parentElement, ed = stack.querySelector(".editor").getBoundingClientRect();
+  list.hidden = false; list.classList.remove("leaving"); list.style.maxHeight = "";
+  /* it always rises above the header. Where there is too little room, the editor glides down to make it, as far as
+     its coloured header if need be: its body can leave the screen while a category is chosen. Still too little room
+     (a long list on a short screen): the list scrolls. (29 Oct: a fallback below the label showed whenever the
+     editor held a few todos, i.e. nearly always on a phone.) */
+  const stack = list.parentElement, box = stack.querySelector(".editor"), ed = box.getBoundingClientRect();
+  const header = box.querySelector(".editor-header").getBoundingClientRect().bottom - ed.top;
   const need = list.offsetHeight + 16 - ed.top;
-  if(need > 0 && ed.bottom + need <= innerHeight - 8) stack.style.transform = `translateY(${need}px)`;
-  else if(need > 0) list.classList.add("below");
+  const glide = Math.max(0, Math.min(need, innerHeight - ed.top - header));
+  if(glide > 0) stack.style.transform = `translateY(${glide}px)`;
+  if(need > glide) list.style.maxHeight = (ed.top + glide - 16) + "px";
   stack.closest(".overlay").classList.add("listing");             // the dim layer deepens: the list reads over the app
   btn.setAttribute("aria-expanded", "true");
 }
