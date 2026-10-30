@@ -56,34 +56,16 @@ function renderDays(){
     l.style.top = minToY(h*60)+"px"; grid.appendChild(l);
   }
 
-  /* events, overlapping ones side by side */
+  /* two layers (RULEBOOK C.3): the plan behind, resting top-left; the actuals in front, bottom-right.
+     Each layer packs its own overlaps, so a plan and its own actual never sit side by side. */
+  const nowMin = new Date().getHours()*60 + new Date().getMinutes();
   for(let i=0;i<days;i++){
     const dIso = idxDate(i);
-    const occ = S.events.filter(ev=>occursOn(ev,dIso))
-      .map(ev=>({ev, s:ev.startMin, e:ev.endMin}))
-      .sort((a,b)=> a.s-b.s || b.e-a.e);
-    /* group events that overlap (directly or via others), assign columns greedily */
-    let overlap = [], overlapEnd = -1;
-    const flush = ()=>{
-      if(!overlap.length) return;
-      const colsEnd = [];
-      overlap.forEach(o=>{
-        let c = colsEnd.findIndex(end=>end <= o.s);
-        if(c===-1){ c = colsEnd.length; colsEnd.push(0); }
-        colsEnd[c] = o.e; o.col = c;
-      });
-      const n = colsEnd.length, innerW = ppd - 8;
-      overlap.forEach(o=>{
-        const cw = (innerW - (n-1)*4)/n;
-        grid.appendChild(renderEvent(o.ev, dIso, i*ppd + 4 + o.col*(cw+4), cw));
-      });
-      overlap = []; overlapEnd = -1;
-    };
-    occ.forEach(o=>{
-      if(overlap.length && o.s >= overlapEnd) flush();
-      overlap.push(o); overlapEnd = Math.max(overlapEnd, o.e);
-    });
-    flush();
+    const place = o => { const cw = (ppd - 8 - (o.cols-1)*4)/o.cols; return { x: i*ppd + 4 + o.col*(cw+4), w: cw }; };
+    packOverlaps(S.events.filter(ev=>occursOn(ev,dIso)).map(ev=>({ev, s:ev.startMin, e:ev.endMin})))
+      .forEach(o=>{ const p = place(o); grid.appendChild(renderEvent(o.ev, dIso, p.x, p.w - ACTUAL_OFFSET, hasActual(S.actuals, o.ev.id, dIso))); });
+    packOverlaps(actualsOn(S.actuals, dIso).map(a=>({a, s:a.startMin, e:actualEnd(a, today, nowMin)})))
+      .forEach(o=>{ const p = place(o); grid.appendChild(renderActual(o.a, o.e, p.x + ACTUAL_OFFSET, p.w - ACTUAL_OFFSET)); });
   }
 
   /* overlays */
@@ -122,19 +104,20 @@ function updateKW(){
 /* An event shows as many 16px lines as its height holds (mockup "Detail nach Höhe"):
    the title first (words break at German syllables), then the time, then the todo count.
    Under one line high it is just its colour. */
+const ACTUAL_OFFSET = 3;   // px: the plan rests this far toward the top-left, an actual toward the bottom-right (~3 min: below the snap)
 const EVENT_LINE = 16, EVENT_PAD_Y = 4, EVENT_NARROW = 80, TIME_W = 66;   // px; TIME_W: "09:00–11:00" at 12px
 const EVENT_ICON = {
   repeat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="wiederholt"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>',
   bell:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Erinnerung"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>',
 };
-function renderEvent(ev, dIso, x, w){
+function renderEvent(ev, dIso, x, w, outline){
   const top = minToY(ev.startMin);
   const h   = Math.max(minToY(ev.endMin) - top - 2, 18);
   const el = document.createElement("div");
   const todos = todosOf(ev, dIso);                 // this occurrence's todos only
   const allDone = todos.length>0 && todos.every(t=>t.state==="done");
   const narrow = w < EVENT_NARROW;
-  el.className = "event" + (allDone ? " complete" : "") + (narrow ? " narrow" : "");
+  el.className = "event" + (allDone ? " complete" : "") + (narrow ? " narrow" : "") + (outline ? " outline" : "");   // outline: it has an actual
   const col = cat(ev.categoryId).color;
   /* the lines: title ≥ 1, then the time (only the start where the range doesn't fit), then todos */
   const lines = Math.floor((h - 2*EVENT_PAD_Y) / EVENT_LINE);
@@ -142,7 +125,7 @@ function renderEvent(ev, dIso, x, w){
   const showTime = lines >= 2;
   const showTodos = todos.length && lines >= (showTime ? 3 : 2);
   const titleLines = Math.max(1, lines - (showTime ? 1 : 0) - (showTodos ? 1 : 0));
-  el.style.cssText = `left:${x}px;top:${top}px;width:${w}px;height:${h}px;background:${col}d0;--cat-fill:${col};--title-lines:${titleLines}`;
+  el.style.cssText = `left:${x}px;top:${top}px;width:${w}px;height:${h}px;background:${outline ? "transparent" : col+"d0"};--cat-fill:${col};--title-lines:${titleLines}`;
   el.dataset.ev = ev.id; el.dataset.date = dIso;
   const done = todos.filter(t=>t.state==="done").length;
   const marks = (ev.repeat&&ev.repeat!=="none" ? EVENT_ICON.repeat : "") + (ev.reminderMin!=null ? EVENT_ICON.bell : "");
@@ -150,6 +133,23 @@ function renderEvent(ev, dIso, x, w){
     (showTime ? `<span class="em">${fullTime ? `${fmtMin(ev.startMin)}–${fmtMin(ev.endMin)}${marks ? `<span class="marks">${marks}</span>` : ""}` : fmtMin(ev.startMin)}</span>` : "") +
     (showTodos ? `<span class="badge">✓ ${done}/${todos.length}${todos.some(t=>t.state==="postponed") ? " · →" : ""}</span>` : "") +
     `<span class="rezH t"></span><span class="rezH b"></span>`;
+  return el;
+}
+/* an actual: the plan's look, in front, with the plan's title (or its category's name without a plan).
+   Not touchable yet: taps reach the plan behind it (correction mode comes next, RULEBOOK B.8). */
+function renderActual(a, endMin, x, w){
+  const plan = a.eventId && S.events.find(ev=>ev.id===a.eventId);
+  const top = minToY(a.startMin) + ACTUAL_OFFSET;
+  const h   = Math.max(minToY(endMin) - minToY(a.startMin) - 2, 6);   // the plan's box, moved down and right: its edges stay within ~3 min of the truth
+  const el = document.createElement("div");
+  const col = cat(a.categoryId).color;
+  const lines = Math.floor((h - 2*EVENT_PAD_Y) / EVENT_LINE);
+  el.className = "event actual" + (a.endMin == null ? " running" : "") + (w < EVENT_NARROW ? " narrow" : "");
+  el.style.cssText = `left:${x}px;top:${top}px;width:${w}px;height:${h}px;background:${col}d0;--title-lines:${Math.max(1, lines - 1)}`;
+  el.dataset.actual = a.id;
+  const title = plan ? plan.title : cat(a.categoryId).name;
+  el.innerHTML = (lines >= 1 ? `<span class="et">${esc(title)}</span>` : "") +
+    (lines >= 2 ? `<span class="em">${fmtMin(a.startMin)}–${a.endMin == null ? "läuft" : fmtMin(a.endMin)}</span>` : "");
   return el;
 }
 function fmtDur(min) {
@@ -171,5 +171,8 @@ function positionNowLine(){
   nl.style.top  = minToY(min)+"px";
   nl.style.left = i*UI.dayPPD+"px"; nl.style.width = UI.dayPPD+"px";
 }
-setInterval(positionNowLine, 60000);
+setInterval(()=>{
+  if(runningActual(S.actuals) && !UI.dragLive) renderDays();    // a running actual grows with the time (redrawn first: it makes a new now line)
+  positionNowLine();
+}, 60000);
 

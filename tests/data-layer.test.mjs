@@ -51,7 +51,7 @@ const V2 = JSON.stringify({
 const tests = {
   async 'first start: the plan is saved in the new shape, every record stamped'(page) {
     const d = await data(page);
-    assert.equal(d.version, 6); assert.ok(Array.isArray(d.dayTodos), "version 6: the list of day todos");
+    assert.equal(d.version, 7); assert.ok(Array.isArray(d.dayTodos), "version 6: the list of day todos"); assert.ok(Array.isArray(d.actuals), "version 7: the list of actuals");
     assert.equal(d.settings, undefined);
     for (const l of LISTS) for (const r of d[l]) assert.ok(r.updatedAt, `${l}/${r.id} has no stamp`);
     for (const p of d.phases) { assert.equal(p.expanded, undefined); assert.equal(p._lane, undefined); }
@@ -327,7 +327,7 @@ const v2Tests = {
   },
   async "V2 todos belong to one day: a series' list goes to its current occurrence"(page) {
     const d = await data(page);
-    assert.equal(d.version, 6); assert.ok(Array.isArray(d.dayTodos), "version 6: the list of day todos");
+    assert.equal(d.version, 7); assert.ok(Array.isArray(d.dayTodos), "version 6: the list of day todos"); assert.ok(Array.isArray(d.actuals), "version 7: the list of actuals");
     assert.equal(d.events.find(e => e.id === 'e2').todos, undefined);
     assert.deepEqual(d.events.find(e => e.id === 'e2').todosByDate, { '2026-10-21': [{ id: 't1', text: 'Skizze', state: 'open' }] });
     assert.deepEqual(d.events.find(e => e.id === 'e1').todosByDate, {});

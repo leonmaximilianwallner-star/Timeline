@@ -154,3 +154,15 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **Day todos first; undated ones later**, with the canvas. *Max*
 - **Stored as their own records** (`dayTodos`, data version 6), synced like the rest; an older app version leaves them on the server untouched. Changes apply at once and undo, as todos in the editor. *Claude*
 - **Holding a day todo moves it to tomorrow** (a right click on a desktop): a phone has no right click. *Claude*
+
+## 30 Oct 2026 — Soll/Ist, part 1: actuals and recording (pull request #19)
+
+- **What really happened is stored apart from the plan:** `actuals`, a record of its own (data version 7), not a field of the event. Covers interrupted work (two actuals, one plan), unplanned time (no plan) and work done on another day. An actual never moves or disappears with its plan. *Max (the flexibility); Claude (the shape)*
+- **Words:** plan and actual (*Soll und Ist*), actual (*Ist*, `actual`), running (*läuft*, `endMin` null), recording (*Aufnahme*), add menu. RULEBOOK A.6, A.8. *Claude (names); Max (to adopt)*
+- **The look:** plan top-left, actual bottom-right, 3px each way, the boxes otherwise time-true; a plan with an actual is only its coloured outline, solid. *Max (the rule, outline not dashed); Claude (3px, both boxes keep their full height: shrinking the plan cost 30-minute events their title, found by the editor-phone test)*
+- **Plans and actuals pack separately**, so a plan and its own actual never sit side by side as if they were two appointments. *Claude*
+- **Record says what it assumes before you press it:** a row per planned event "now" can mean (from 30 min before its start to its planned end, closest first, at most two), then *Ohne Plan*. A guess you can see instead of a silent one. *Claude*
+- **A running actual is stored in the plan**, so it survives closing the app and can be stopped on another device. A stop under a minute leaves nothing. *Claude*
+- **Now is red again**, its line and a running recording (the dot on the + button). Amber (22 Oct) came from the mockup; red was the original meaning. A brighter red than the red category's. *Max*
+- **Actuals are not touchable yet**: taps reach the plan behind them. Correcting by drag is the next pull request. *Claude (scope); Max (functional first, step by step)*
+- **Found on the way:** the minute tick that grows a running actual redrew the day view after placing the now line, which hid the line. Fixed before merging. *Claude (own mistake)*

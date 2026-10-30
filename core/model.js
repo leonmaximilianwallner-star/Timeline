@@ -6,7 +6,7 @@
 const STORE_KEY  = "timeline.data.v3";   // the plan (data/store.js)
 const OLD_STORE_KEY = "timeline.app.v2";  // the V2 app's data: read once, never changed
 const DEVICE_KEY = "timeline.device.v1";  // this device's state (data/device.js)
-const DATA_VERSION = 6;                    // the shape of the plan (data/store.js toCurrentShape)
+const DATA_VERSION = 7;                    // the shape of the plan (data/store.js toCurrentShape)
 const NOTIF_STORE= "timeline.notif.v2";
 const HOUR_START = 0, HOUR_END = 24, HOUR_PX = 52;
 let   TL_PPD     = 160;              // unified px/day — both views share one grid
@@ -15,12 +15,12 @@ const PALETTE    = ["#f4971f","#e9473a","#40838b","#6498c0","#8fc14e","#90909a",
 
 const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-3);
 
-/* starting data, in today's shape (version 5): ends exclusive, milestones in one list, todos per occurrence */
+/* starting data, in today's shape: ends exclusive, milestones in one list, todos per occurrence */
 function seedData(){
   const t = new Date(); t.setHours(0,0,0,0);
   const d = n => isoDate(addDays(t, n));
   return {
-    version: DATA_VERSION, dayTodos: [],
+    version: DATA_VERSION, dayTodos: [], actuals: [],
     /* unified categories: entries with start&end are projects (get a spine); dateless entries are categories. Grey is reserved for "frei". */
     categories: [
       { id:"seminar", name:"Seminararbeit", color:"#40838b",

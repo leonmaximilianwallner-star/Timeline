@@ -176,7 +176,19 @@ Postponed todos come along to the next time (**Max**, 21 Oct):
 - **the next occurrence of a series** shows the postponed todos of the occurrence before it. They are only shown until something changes in that occurrence, then stored there. One step only: a todo carried into next week isn't carried further unless postponed again.
 A todo that came along has `carried: true` and shows ↻. The original stays postponed where it was. **Never say:** inherit.
 
-**Today** · *Heute* · `today` — the current day; the today line is red.
+**Plan and actual** · *Soll und Ist* (**Max**, 30 Oct)
+An event is the **plan**: when you meant to do something. What really happened is its **actual**. Comparing the two is *Soll/Ist*. The plan is never changed by what really happened.
+
+**Actual** · *Ist* · `actual` · `actuals` row
+A slot of time actually spent on one day: `{ date, startMin, endMin, eventId, occurrence, categoryId }`. It names the planned event it was for (`eventId`, and for a series which day: `occurrence`), or no plan at all (both `null`: something unplanned; its category, or frei). A plan can have several actuals (interrupted work: two actuals, one plan). An actual never moves or disappears with its plan: it is history. Rules in `core/actuals.js`. **Not:** an event, a copy of an event. **Never say:** record (a stored thing of any kind, A.9), log, entry, session, tracking.
+An actual with `endMin` null is **running** (*läuft*): it is being recorded right now. At most one runs at a time; it is drawn up to now. One left running past midnight ends with its own day.
+
+**Recording** · *Aufnahme* · `record` (verb), `recording`
+Starting an actual now, from the add menu, and stopping it. **Record** assumes the planned event "now" means: one of today's whose window from `RECORD_LEAD` (30 min) before its start to its planned end holds now, the closest start first. A stop under a minute leaves nothing behind (an accidental tap). **Never say:** timer, stopwatch (in code), track.
+
+**Correcting** · *Ist korrigieren* — changing actuals after the fact, by drag. *Comes next (B.8).*
+
+**Today** · *Heute* · `today` — the current day; the now line is red.
 
 **Calendar week** · *KW* · `isoWeek` — ISO week number, shown as "KW 43".
 
@@ -246,7 +258,9 @@ The editor is a window (see Parts). Code: `openEditor(ctx)`, `UI.editor`, IDs `#
 
 **Add mode** · *Hinzufügen* · `addMode` — the + button's mode: the next drag creates something, then the mode ends by itself.
 
-**Time budget** · *Zeitbudget* · `timeBudget` — the chart of time actually spent per category over 7 or 30 days, from events.
+**Add menu** · — · `addMenu` — the rows that rise above the + button while add mode is on (**Max**, 30 Oct): record (one row per planned event "now" may mean, then *Ohne Plan*), or *Stopp* while an actual runs. A red dot on the + button says an actual is running, also while the menu is closed. `ui/recording.js`.
+
+**Time budget** · *Zeitbudget* · `timeBudget` — the chart of time per category over 7 or 30 days. *Today in the app:* it still counts planned time (events), not actuals; switching it to actuals is the next Soll/Ist step (B.8).
 
 **Zoom level** · — · `zoomLevel` `A` `B` `C` `D` — what the canvas view shows at a zoom (B.5).
 
@@ -436,6 +450,7 @@ The gate, the store and sync are defined in `ARCHITECTURE.md` §4–5. The rules
 - **Contrast** — white text on amber, green, blue, pink and grey fills is below 4.5:1. **Max, 22 Oct:** white stays (the whole design points to it, and events and phases already do it); if it fails the eye test in the editor headers, it is revisited.
 - **Day todos, next steps** — changing an existing day todo's category; dragging one into the day view to give it a time (it becomes an event?); an undated list. *(29 Oct)*
 - **Repeat and reminder pickers** — still the phone's own pickers (a window each). Same list-in-place treatment as the categories? *(Max to decide after feeling the category list)*
+- **Soll/Ist, next steps** (30 Oct): correcting actuals by drag (its own mode, a second button in the add menu; then actuals become touchable, today taps pass through them to the plan); the time budget counting actuals; showing the deviation (+15 min, longer by 40 min); waves spreading from the recording dot; what the outlined plan's text should show under its actual. *(Max: functional first)*
 - **A full-screen lookup view** of an event (pulled up past a resistance), and layered squircle transitions. *(Max, 22 Oct; concept: design first)*
 
 ---
@@ -454,7 +469,7 @@ The gate, the store and sync are defined in `ARCHITECTURE.md` §4–5. The rules
 - **The thing you edit wears its colour**: the editor's header, a project's or category's page in settings. The body below is the neutral raised surface. Text on a colour is #ededec (B.3).
 - **Three surfaces**: base (the page) → surface (a list) → raised (a floating panel). **No soft shadows anywhere** (**Max**, 22 Oct): a floating panel is told apart by the dim layer behind it, its lighter surface and a 1px edge (`--hairline`). Where something must stand off what lies under it (the add button, a dragged copy), a hard 2px ring in the page colour, never a blur.
 - **One dim layer** (`--scrim`, solid, no blur) behind everything that floats: the editor, settings, the time budget.
-- **The current time is amber** (`--now`, #ffb454; the mockup), its line and its tip, nothing else. **Today** is not coloured: its weekday and date are simply brighter. The red they had was a category's red.
+- **Now is red** (`--now`, #ff3b30; **Max**, 30 Oct, replacing the mockup's amber of 22 Oct): the current time's line and its tip, and a running recording (the dot on the + button, the record and stop marks). Nothing else. It is brighter than the red category (#e9473a), so the line reads over a red event. **Today** is not coloured: its weekday and date are simply brighter.
 - Muted text is one grey (`--fg-muted`), never darker: the old faint grey read at 3:1.
 
 ## C.3 Arrangement
@@ -469,6 +484,7 @@ The gate, the store and sync are defined in `ARCHITECTURE.md` §4–5. The rules
 - **Header actions**, right to left: done (filled round button), close without saving (outlined), a gap, delete (plain). In settings, changes apply at once, so there is only close (or back); creating something new has a done.
 - **Round buttons: one size, three looks.** 36px everywhere: **plain** (an icon; the app header's buttons, delete), **outlined** (close, cancel), **filled** (done; the app header's button while its panel is open). The one exception is the **add button, 44px** (`--float-btn`): it floats alone over the content and is used with a thumb. It is filled like done; in add mode it is outlined like cancel. Icons are 20px, stroke 1.5.
 - **The day view's night is thin** (**Max**, 22 Oct, "soft start"): from the day's start (a setting per device, `dayStart`, 6:00 unless changed; 0:00 = the whole day) an hour is 52px; before it, 13px, a darker band with only 00:00 marked. Nothing is hidden and scrolling stays the phone's own: a hard stop would fight its momentum and the day snapping. All time ↔ height goes through `minToY` / `yToMin` (`views/range.js`).
+- **Day view, plan behind, actual in front** (**Max**, 30 Oct): every plan rests toward the top-left of its column, an actual toward the bottom-right, `ACTUAL_OFFSET` (3px) each way; vertically that is ~3 min, below the 15-min snap, so the edges stay true. A plan that has an actual on that day is only its **coloured outline** (solid; dashed means a drag preview), its text dimmed. The actual has the plan's look and the hard ring in the page colour. Plans and actuals pack their overlaps separately, so a plan and its own actual are never put side by side.
 - **Day view, an event shows what its height holds** (mockup "Detail nach Höhe"): lines of 16px; under one line just its colour; then the title (as many lines as are left, words broken at syllables), the time (in a narrow column only the start), the todo count. Small line icons for repeat and reminder, never emoji.
 
 ## C.4 Measures (tokens in `styles/tokens.css`)
