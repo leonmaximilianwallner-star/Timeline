@@ -308,6 +308,7 @@ core/                       rules with no screen
   text.js                   escaping and cleaning text
   repeat.js                 on which days a repeating event occurs
   todos.js                  which todos belong to which day of an event; carry-over within a series
+  actuals.js                actuals: which plan "record" means, stopping, packing plans and actuals in separate layers
 
 data/
   device.js                 device state: theme, days, open dropdowns (never synced)
@@ -337,6 +338,7 @@ ui/
   time-budget.js            time budget
   settings.js               settings: one panel, four pages (main, a colour, new, sync)
   day-todos.js              todos of a day without an event: the dots in the day header, the day's panel
+  recording.js              the add menu above the + button: record and stop an actual
 
 styles/   tokens · base · timeline · day · add-button · lists (rows, overlines, switches: shared by editor and settings) · editor · todos (todo rows, the celebration) · settings · time-budget · toast · device · loader
 

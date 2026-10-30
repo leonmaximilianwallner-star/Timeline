@@ -51,6 +51,11 @@
 .event.narrow{padding:4px 6px}
 .event:hover{filter:brightness(1.1); z-index:6}
 .event.dragging{opacity:.35}
+/* Soll and Ist (RULEBOOK C.3): a plan that has an actual is only its coloured outline (solid: dashed means a drag preview);
+   the actual stands in front of it, with the hard ring in the page colour (no shadow) */
+.event.outline{box-shadow:inset 0 0 0 1.5px var(--cat-fill); color:var(--text)}
+.event.outline .et,.event.outline .em,.event.outline .badge{opacity:.6}
+.event.actual{z-index:7; outline:2px solid var(--base); pointer-events:none}
 /* text lines of 16px; the title gets what the height leaves (--title-lines, views/day/render.js) */
 .event .et{font-size:var(--fs-small); line-height:16px; font-weight:500; hyphens:auto; -webkit-hyphens:auto; overflow-wrap:anywhere;
   display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:var(--title-lines, 1); overflow:hidden; flex:0 0 auto}

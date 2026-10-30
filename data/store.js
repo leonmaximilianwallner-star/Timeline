@@ -72,6 +72,10 @@ function toCurrentShape(d, takeDeviceState){
     d.dayTodos = d.dayTodos || [];
     d.version = 6;
   }
+  if(d.version < 7){                                       // version 7 (30 Oct): actuals, the time actually spent (core/actuals.js)
+    d.actuals = d.actuals || [];
+    d.version = 7;
+  }
   RECORD_LISTS.forEach(list => (d[list]||[]).forEach(r => { if(!r.updatedAt) r.updatedAt = now; }));
   d.deleted = d.deleted || {};
   return d;

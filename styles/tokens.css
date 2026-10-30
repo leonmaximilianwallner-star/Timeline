@@ -25,7 +25,8 @@
   --row-h:44px;              /* one row: also the smallest touch target */
   --round-btn:36px;          /* every round button (RULEBOOK C.4) */
   --float-btn:44px;          /* the one floating button (add): alone over the content, used with a thumb */
-  --now:#ffb454;             /* the current time: its line and label, nothing else */
+  --now:#ff3b30;             /* now, in red (Max, 30 Oct): the current time's line, and a recording that runs; nothing else.
+                                Brighter than the red category (#e9473a), so the line reads over a red event */
   --night:#00000040;         /* the thin night before the day's start, over the day view's ground */
   /* type: five sizes, plus one for the celebration */
   --fs-label:11px; --fs-small:12px; --fs-body:14px; --fs-lead:16px; --fs-title:20px; --fs-glance:28px;
@@ -38,5 +39,5 @@ html[data-theme="light"]{
   --line-soft:#e6e4df;
   --text:#1d1d24;
   --raised:#f7f6f3; --hairline:#e6e4df; --fg-muted:#5d5d68; --border-control:#8a8a96;
-  --on-primary:#ffffff; --scrim:#0000004d; --scrim-deep:#00000080; --danger:#c8372b; --now:#d9822b; --night:#0000000d;
+  --on-primary:#ffffff; --scrim:#0000004d; --scrim-deep:#00000080; --danger:#c8372b; --now:#d92d20; --night:#0000000d;
 }

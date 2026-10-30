@@ -18,6 +18,7 @@ function renderAll(){
   renderDays();
   renderTopdate();
   positionNowLine();
+  showRecording();                         // the add button's recording sign (ui/recording.js): another device may have started or stopped one
 }
 
 function renderTopdate(){

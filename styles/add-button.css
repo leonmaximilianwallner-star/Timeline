@@ -12,3 +12,35 @@
 #fab.on svg{transform:rotate(45deg)}
 #fab:active{transform:scale(.92)}
 #fab:focus-visible{outline:2px solid var(--text); outline-offset:2px}
+
+/* a running recording (ui/recording.js): a red dot on the add button, there while the menu is closed too.
+   Still to refine (RULEBOOK B.8): waves spreading from it. */
+#fab.recording::after{
+  content:""; position:absolute; top:-2px; right:-2px; width:12px; height:12px; border-radius:9999px;
+  background:var(--now); outline:2px solid var(--base);
+}
+
+/* the add menu: rows that rise above the add button with add mode, right-aligned (RULEBOOK C.3) */
+#addMenu{
+  position:fixed; right:20px; bottom:calc(24px + var(--float-btn) + 12px); z-index:40;
+  display:flex; flex-direction:column; align-items:flex-end; gap:8px;
+  opacity:0; transform:translateY(8px); visibility:hidden; pointer-events:none;
+  transition:opacity .18s var(--soft), transform .18s var(--soft), visibility 0s .18s;   /* closes with the same motion, reversed */
+}
+#addMenu.open{opacity:1; transform:none; visibility:visible; pointer-events:auto; transition:opacity .18s var(--soft), transform .18s var(--soft)}
+.add-menu-item{
+  height:var(--row-h); max-width:calc(100vw - 40px); padding:0 16px 0 12px; border-radius:9999px;
+  display:flex; align-items:center; gap:8px;
+  background:var(--raised); color:var(--text); border:1px solid var(--hairline); outline:2px solid var(--base);
+  font:inherit; font-size:var(--fs-body); white-space:nowrap; cursor:pointer;
+}
+.add-menu-item:active{transform:scale(.97)}
+.add-menu-item:focus-visible{outline:2px solid var(--text); outline-offset:2px}
+.add-menu-item .am-label{font-weight:600}
+.add-menu-item .am-title{display:inline-flex; align-items:center; gap:6px; overflow:hidden; text-overflow:ellipsis; min-width:0}
+.add-menu-item .am-title .dot{width:8px; height:8px; border-radius:9999px; flex:0 0 auto}
+.add-menu-item .am-meta{color:var(--fg-muted); font-size:var(--fs-small); font-variant-numeric:tabular-nums}
+.rec-mark{flex:0 0 auto; width:12px; height:12px; background:var(--now)}
+.rec-mark.record{border-radius:9999px}
+.rec-mark.stop{border-radius:2px}
+@media (prefers-reduced-motion: reduce){ #addMenu, #addMenu.open{transition:none} }

@@ -8,6 +8,9 @@ function setAddMode(on){
   $fab.title = on ? "Hinzufügen beenden (Esc)" : "Hinzufügen (A)";
   document.getElementById("scene")?.classList.toggle("addmode", on);
   document.getElementById("dayGrid")?.classList.toggle("addmode", on);
+  if(on) renderAddMenu();                                   // the add menu rises with add mode (ui/recording.js)
+  $addMenu.classList.toggle("open", on);
+  $addMenu.inert = !on;
   if(!on){ hideHover(); }
 }
 $fab.addEventListener("click", ()=> setAddMode(!UI.addMode));
