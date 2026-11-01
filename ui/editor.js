@@ -114,8 +114,8 @@ function openEditor(ctx){
   ov.querySelector("#editorClose").onclick = ()=>closeEditor();   // not closeEditor itself: the click event would read as "instant"
   ov.querySelector("#editorSave").onclick = saveEditor;
   /* to the focus view of this day, with this event open; what was changed is kept, as with a tap outside */
-  ov.querySelector("#editorFocus")?.addEventListener("click", ()=>{ const day = ctx.occurrence, id = ed.id; saveEditor(); openFocus(day, id); });
-  slideToClose(ov.querySelector(".editor"));
+  ov.querySelector("#editorFocus")?.addEventListener("click", ()=>morphToFocus(ctx.occurrence, ed.id));
+  slideToClose(ov.querySelector(".editor"), undefined, ctx.type==="event" && ed ? ()=>morphToFocus(ctx.occurrence, ed.id) : null);
   renderEditorBody();
   /* the editor keeps the height it opened with: what is added later scrolls inside its body (Max, 22 Oct) */
   const box = ov.querySelector(".editor");
@@ -123,26 +123,38 @@ function openEditor(ctx){
 }
 /* on a phone the editor sits at the bottom: pulling its header down closes it without saving, like ✕ (Max, 22 Oct).
    Far enough (a third of the way) or fast enough, it goes; otherwise it springs back. */
-const SLIDE_CLOSE_PX = 120, SLIDE_FLICK = 0.4;       // px; px per ms (400 px/s: a deliberate fling, as bottom panels on phones)
-function slideToClose(box, close = ()=>closeEditor(true)){
+const SLIDE_CLOSE_PX = 120, SLIDE_FLICK = 0.4;
+/* pulling the header up turns the editor into Fokus (Max, 1 Nov): a rubber band (it gives at most PULL_GIVE,
+   however far the finger goes), armed past PULL_FOCUS of finger travel (a tick), committed on release. */
+const PULL_FOCUS = 96, PULL_GIVE = 140;              // px of finger travel; px the editor moves at most
+const pullGive = x => PULL_GIVE * (1 - 1 / (x / PULL_GIVE * 0.6 + 1));       // px; px per ms (400 px/s: a deliberate fling, as bottom panels on phones)
+function slideToClose(box, close = ()=>closeEditor(true), pullUp = null){
   const header = box.querySelector(".editor-header");
   header.addEventListener("pointerdown", e=>{
     if(!matchMedia("(max-width:600px)").matches || e.target.closest("input, select, button, label")) return;
     const y0 = e.clientY, recent = [[performance.now(), 0]];   // the last moves: speed is what a finger feels at release
-    let dy = 0;
+    let dy = 0, armed = false;
     header.setPointerCapture(e.pointerId);
     box.style.transition = "none";
     const move = m=>{
-      dy = Math.max(0, m.clientY - y0); box.style.transform = `translateY(${dy}px)`;
+      dy = m.clientY - y0;
+      if(dy < 0 && !pullUp) dy = 0;
+      /* down: the editor follows the finger. Up (to Fokus): a rubber band, it barely gives; past PULL_FOCUS it is armed */
+      box.style.transform = `translateY(${dy >= 0 ? dy : -pullGive(-dy)}px)`;
+      if(pullUp && (-dy >= PULL_FOCUS) !== armed){ armed = !armed; box.classList.toggle("armed", armed); if(armed) vibrate(12); }
       const now = performance.now(); recent.push([now, dy]); while(recent.length > 2 && now - recent[1][0] > 100) recent.shift();
     };
     const up = u=>{
       header.removeEventListener("pointermove", move); header.removeEventListener("pointerup", up); header.removeEventListener("pointercancel", up);
       const [t1, d1] = recent[0], speed = (dy - d1) / Math.max(1, performance.now() - t1);
+      box.classList.remove("armed");
       box.style.transition = "transform .22s var(--soft)";
       if(dy > Math.min(SLIDE_CLOSE_PX, box.offsetHeight/3) || (dy > 24 && speed > SLIDE_FLICK)){
         box.style.transform = "translateY(100%)";
         box.addEventListener("transitionend", ()=>close(), { once:true });   // already slid out
+      } else if(pullUp && u.type === "pointerup" && (-dy >= PULL_FOCUS || (dy < -24 && -speed > SLIDE_FLICK))){
+        box.style.transition = "none";
+        pullUp();                                          // commit on release: the motion starts from where the editor is
       } else box.style.transform = "";
     };
     header.addEventListener("pointermove", move); header.addEventListener("pointerup", up); header.addEventListener("pointercancel", up);
@@ -417,7 +429,7 @@ function renderEditorBody(){
   if(!ed && matchMedia("(pointer:fine)").matches) f.focus();
 }
 
-function saveEditor(){
+function saveEditor(opts = {}){
   const ctx = UI.editor, ed = ctx.edit, B = document.getElementById("editorBody");
   const kind = ctx.type;
   const val = id => { const el=document.getElementById(id); return el?el.value:undefined; };
@@ -478,7 +490,7 @@ function saveEditor(){
                  else st.milestones.push({ id:uid(), ...data }); });
     if(UI.addMode) setAddMode(false);
   }
-  closeEditor();
+  if(!opts.stay) closeEditor();               // stay: the motion to Fokus closes it (ui/focus-morph.js)
 }
 
 /* every todo of an event done: its colour washes over the screen from the editor, with its name */
