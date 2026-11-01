@@ -331,19 +331,22 @@ const pullUp = async (pg, dy) => {
   const r = await pg.locator('.editor-grip').boundingBox();
   const x = r.x + r.width / 2, y = r.y + 6;
   await pg.mouse.move(x, y); await pg.mouse.down();
+  const h0 = await pg.evaluate(() => document.querySelector('#editorOverlay .editor').offsetHeight);
   for (let i = 1; i <= 10; i++) { await pg.mouse.move(x, y - dy * i / 10); await pg.waitForTimeout(20); }
   const armed = await pg.evaluate(() => document.querySelector('#editorOverlay .editor').classList.contains('armed'));
-  const lift = await pg.evaluate(() => -new DOMMatrix(getComputedStyle(document.querySelector('#editorOverlay .editor')).transform).m42);
+  const lift = await pg.evaluate(h => document.querySelector('#editorOverlay .editor').offsetHeight - h, h0);   // up: it grows from the bottom edge
+  const bottom = await pg.evaluate(() => Math.round(document.querySelector('#editorOverlay .editor').getBoundingClientRect().bottom));
   await pg.mouse.up();
-  return { armed, lift };
+  return { armed, lift, bottom };
 };
 const openFirst = pg => pg.evaluate(() => { const ev = S.events.find(e => e.repeat === 'none'); openEditor({ type: 'event', edit: ev, occurrence: ev.date }); return ev.id; });
-await step('a short pull up: the editor barely gives (a rubber band), springs back, stays the editor', async () => {
+await step('a short pull up: the editor holds back (grows a little from the bottom edge, nothing shows under it), springs back', async () => {
   await moving.evaluate(() => { closeFocus?.(true); });
   await openFirst(moving); await moving.waitForTimeout(400);
-  const { armed, lift } = await pullUp(moving, 60);
+  const { armed, lift, bottom } = await pullUp(moving, 60);
   assert.equal(armed, false);
-  assert.ok(lift > 5 && lift < 40, `moved ${lift}px for 60px of finger`);
+  assert.ok(lift > 3 && lift < 15, `grew ${lift}px for 60px of finger: it holds back before the line`);
+  assert.equal(bottom, 844, 'still on the screen\'s bottom edge');
   await moving.waitForTimeout(400);
   assert.equal(await moving.evaluate(() => !!UI.editor && !UI.focus), true);
   await moving.evaluate(() => closeEditor(true));
@@ -353,14 +356,24 @@ await step('a pull past the line arms it; on release the editor turns into Fokus
   await moving.evaluate(() => { document.getElementById('fTitle').value = 'Hochgezogen'; });
   const { armed, lift } = await pullUp(moving, 150);
   assert.equal(armed, true);
-  assert.ok(lift < 80, `the rubber band holds it: ${lift}px for 150px of finger`);
+  assert.ok(lift > 50, `past the line it springs forward and follows: ${lift}px for 150px of finger`);
   assert.equal(await moving.locator('.morph-plate').count(), 2, 'the container transform runs');
   await moving.waitForTimeout(700);
   assert.equal(await moving.evaluate(() => !!UI.focus && !UI.editor && !document.querySelector('.editor-overlay, .morph-plate')), true);
   assert.equal(await moving.locator('.focus-event.open').getAttribute('data-ev'), id);
   assert.equal(await moving.evaluate(i => S.events.find(e => e.id === i).title, id), 'Hochgezogen');
   assert.equal(await moving.evaluate(() => [...document.querySelectorAll('.focus-view *')].some(el => el.getAnimations().length)), false, 'nothing left mid-motion');
-  await moving.evaluate(() => closeFocus(true));
+});
+await step('closing Fokus: a container transform back into the week, landing on that day at the event\'s hour', async () => {
+  const { day, id } = await moving.evaluate(() => ({ day: UI.focus.day, id: UI.focus.open }));
+  await moving.click('#focusClose');
+  assert.ok(await moving.locator('.morph-plate').count() >= 1, 'its events reshape into the grid');
+  await moving.waitForTimeout(700);
+  assert.equal(await moving.evaluate(() => !UI.focus && !UI.dragLive && !document.querySelector('.focus-view, .morph-plate')), true);
+  const ev = await moving.evaluate(([d, i]) => { const r = document.querySelector(`#dayGrid .event[data-ev="${i}"][data-date="${d}"]`).getBoundingClientRect(); return { top: r.top, left: r.left, bg: document.querySelector(`#dayGrid .event[data-ev="${i}"]`).style.background }; }, [day, id]);
+  assert.ok(ev.top > 0 && ev.top < 844 && ev.left >= 0 && ev.left < 390, `the event is on screen: ${JSON.stringify(ev)}`);
+  assert.ok(ev.bg && ev.bg !== 'transparent', 'its colour is back');
+  assert.equal(await moving.evaluate(() => [...document.querySelectorAll('#dayGrid *, #dayHead *')].some(el => el.getAnimations().length)), false, 'nothing left mid-motion');
 });
 await step('pulling down still closes the editor; a new event cannot be pulled up (no Fokus without a stored event)', async () => {
   await openFirst(moving); await moving.waitForTimeout(400);

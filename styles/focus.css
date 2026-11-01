@@ -4,16 +4,15 @@
   background:var(--base); color:var(--text); overflow:hidden auto; overscroll-behavior:contain;
   animation:focus-rise .26s var(--soft);
 }
-.focus-view.leaving{animation:focus-sink .22s var(--soft) forwards; pointer-events:none}
 @keyframes focus-rise{from{opacity:0; transform:translateY(24px)}}
-@keyframes focus-sink{to{opacity:0; transform:translateY(24px)}}
-@media (prefers-reduced-motion: reduce){ .focus-view, .focus-view.leaving{animation:none} }
+@media (prefers-reduced-motion: reduce){ .focus-view{animation:none} }
 
 /* from the editor (ui/focus-morph.js): no rise of its own; the open event's colours wait under the moving plates */
 .focus-view.morph-in{animation:none}
 .morph-plate{position:fixed; z-index:0; pointer-events:none}
 .focus-view.morphing .focus-inner{position:relative; z-index:1}
 .focus-view.morphing .focus-event.open, .focus-view.morphing .fe-body{background:transparent}
+.focus-view.morphing-out .focus-event{background:transparent}                 /* on the way to the week, every event is a plate */
 .fe-sub .fe-times, .fe-sub .fe-cat{display:inline-block}   /* each travels on its own */
 
 .focus-inner{max-width:480px; margin:0 auto; padding:calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 48px)}

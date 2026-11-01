@@ -19,10 +19,11 @@ function openFocus(dayIso, eventId, opts = {}){
 }
 function closeFocus(instant, fromHistory){
   const el = document.getElementById("focusView"); if(!el) return;
+  const { day, open } = UI.focus;
   el.removeAttribute("id"); UI.focus = null;                   // closed for the app at once; the motion plays out
   if(!fromHistory && history.state && history.state.focus) history.back();   // its history step goes with it
   if(instant || matchMedia("(prefers-reduced-motion: reduce)").matches) el.remove();
-  else { el.classList.add("leaving"); setTimeout(() => el.remove(), 220); }
+  else morphFromFocus(el, day, open);                          // a container transform back into the week (ui/focus-morph.js)
 }
 window.addEventListener("popstate", () => { if(UI.focus) closeFocus(false, true); });
 

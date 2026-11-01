@@ -123,24 +123,30 @@ function openEditor(ctx){
 }
 /* on a phone the editor sits at the bottom: pulling its header down closes it without saving, like ✕ (Max, 22 Oct).
    Far enough (a third of the way) or fast enough, it goes; otherwise it springs back. */
-const SLIDE_CLOSE_PX = 120, SLIDE_FLICK = 0.4;
-/* pulling the header up turns the editor into Fokus (Max, 1 Nov): a rubber band (it gives at most PULL_GIVE,
-   however far the finger goes), armed past PULL_FOCUS of finger travel (a tick), committed on release. */
-const PULL_FOCUS = 96, PULL_GIVE = 140;              // px of finger travel; px the editor moves at most
-const pullGive = x => PULL_GIVE * (1 - 1 / (x / PULL_GIVE * 0.6 + 1));       // px; px per ms (400 px/s: a deliberate fling, as bottom panels on phones)
+const SLIDE_CLOSE_PX = 120, SLIDE_FLICK = 0.4;      // px; px per ms (400 px/s: a deliberate fling, as bottom panels on phones)
+/* pulling the header up turns the editor into Fokus (Max, 1 Nov). The editor grows from the screen's bottom edge
+   (nothing behind it shows), in two phases: before the line it holds back (PULL_HEAVY of the finger's travel);
+   at the line it springs forward (PULL_SPRING, with a tick: armed) and then follows the finger loosely (PULL_FREE),
+   as if it wanted to become Fokus. Committed on release; before the line it springs back. */
+const PULL_FOCUS = 96;                               // px of finger travel to the line
+const PULL_HEAVY = 0.15, PULL_SPRING = 28, PULL_FREE = 0.7;
+const pullGive = x => x < PULL_FOCUS ? x * PULL_HEAVY
+  : PULL_FOCUS * PULL_HEAVY + PULL_SPRING * (1 - Math.exp(-(x - PULL_FOCUS) / 10)) + (x - PULL_FOCUS) * PULL_FREE;
 function slideToClose(box, close = ()=>closeEditor(true), pullUp = null){
   const header = box.querySelector(".editor-header");
   header.addEventListener("pointerdown", e=>{
     if(!matchMedia("(max-width:600px)").matches || e.target.closest("input, select, button, label")) return;
     const y0 = e.clientY, recent = [[performance.now(), 0]];   // the last moves: speed is what a finger feels at release
     let dy = 0, armed = false;
+    const h0 = box.offsetHeight;
     header.setPointerCapture(e.pointerId);
     box.style.transition = "none";
     const move = m=>{
       dy = m.clientY - y0;
       if(dy < 0 && !pullUp) dy = 0;
-      /* down: the editor follows the finger. Up (to Fokus): a rubber band, it barely gives; past PULL_FOCUS it is armed */
-      box.style.transform = `translateY(${dy >= 0 ? dy : -pullGive(-dy)}px)`;
+      /* down: the editor follows the finger. Up (to Fokus): it grows, held back until the line, then eager */
+      box.style.transform = dy > 0 ? `translateY(${dy}px)` : "";
+      if(pullUp){ box.style.maxHeight = "none"; box.style.height = Math.min(innerHeight, h0 + (dy < 0 ? pullGive(-dy) : 0)) + "px"; }
       if(pullUp && (-dy >= PULL_FOCUS) !== armed){ armed = !armed; box.classList.toggle("armed", armed); if(armed) vibrate(12); }
       const now = performance.now(); recent.push([now, dy]); while(recent.length > 2 && now - recent[1][0] > 100) recent.shift();
     };
@@ -148,14 +154,17 @@ function slideToClose(box, close = ()=>closeEditor(true), pullUp = null){
       header.removeEventListener("pointermove", move); header.removeEventListener("pointerup", up); header.removeEventListener("pointercancel", up);
       const [t1, d1] = recent[0], speed = (dy - d1) / Math.max(1, performance.now() - t1);
       box.classList.remove("armed");
-      box.style.transition = "transform .22s var(--soft)";
+      box.style.transition = "transform .22s var(--soft), height .22s var(--soft)";
       if(dy > Math.min(SLIDE_CLOSE_PX, box.offsetHeight/3) || (dy > 24 && speed > SLIDE_FLICK)){
         box.style.transform = "translateY(100%)";
         box.addEventListener("transitionend", ()=>close(), { once:true });   // already slid out
       } else if(pullUp && u.type === "pointerup" && (-dy >= PULL_FOCUS || (dy < -24 && -speed > SLIDE_FLICK))){
         box.style.transition = "none";
         pullUp();                                          // commit on release: the motion starts from where the editor is
-      } else box.style.transform = "";
+      } else {
+        box.style.transform = ""; box.style.height = h0 + "px";
+        box.addEventListener("transitionend", ()=>{ box.style.maxHeight = ""; }, { once:true });
+      }
     };
     header.addEventListener("pointermove", move); header.addEventListener("pointerup", up); header.addEventListener("pointercancel", up);
   });
