@@ -1,7 +1,7 @@
 // views/focus/render.js — the focus view: one day, the event of now open (RULEBOOK A.8 "Focus view"; Max, 1 Nov).
 "use strict";
-/* A layer over the app, not a band of the page (Max, 1 Nov): the week strip, then the day as a list,
-   one event open with its todos, free time between events. It reads the plan and redraws with it
+/* A layer over the app, not a band of the page (Max, 1 Nov): the week strip, the day's own todos (those without
+   an event), then the day as a list: one event open with its todos, free time between events with its note. It reads the plan and redraws with it
    (renderAll); every change goes through mutate. Opened from the event editor; closed by its button,
    Escape, or the phone's back gesture (one history step). The rules: core/focus.js. */
 const FOCUS_DOTS = 3;              // category dots per day in the week strip, as in the day view's header
@@ -48,8 +48,10 @@ function renderFocus(){
 
   const items = [...day.map(o => ({ s: o.s, o })), ...focusGaps(day).map(g => ({ s: g.s, g }))].sort((a, b) => a.s - b.s);
   const rows = items.map(({ o, g }) => {
-    if(g) return `<div class="focus-row"><div class="focus-time"><span class="ft-end">${fmtMin(g.s)}</span></div>
-      <button type="button" class="focus-gap" data-gap="${g.s}-${g.e}">${icon("plus")}<span>${fmtDur(g.e - g.s)} frei · Zeit vergeben</span></button></div>`;
+    if(g){ const next = S.events.find(x => x.id === g.next);   // free time: three dots, its length, a note typed in place ("Pause", "Anfahrt")
+      return `<div class="focus-row"><div class="focus-time"><span class="ft-end">${fmtMin(g.s)}</span></div>
+      <label class="focus-gap"><span class="gap-dots">${icon("dots")}</span><span class="gap-len">${fmtDur(g.e - g.s)}</span>
+        <input class="gap-note" data-gap-for="${g.next}" value="${esc(gapNoteOf(next, f.day))}" placeholder="Pause, Anfahrt …" aria-label="Notiz vor ${esc(next.title)}" autocomplete="off" enterkeyhint="done"></label></div>`; }
     const ev = o.ev, c = cat(ev.categoryId), todos = todosOf(ev, f.day), done = todos.filter(t => t.state === "done").length;
     const time = `<div class="focus-time${past(o) ? " past" : ""}"><span class="ft-start">${fmtMin(o.s)}</span><span class="ft-end">${fmtMin(o.e)}</span></div>`;
     if(ev.id === f.open) return `<div class="focus-row">${time}
@@ -68,7 +70,16 @@ function renderFocus(){
         <span class="fe-main"><span class="fe-title">${esc(ev.title)}</span><span class="fe-meta">${esc(meta)}</span></span></button></div>`;
   }).join("");
 
-  const scroll = el.scrollTop, typing = document.activeElement && document.activeElement.id === "focusNewTodo";
+  /* the day's own todos (without an event; today with the open ones of earlier days), before the first event */
+  const own = dayTodosOn(S, f.day, today);
+  const todos = `<section class="focus-todos" aria-label="Todos des Tages">
+      <div class="todoList">${own.map(t => dayTodoRowHTML(t, t.date !== f.day)).join("")}</div>
+      <label class="row add"><span class="row-icon">${icon("plus")}</span><span class="row-main"><input id="focusNewDayTodo" class="row-input" placeholder="Todo für diesen Tag" autocomplete="off" enterkeyhint="done"></span></label>
+    </section>`;
+
+  /* a redraw (a tick, a sync) keeps the place, and whatever is being typed */
+  const scroll = el.scrollTop, a = document.activeElement;
+  const typing = a && el.contains(a) && a.tagName === "INPUT" ? { key: a.id ? "#" + a.id : `[data-gap-for="${a.dataset.gapFor}"]`, value: a.value, at: a.selectionStart } : null;
   el.innerHTML = `<div class="focus-inner">
     <header class="focus-head">
       <div class="focus-name"><span class="overline">Fokus · ${dayWords(f.day)}</span>
@@ -76,11 +87,12 @@ function renderFocus(){
       <button type="button" class="rbtn" id="focusClose" title="Zur Woche (Esc)">${icon("collapse")}</button>
     </header>
     <nav class="focus-week" aria-label="Woche">${weekOf(f.day).map(pill).join("")}</nav>
-    <div class="focus-list">${rows || `<div class="focus-row"><div class="focus-time"></div>
-      <button type="button" class="focus-gap" data-gap="${9*60}-${10*60}">${icon("plus")}<span>Keine Termine · Termin anlegen</span></button></div>`}</div>
+    ${todos}
+    <div class="focus-list">${rows || `<p class="focus-empty">Keine Termine</p>`}</div>
   </div>`;
-  el.scrollTop = scroll;                                       // a redraw (a tick, a sync) keeps the place
-  if(typing) document.getElementById("focusNewTodo")?.focus();
+  el.scrollTop = scroll;
+  const back = typing && el.querySelector(typing.key);
+  if(back){ back.value = typing.value; back.focus(); try{ back.setSelectionRange(typing.at, typing.at); }catch(_){} }
 }
 
 /* one set of listeners on the layer; the content is redrawn under them */
@@ -96,23 +108,39 @@ function bindFocus(el){
     if(open){ UI.focus.open = open.dataset.open; renderFocus(); return; }
     const edit = t.closest("[data-edit]");
     if(edit){ const ev = openEv(); if(ev) openEditor({ type: "event", edit: ev, occurrence: UI.focus.day }); return; }
-    const gap = t.closest("[data-gap]");
-    if(gap){ const [s, en] = gap.dataset.gap.split("-").map(Number);
-      openEditor({ type: "event", initial: { date: UI.focus.day, startMin: s, endMin: Math.min(en, s + 60) } }); return; }
     const row = t.closest(".todoRow"); if(!row) return;
     const id = row.dataset.tid;
+    if(row.classList.contains("day-todo")){                    // a todo of the day, without an event (ui/day-todos.js)
+      if(t.closest(".tdel")) mutate(s => { s.dayTodos = s.dayTodos.filter(x => x.id !== id); });
+      else if(t.closest(".tcheck")) mutate(s => { const x = s.dayTodos.find(y => y.id === id); if(x) cycleTodo(x); });
+      return;
+    }
     if(t.closest(".tdel")) setTodos(list => { const i = list.findIndex(x => x.id === id); if(i >= 0) list.splice(i, 1); });
     else if(t.closest(".tcheck")) setTodos(list => { const x = list.find(y => y.id === id); if(x) cycleTodo(x); });
   });
-  el.addEventListener("contextmenu", e => {                    // as in the editor: postponed, or open again
-    const row = e.target.closest(".focus-event.open .todoRow"); if(!row) return;
+  el.addEventListener("contextmenu", e => {
+    const dayRow = e.target.closest(".focus-todos .todoRow");    // a day's todo: to tomorrow, as in the day's panel (a hold on a phone)
+    if(dayRow){ e.preventDefault(); const today = todayISO();
+      mutate(s => { const x = s.dayTodos.find(y => y.id === dayRow.dataset.tid); if(x){ x.date = dayAfter(x.date > today ? x.date : today); x.state = "open"; } });
+      toast("Auf morgen verschoben"); return; }
+    const row = e.target.closest(".focus-event.open .todoRow"); if(!row) return;   // an event's todo, as in the editor: postponed, or open again
     e.preventDefault();
     setTodos(list => { const x = list.find(y => y.id === row.dataset.tid); if(x) x.state = x.state === "postponed" ? "open" : "postponed"; });
   });
   el.addEventListener("keydown", e => {
-    if(e.target.id !== "focusNewTodo" || e.key !== "Enter") return;
+    if(e.key !== "Enter" || e.target.tagName !== "INPUT") return;
     e.preventDefault();
+    if(e.target.classList.contains("gap-note")){ e.target.blur(); return; }   // saved on change, below
     const text = e.target.value.trim(); if(!text) return;
-    setTodos(list => list.push({ id: uid(), text, state: "open" }));
+    e.target.value = "";
+    if(e.target.id === "focusNewTodo") setTodos(list => list.push({ id: uid(), text, state: "open" }));
+    if(e.target.id === "focusNewDayTodo") mutate(s => { s.dayTodos = s.dayTodos || []; s.dayTodos.push({ id: uid(), text, state: "open", date: UI.focus.day, categoryId: UI.dayTodoCat ?? null }); });
+  });
+  /* a note on free time is kept when typing ends (Enter, or leaving the field) */
+  el.addEventListener("change", e => {
+    const input = e.target.closest(".gap-note"); if(!input) return;
+    const text = input.value.trim(), id = input.dataset.gapFor, day = UI.focus.day;
+    if(text === gapNoteOf(S.events.find(x => x.id === id) || {}, day)) return;
+    mutate(s => { const ev = s.events.find(x => x.id === id); if(ev) setGapNote(ev, day, text); });
   });
 }

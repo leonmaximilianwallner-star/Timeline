@@ -54,6 +54,7 @@ const ICON = {
   columns: '<path d="M4 5h16v14H4z"/><path d="M9.3 5v14M14.7 5v14"/>',
   out:     '<path d="M15 4h4v16h-4"/><path d="M10 8l-4 4 4 4"/><path d="M6 12h10"/>',
   expand:  '<path d="M14 4h6v6"/><path d="M10 20H4v-6"/><path d="M20 4l-7 7"/><path d="M4 20l7-7"/>',
+  dots:    '<circle cx="12" cy="5" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.4" fill="currentColor" stroke="none"/>',
   collapse:'<path d="M4 14h6v6"/><path d="M20 10h-6V4"/><path d="M14 10l7-7"/><path d="M3 21l7-7"/>',
 };
 const icon = name => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[name]}</svg>`;
@@ -462,6 +463,7 @@ function saveEditor(opts = {}){
     if(data.repeat === "none") byDate = {};                        // a plain event has one day: its own
     byDate[data.repeat === "none" ? data.date : day] = ctx.todos;
     data.todosByDate = JSON.parse(JSON.stringify(byDate));
+    if(ed && ed.gapNotes && shift) data.gapNotes = shiftTodos(ed.gapNotes, shift);   // the notes on the free time before it go along (core/focus.js)
     /* a series' end and removed days move with its start; a plain event has neither */
     const moved = d => isoDate(addDays(parseISO(d), shift));
     data.end    = data.repeat !== "none" && ed && ed.end ? moved(ed.end) : undefined;

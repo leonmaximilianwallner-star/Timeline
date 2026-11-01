@@ -98,7 +98,7 @@ function morphToFocus(day, eventId){
   anims.push(ov.animate([{ backgroundColor: getComputedStyle(ov).backgroundColor }, { backgroundColor:"transparent" }], timing));
   anims.push(fv.animate([{ backgroundColor:"transparent" }, { backgroundColor: getComputedStyle(fv).backgroundColor }], { ...timing, duration: MORPH_MS * 0.7 }));
   const centre = opened ? rectOf(opened).top + rectOf(opened).height / 2 : innerHeight / 2;
-  anims.push(...morphArrive([...fv.querySelectorAll(".focus-head .overline, .focus-pill, .focus-row")].flatMap(el =>
+  anims.push(...morphArrive([...fv.querySelectorAll(".focus-head .overline, .focus-pill, .focus-todos, .focus-row, .focus-empty")].flatMap(el =>
     opened && el.contains(opened) ? [el.querySelector(".focus-time")] : [el]), centre, ease));
 
   morphDone(anims, () => {
@@ -152,7 +152,7 @@ function morphFromFocus(fv, day, openId){
   /* Fokus's own parts leave; its ground clears and the week shows; the week's other events arrive */
   const travels = new Set(shared.map(([a]) => a));             // what has no place in the week leaves, like the rest of Fokus
   anims.push(...morphLeave([...fv.querySelectorAll(".focus-title, .fp-wd, .fp-dn")].filter(el => !travels.has(el))));
-  anims.push(...morphLeave(fv.querySelectorAll(".focus-head .overline, #focusClose, .focus-time, .focus-gap, .fe-body, .fe-when, .fe-cat, .fe-dot, .fe-meta, .fp-dots")));
+  anims.push(...morphLeave(fv.querySelectorAll(".focus-head .overline, #focusClose, .focus-todos, .focus-empty, .focus-time, .focus-gap, .fe-body, .fe-when, .fe-cat, .fe-dot, .fe-meta, .fp-dots")));
   anims.push(...[...fv.querySelectorAll(".focus-event")].filter(el => !landed.has(el)).flatMap(el => morphLeave([el])));
   fv.querySelectorAll(".focus-pill").forEach(p => anims.push(p.animate([{ backgroundColor: getComputedStyle(p).backgroundColor }, { backgroundColor:"transparent" }],
     { duration: MORPH_MS * MORPH_LEAVE, easing:"ease-out", fill:"both" })));

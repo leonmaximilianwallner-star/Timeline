@@ -27,6 +27,7 @@ function shiftSeries(ev, n){
   if(ev.end) ev.end = isoDate(addDays(parseISO(ev.end), n));
   if(ev.except) ev.except = ev.except.map(d=>isoDate(addDays(parseISO(d), n)));
   ev.todosByDate = shiftTodos(ev.todosByDate, n);
+  if(ev.gapNotes) ev.gapNotes = shiftTodos(ev.gapNotes, n);   // the notes on the free time before it (core/focus.js) go along
 }
 /* delete one occurrence, or this one and every later one. Returns what happened, for the toast. */
 function deleteOccurrence(s, id, dateISO, following){
