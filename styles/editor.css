@@ -58,18 +58,20 @@
   font:inherit; font-size:20px; line-height:26px; font-weight:600}
 #fTitle::placeholder{color:var(--ink); opacity:.6}
 .editor-body{
-  flex:1; min-height:0; overflow:auto; padding:20px 16px; display:flex; flex-direction:column; gap:24px;
+  flex:1; min-height:0; overflow:hidden auto; padding:20px 16px;   /* scrolls down only: nothing in it is wider than the editor */
+  display:flex; flex-direction:column; gap:24px;
   background:var(--raised); border-radius:var(--r-float) var(--r-float) 0 0; color:var(--text);
 }
 .editor-body > *{flex-shrink:0}                        /* never squeezed: the body scrolls instead (a full list hid repeat and reminder) */
 /* the time: the one big number of the editor, then the day in words */
 .when{padding:0 4px; display:flex; flex-direction:column; gap:2px}
 .when-top{display:flex; align-items:baseline; justify-content:space-between; gap:12px}
-.when-big{display:flex; align-items:baseline; gap:6px; font-size:20px; line-height:26px; font-weight:600; font-variant-numeric:tabular-nums}
+.when-big{display:flex; align-items:baseline; gap:6px; min-width:0; font-size:20px; line-height:26px; font-weight:600; font-variant-numeric:tabular-nums}
 .when-sub{display:flex; align-items:baseline; gap:6px; flex-wrap:wrap; font-size:14px; line-height:20px; color:var(--fg-muted)}
 .when-len{font-size:14px; line-height:20px; color:var(--fg-muted); font-variant-numeric:tabular-nums; white-space:nowrap}
 .when input{padding:0; border:0; outline:none; background:transparent; color:inherit; font:inherit; font-variant-numeric:tabular-nums;
-  field-sizing:content; min-width:2ch; color-scheme:dark}
+  field-sizing:content; min-width:0; flex:0 1 auto; color-scheme:dark}
+/* a phone's own time and date fields bring their own width (Android, 12-hour times): they shrink to the row, never widen it */
 html[data-theme="light"] .when input{color-scheme:light}
 .when input:focus-visible{outline:2px solid var(--text); outline-offset:2px; border-radius:4px}
 .when input::-webkit-calendar-picker-indicator{opacity:.5; cursor:pointer; margin-left:2px}

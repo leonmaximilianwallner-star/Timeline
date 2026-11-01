@@ -136,7 +136,7 @@ function renderEvent(ev, dIso, x, w, outline){
   return el;
 }
 /* an actual: the plan's look, in front, with the plan's title (or its category's name without a plan).
-   Not touchable yet: taps reach the plan behind it (correction mode comes next, RULEBOOK B.8). */
+   A tap opens its own editor (input/day-drag.js); dragging it comes with correction mode (RULEBOOK B.8). */
 function renderActual(a, endMin, x, w){
   const plan = a.eventId && S.events.find(ev=>ev.id===a.eventId);
   const top = minToY(a.startMin) + ACTUAL_OFFSET;

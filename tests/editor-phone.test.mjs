@@ -265,6 +265,38 @@ await step('a phase dropdown: redraws do not replay its opening; closing plays i
   assert.equal(await moving.locator('.dropdown').count(), 0);
 });
 
+/* Soll/Ist (1 Nov): a tap on an actual opens the actual, not the plan behind it */
+await step('a tap on an actual opens its own editor, not the plan\'s; saving changes the actual only', async () => {
+  await page.evaluate(() => { const ev = S.events.find(e => e.repeat === 'none'); window.__plan = JSON.stringify(ev);
+    mutate(s => s.actuals.push({ id: 'ist1', date: todayISO(), startMin: ev.startMin + 15, endMin: ev.endMin + 40, eventId: ev.id, occurrence: todayISO(), categoryId: ev.categoryId })); });
+  await page.locator('.event.actual').tap(); await page.waitForTimeout(400);
+  assert.equal(await page.evaluate(() => UI.editor && UI.editor.type), 'actual');
+  assert.equal(await page.evaluate(() => document.getElementById('fTitle').readOnly), true, 'it carries its plan\'s name, not one of its own');
+  await page.evaluate(() => { document.getElementById('fStart').value = '13:20'; });
+  await page.click('#editorSave'); await page.waitForTimeout(400);
+  assert.equal(await page.evaluate(() => S.actuals.find(a => a.id === 'ist1').startMin), 13 * 60 + 20);
+  assert.equal(await page.evaluate(() => JSON.stringify(S.events.find(e => e.id === JSON.parse(window.__plan).id))), await page.evaluate(() => window.__plan), 'the plan is untouched');
+});
+await step('a running actual stays running when its editor saves; its delete removes only it', async () => {
+  await page.evaluate(() => { mutate(s => { s.actuals.find(a => a.id === 'ist1').endMin = null; }); openEditor({ type: 'actual', edit: S.actuals.find(a => a.id === 'ist1') }); });
+  await page.waitForTimeout(300);
+  assert.equal(await page.evaluate(() => document.getElementById('fEnd').disabled), true);
+  await page.click('#editorSave'); await page.waitForTimeout(400);
+  assert.equal(await page.evaluate(() => S.actuals.find(a => a.id === 'ist1').endMin), null);
+  const events = await page.evaluate(() => S.events.length);
+  await page.evaluate(() => openEditor({ type: 'actual', edit: S.actuals.find(a => a.id === 'ist1') })); await page.waitForTimeout(300);
+  await page.click('#editorDelete'); await page.waitForTimeout(400);
+  assert.equal(await page.evaluate(() => S.actuals.length), 0);
+  assert.equal(await page.evaluate(() => S.events.length), events);
+});
+await step('the time row never makes the editor slide sideways, even with a phone\'s wide time fields', async () => {
+  await page.addStyleTag({ content: '.when input{width:170px}' });     // as an Android field with a 12-hour time brings its own width
+  await open(); await page.waitForTimeout(300);
+  const w = await page.evaluate(() => { const B = document.getElementById('editorBody'); return [B.scrollWidth, B.clientWidth]; });
+  assert.equal(w[0], w[1], `content ${w[0]}px in ${w[1]}px`);
+  await page.evaluate(() => closeEditor(true));
+});
+
 await browser.close(); server.close();
 console.log(failed ? `\n${failed} editor-phone test(s) FAILED` : '\nEditor-phone tests passed.');
 process.exit(failed ? 1 : 0);

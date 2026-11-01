@@ -134,6 +134,7 @@ function afterRemoteChange(){
   persist();
   UI.undo.length = 0; UI.redo.length = 0; updateUndoButtons();
   renderAll();
+  editorTakeRemote();                        // an open editor goes on from the new data, not its old copy (ui/editor.js)
 }
 /* called by the gate after every change: send it shortly, bundled with whatever follows */
 function scheduleSync(){

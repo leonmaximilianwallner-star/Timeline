@@ -182,6 +182,7 @@ An event is the **plan**: when you meant to do something. What really happened i
 **Actual** · *Ist* · `actual` · `actuals` row
 A slot of time actually spent on one day: `{ date, startMin, endMin, eventId, occurrence, categoryId }`. It names the planned event it was for (`eventId`, and for a series which day: `occurrence`), or no plan at all (both `null`: something unplanned; its category, or frei). A plan can have several actuals (interrupted work: two actuals, one plan). An actual never moves or disappears with its plan: it is history. Rules in `core/actuals.js`. **Not:** an event, a copy of an event. **Never say:** record (a stored thing of any kind, A.9), log, entry, session, tracking.
 An actual with `endMin` null is **running** (*läuft*): it is being recorded right now. At most one runs at a time; it is drawn up to now. One left running past midnight ends with its own day.
+**A tap on an actual opens it** (**Max**, 1 Nov), in front of its plan: the editor's shell, kind *Ist*, with its plan's name (not editable: it has none of its own), date, from–to to the minute, its category, delete. A running one keeps running (its end is shown, not editable; it comes with *Stopp*).
 
 **Recording** · *Aufnahme* · `record` (verb), `recording`
 Starting an actual now, from the add menu, and stopping it. **Record** assumes the planned event "now" means: one of today's whose window from `RECORD_LEAD` (30 min) before its start to its planned end holds now, the closest start first. A stop under a minute leaves nothing behind (an accidental tap). **Never say:** timer, stopwatch (in code), track.
@@ -450,7 +451,7 @@ The gate, the store and sync are defined in `ARCHITECTURE.md` §4–5. The rules
 - **Contrast** — white text on amber, green, blue, pink and grey fills is below 4.5:1. **Max, 22 Oct:** white stays (the whole design points to it, and events and phases already do it); if it fails the eye test in the editor headers, it is revisited.
 - **Day todos, next steps** — changing an existing day todo's category; dragging one into the day view to give it a time (it becomes an event?); an undated list. *(29 Oct)*
 - **Repeat and reminder pickers** — still the phone's own pickers (a window each). Same list-in-place treatment as the categories? *(Max to decide after feeling the category list)*
-- **Soll/Ist, next steps** (30 Oct): correcting actuals by drag (its own mode, a second button in the add menu; then actuals become touchable, today taps pass through them to the plan); the time budget counting actuals; showing the deviation (+15 min, longer by 40 min); waves spreading from the recording dot; what the outlined plan's text should show under its actual. *(Max: functional first)*
+- **Soll/Ist, next steps** (30 Oct): correcting actuals by drag (its own mode, a second button in the add menu; a tap already opens an actual, 1 Nov); the time budget counting actuals; showing the deviation (+15 min, longer by 40 min); waves spreading from the recording dot; what the outlined plan's text should show under its actual. *(Max: functional first)*
 - **A full-screen lookup view** of an event (pulled up past a resistance), and layered squircle transitions. *(Max, 22 Oct; concept: design first)*
 
 ---

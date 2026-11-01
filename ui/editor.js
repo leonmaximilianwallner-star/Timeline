@@ -66,7 +66,10 @@ function rowHTML({ icon:ic, label, value="", pick="", chev=false, cls="", id="",
 const optionsHTML = (opts, current) => opts.map(([k,l])=>`<option value="${k}" ${String(current)===String(k)?"selected":""}>${l}</option>`).join("");
 const REPEATS   = [["none","Keine"],["daily","Täglich"],["weekly","Wöchentlich"],["weekdays","Werktags"],["monthly","Monatlich"]];
 const REMINDERS = [["","Keine"],["0","Zum Start"],["5","5 min vorher"],["15","15 min vorher"],["30","30 min vorher"],["60","1 h vorher"],["1440","1 Tag vorher"]];
-const KIND_WORD = { event:"Termin", phase:"Phase", milestone:"Meilenstein" };
+const KIND_WORD = { event:"Termin", phase:"Phase", milestone:"Meilenstein", actual:"Ist" };
+const KIND_LIST = { event:"events", phase:"phases", milestone:"milestones", actual:"actuals" };
+/* an actual has no name of its own: it shows its plan's, or "Ohne Plan" (RULEBOOK A.6) */
+const actualTitle = a => { const plan = a.eventId && S.events.find(ev=>ev.id===a.eventId); return plan ? plan.title : "Ohne Plan"; };
 
 function openEditor(ctx){
   closeEditor(true);
@@ -92,7 +95,7 @@ function openEditor(ctx){
       <div class="editor-name">
         <button type="button" class="editor-kind" id="editorKindBtn" aria-haspopup="listbox" aria-expanded="false" aria-controls="editorCatList"><span id="editorKind"></span><span class="kind-arrow">${icon("down")}</span></button>
         <input type="hidden" id="fProj" value="${v.categoryId||""}">
-        <input id="fTitle" type="text" autocomplete="off" aria-label="Titel" placeholder="${KIND_WORD[ctx.type]}" value="${esc(v.title||"")}">
+        <input id="fTitle" type="text" autocomplete="off" aria-label="Titel" placeholder="${KIND_WORD[ctx.type]}" value="${esc(ctx.type==="actual" ? actualTitle(v) : v.title||"")}" ${ctx.type==="actual" ? "readonly" : ""}>
       </div>
       <button type="button" class="rbtn" id="editorDelete" title="Löschen" ${ed?"":"hidden"}>${icon("bin")}</button>
       ${ed?`<span class="rbtn-gap"></span>`:""}
@@ -194,18 +197,33 @@ function closeEditor(instant){
   UI.editor = null;
 }
 
+/* changes from another device arrived while the editor is open (data/sync.js): it goes on from them.
+   Before, it kept the copy it opened with, so its next tick or save wrote the old todos back as the newest change. */
+function editorTakeRemote(){
+  const ctx = UI.editor; if(!ctx || !ctx.edit) return;
+  const fresh = (S[KIND_LIST[ctx.type]] || []).find(x=>x.id===ctx.edit.id);
+  if(!fresh){ closeEditor(); toast("Auf einem anderen Gerät gelöscht"); return; }
+  ctx.edit = fresh;
+  if(ctx.type==="event"){ ctx.todos = JSON.parse(JSON.stringify(todosOf(fresh, ctx.occurrence))); ctx.showTodos(); }
+}
+
 function renderEditorBody(){
   const ctx = UI.editor, ed = ctx.edit, B = document.getElementById("editorBody");
   const v = (ed||ctx.initial||{});
   const kind = ctx.type;
   let h = "";
 
-  if(kind==="event"){
+  if(kind==="event" || kind==="actual"){
+    /* an actual is measured to the minute; a running one has no end yet (it shows now, and stays running) */
+    const step = kind==="actual" ? 60 : 900, running = kind==="actual" && v.endMin == null;
+    const end = running ? new Date().getHours()*60 + new Date().getMinutes() : v.endMin??10*60;
     h += `<div class="when">
       <div class="when-top">
-        <span class="when-big"><input id="fStart" type="time" step="900" aria-label="Von" value="${fmtMin(v.startMin??9*60)}">–<input id="fEnd" type="time" step="900" aria-label="Bis" value="${fmtMin(v.endMin??10*60)}"></span>
-        <span class="when-len" id="fLen"></span></div>
+        <span class="when-big"><input id="fStart" type="time" step="${step}" aria-label="Von" value="${fmtMin(v.startMin??9*60)}">–<input id="fEnd" type="time" step="${step}" aria-label="Bis" value="${fmtMin(end)}" ${running ? "disabled" : ""}></span>
+        <span class="when-len" id="fLen">${running ? "läuft" : ""}</span></div>
       <span class="when-sub"><span id="fWeekday"></span><input id="fDate" type="date" aria-label="Datum" value="${v.date||todayISO()}"><span id="fDayWords"></span></span></div>`;
+  }
+  if(kind==="event"){
     h += `<div class="list">
       ${rowHTML({ icon:"repeat", label:"Wiederholung", value:`<span id="fRepeatText"></span>`, pick:`<select id="fRepeat" class="row-pick" aria-label="Wiederholung">${optionsHTML(REPEATS, v.repeat||"none")}</select>` })}
       ${rowHTML({ icon:"bell", label:"Erinnerung", value:`<span id="fRemText"></span>`, pick:`<select id="fRem" class="row-pick" aria-label="Erinnerung">${optionsHTML(REMINDERS, v.reminderMin??"")}</select>` })}
@@ -276,10 +294,12 @@ function renderEditorBody(){
     const set = (id, t) => { const el = document.getElementById(id); if(el) el.textContent = t; };
     const date = val("fDate");
     if(date){ set("fWeekday", WD_LONG[parseISO(date).getDay()] + (kind==="event" ? "," : "")); set("fDayWords", "· " + dayWords(date)); }   // event: "Donnerstag, <date> · Morgen"
-    if(kind==="event"){
+    if(kind==="event" || kind==="actual"){
       const m = id => { const [hh,mm] = (val(id)||"0:0").split(":").map(Number); return hh*60+mm; };
       const len = m("fEnd") - m("fStart");
-      set("fLen", len > 0 ? fmtDur(len) : "");
+      if(!document.getElementById("fEnd").disabled) set("fLen", len > 0 ? fmtDur(len) : "");
+    }
+    if(kind==="event"){
       set("fRepeatText", REPEATS.find(r=>r[0]===val("fRepeat"))[1]);
       set("fRemText", REMINDERS.find(r=>r[0]===val("fRem"))[1]);
     }
@@ -310,7 +330,7 @@ function renderEditorBody(){
     const el = B.querySelector("#editorTodoCount"); if(!el) return;
     el.textContent = ctx.todos.length ? `${ctx.todos.filter(t=>t.state==="done").length}/${ctx.todos.length}` : "";
   }
-  if(kind==="event") showTodos();
+  if(kind==="event"){ showTodos(); ctx.showTodos = showTodos; }
   /* todos of a stored event apply at once, as ticking is doing, not planning (Max, 22 Oct): ✕ and sliding
      down discard only the event's own changes. A new event's todos wait for ✓ with the rest. */
   const allDone = list => list.length>0 && list.every(t=>t.state==="done");
@@ -356,6 +376,7 @@ function renderEditorBody(){
       if(k==="event") s.events = s.events.filter(x=>x.id!==ed.id);
       else if(k==="phase") s.phases = s.phases.filter(x=>x.id!==ed.id);
       else if(k==="milestone") s.milestones = s.milestones.filter(x=>x.id!==ed.id);
+      else if(k==="actual") s.actuals = s.actuals.filter(x=>x.id!==ed.id);
     });
     toast("Gelöscht");
     closeEditor();
@@ -438,6 +459,12 @@ function saveEditor(){
     mutate(st=>{ if(ed) Object.assign(st.phases.find(x=>x.id===ed.id), data);
                  else st.phases.push({ id:uid(), ...data }); });
     if(UI.addMode) setAddMode(false);
+  }
+  else if(kind==="actual"){
+    const s = clamp(mins("fStart")??ed.startMin, HOUR_START*60, HOUR_END*60);
+    const running = ed.endMin == null;                                   // stays running: the end comes with Stopp
+    const e = running ? null : Math.max(clamp(mins("fEnd")??ed.endMin, HOUR_START*60, HOUR_END*60), s + 1);
+    mutate(st=>{ const a = st.actuals.find(x=>x.id===ed.id); if(a) Object.assign(a, { date:val("fDate")||a.date, startMin:s, endMin:e, categoryId:val("fProj")||null }); });
   }
   else if(kind==="milestone"){
     const data = { title:(val("fTitle")||"").trim()||"Meilenstein", date:val("fDate")||todayISO(),
