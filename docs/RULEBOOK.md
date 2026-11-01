@@ -170,6 +170,9 @@ A repeating event is a **series**. A series may **end** (`end`: the day after it
 Minutes before an event's start when a notification fires. **Never say:** alarm.
 It arrives as a **push** (sent by the server, `send-reminders`; per device, Settings → Erinnerungen) or, with push off, from the open app. A device that receives push is a **push device** (`push_devices`). Not to be confused with sync's sending of rows (`pushRows`).
 
+**Free time** · *frei* · `gap` — time between two events of one day, at least `FOCUS_GAP_MIN` (15 min). Shown only in Fokus. Not stored: it follows from the events. **Never say:** pause, break (in code: those are things a note may say).
+**Gap note** · *Notiz* · `gapNotes[day]` — a few words on the free time before an event ("Pause", "Anfahrt · 16:00 los"), typed in place in Fokus (**Max**, 1 Nov). Stored with the event the free time leads to, per occurrence, as todos are, so it moves with that event (`gapNoteOf`, `setGapNote` in `core/focus.js`). Not an event and not drawn as one. **Never say:** description, body.
+
 **Carry-over** · *Übernahme* · `carryOver`
 Postponed todos come along to the next time (**Max**, 21 Oct):
 - **a new event** takes the postponed todos of the latest event of its category (or, later, of its step);
@@ -221,7 +224,7 @@ One of the levels stacked on the one page, reached by scrolling down. **Never sa
 
 **Day view** · *Tagesansicht* · `day` — the hour grid with 3, 5 or 7 day columns (the **density**, `density`). Events and their todos. **Never say:** daily view, calendar view, week view.
 
-**Focus view** · *Fokus* · `focus` — one day, about the now (**Max**, 1 Nov): what exactly, rather than when. The week as seven pills, then the day as a list (time on the left), one event **open**: its colour as header (*noch 1h 20min*, *in 2h*, *vorbei*), its todos below, tickable. The others are rows; a tap opens one. Free time between events of at least 30 min (`FOCUS_GAP_MIN`) is a row that creates an event there. Today the event of now is open, else the next one; another day opens with its first. A layer over the app, not a band of the page (**Max**). Reached from the event editor (the expand button; the pull-up gesture is next); closed by its button, Escape or the phone's back gesture. `views/focus/render.js`, rules in `core/focus.js`. **Never say:** single day view, zoom, detail view, Jetzt (a canvas idea of Sept).
+**Focus view** · *Fokus* · `focus` — one day, about the now (**Max**, 1 Nov): what exactly, rather than when. The week as seven pills, then the day as a list (time on the left), one event **open**: its colour as header (*noch 1h 20min*, *in 2h*, *vorbei*), its todos below, tickable. The others are rows; a tap opens one. **The day's own todos** (day todos, today with the open ones of earlier days) stand before the first event, plain rows without a surface, a thin line under them; they are added, ticked and moved to tomorrow there as in the day's panel (**Max**, 1 Nov). **Free time** between events (at least 15 min, `FOCUS_GAP_MIN`) is three dots, its length and its **note** (see below). Fokus doesn't create events (**Max**, 1 Nov: unsure it's needed; the week view does that). Today the event of now is open, else the next one; another day opens with its first. A layer over the app, not a band of the page (**Max**). Reached from the event editor (the expand button; the pull-up gesture is next); closed by its button, Escape or the phone's back gesture. `views/focus/render.js`, rules in `core/focus.js`. **Never say:** single day view, zoom, detail view, Jetzt (a canvas idea of Sept).
 
 ### Parts
 

@@ -320,6 +320,26 @@ await step('a tap on another event opens it; its header opens the editor over th
   await page.evaluate(() => closeEditor(true));
   assert.equal(await page.evaluate(() => !!UI.focus), true, 'still in the focus view');
 });
+await step('the day\'s own todos stand before the first event: added, ticked and moved to tomorrow in Fokus', async () => {
+  await page.fill('#focusNewDayTodo', 'ohne Termin'); await page.press('#focusNewDayTodo', 'Enter');
+  const id = await page.evaluate(() => S.dayTodos.find(t => t.text === 'ohne Termin').id);
+  assert.equal(await page.evaluate(() => S.dayTodos.find(t => t.text === 'ohne Termin').date), await page.evaluate(() => UI.focus.day));
+  const first = await page.evaluate(() => { const l = document.querySelector('.focus-todos'), e = document.querySelector('.focus-list .focus-event'); return l.getBoundingClientRect().bottom <= e.getBoundingClientRect().top; });
+  assert.equal(first, true, 'above the first event');
+  await page.locator(`.focus-todos .todoRow[data-tid="${id}"] .tcheck`).tap();
+  assert.equal(await page.evaluate(i => S.dayTodos.find(t => t.id === i).state, id), 'done');
+  await page.locator(`.focus-todos .todoRow[data-tid="${id}"] .tx`).click({ button: 'right' });
+  assert.equal(await page.evaluate(i => S.dayTodos.find(t => t.id === i).date, id), await page.evaluate(() => dayAfter(UI.focus.day > todayISO() ? UI.focus.day : todayISO())));
+});
+await step('free time between events: three dots, its length, a note typed in place, stored with the next event', async () => {
+  await page.evaluate(() => mutate(s => { const d = UI.focus.day; s.events.push({ id: 'g1', title: 'Früh', categoryId: null, date: d, startMin: 6 * 60, endMin: 7 * 60, repeat: 'none', reminderMin: null, todosByDate: {} },
+    { id: 'g2', title: 'Treffen', categoryId: null, date: d, startMin: 7 * 60 + 30, endMin: 8 * 60, repeat: 'none', reminderMin: null, todosByDate: {} }); }));
+  const note = page.locator('.gap-note[data-gap-for="g2"]');
+  assert.equal(await page.locator('.focus-gap .gap-dots svg circle').count() >= 3, true);
+  await note.fill('Anfahrt'); await note.press('Enter');
+  assert.equal(await page.evaluate(() => gapNoteOf(S.events.find(e => e.id === 'g2'), UI.focus.day)), 'Anfahrt');
+  assert.equal(await page.locator('.focus-gap button, .focus-gap[data-gap]').count(), 0, 'no "create an event" here (Max, 1 Nov)');
+});
 await step('the phone\'s back gesture closes the focus view, not the app', async () => {
   await page.goBack(); await page.waitForTimeout(400);
   assert.equal(await page.evaluate(() => UI.focus === null && !document.querySelector('.focus-view')), true);

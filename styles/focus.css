@@ -61,8 +61,19 @@ button.focus-event.past{opacity:.6}
 .fe-head .fe-sub{white-space:normal; opacity:.85}
 .fe-body{background:var(--raised); border-radius:var(--r-row) var(--r-row) 0 0; padding:8px 0; min-height:120px}
 
-/* free time: plain, not dashed (dashed is a drag preview, RULEBOOK C.3) */
-.focus-gap{min-height:var(--row-h); padding:0 16px; border:0; border-radius:9999px; background:transparent; color:var(--fg-muted);
-  font:inherit; font-size:var(--fs-body); display:flex; align-items:center; gap:8px; cursor:pointer; text-align:left}
-.focus-gap svg{width:18px; height:18px; flex:0 0 18px}
-.focus-gap:hover{background:var(--surface)}
+/* free time: three dots, its length and a note typed in place ("Pause", "Anfahrt"); no surface, it isn't an event (Max, 1 Nov) */
+.focus-gap{min-height:var(--row-h); padding:0 4px 0 12px; display:flex; align-items:center; gap:8px; color:var(--fg-muted); cursor:text}
+.focus-gap .gap-dots{display:flex; width:20px; height:20px; flex:0 0 20px}
+.focus-gap .gap-dots svg{width:20px; height:20px}
+.focus-gap .gap-len{font-size:var(--fs-small); line-height:16px; font-variant-numeric:tabular-nums; white-space:nowrap}
+.focus-gap .gap-note{flex:1; min-width:0; height:32px; padding:0; border:0; outline:none; background:transparent;
+  color:var(--text); font:inherit; font-size:var(--fs-body); font-weight:500}
+.focus-gap .gap-note::placeholder{color:var(--fg-muted); font-weight:400; opacity:.7}
+.focus-gap:focus-within .gap-dots{color:var(--text)}
+
+/* the day's own todos, before the first event: plain rows, no surface; a thin line under them (Max, 1 Nov) */
+.focus-todos{padding-bottom:12px; margin-bottom:20px; border-bottom:1px solid var(--hairline)}
+.focus-todos .todoRow{padding-left:4px}
+.focus-todos .todoRow:hover{background:transparent}
+.focus-todos .row.add{padding-left:4px}
+.focus-empty{margin:0; padding:12px 4px; font-size:var(--fs-body); color:var(--fg-muted)}

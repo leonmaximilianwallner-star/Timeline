@@ -198,3 +198,13 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **The pull has two phases**: it holds back before the line, springs forward at it, follows loosely after. The old rubber band asked the same strength for every pixel. *Max*
 - **Corners round off in the first 40 % of the motion**, not along all of it (the "beat" before the squircle). *Max (found)*
 - **While the week is moving into place, it doesn't extend or redraw itself** (the drag guard `UI.dragLive`), so nothing is swapped out mid-motion. *Claude*
+
+## 1 Nov 2026 — Fokus: the day's todos, notes on free time (pull request #24)
+
+- **The day's own todos stand at the top of Fokus**, before the first event, plain rows with a thin line under them. They had no place there before; the dots in the week stand for events. *Max*
+- **Free time is three dots, its length and a note** ("Pause", "Anfahrt"), without an event's surface. *Max*
+- **The note is stored with the event the free time leads to**, per day, so it moves with that event: "leave 30 min earlier" belongs to the meeting. Not its own record: free time isn't stored, it follows from the events. *Claude (where); Max to veto*
+- **Fokus no longer creates events** from free time or an empty day. Max was unsure it's needed; the week view creates events, Fokus is about the now. Easy to bring back. *Claude (recommendation), Max (unsure)*
+- **Free time from 15 min on** (was 30): a short walk between two rooms can need a note too. *Claude*
+- **A new todo of the day in Fokus takes the category last chosen in the day's panel** (or frei); choosing one in Fokus comes later if needed. *Claude*
+- **A redraw while typing keeps what is typed** (a sync arriving mid-word), for every field in Fokus. *Claude*

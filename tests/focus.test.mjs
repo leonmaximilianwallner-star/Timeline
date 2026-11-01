@@ -5,8 +5,8 @@ import vm from 'node:vm';
 import assert from 'node:assert/strict';
 
 const box = {};
-vm.runInNewContext(['core/dates.js', 'core/repeat.js', 'core/focus.js'].map(f => readFileSync(f, 'utf8')).join('\n') +
-  '\nthis.f = { focusDay, focusOpen, focusGaps, weekOf, FOCUS_GAP_MIN };', box);
+vm.runInNewContext(['core/dates.js', 'core/todos.js', 'core/repeat.js', 'core/focus.js'].map(f => readFileSync(f, 'utf8')).join('\n') +
+  '\nthis.f = { focusDay, focusOpen, focusGaps, weekOf, gapNoteOf, setGapNote, shiftSeries, FOCUS_GAP_MIN };', box);
 const f = box.f;
 const T = '2026-11-02';                     // a Monday
 const h = (hh, mm = 0) => hh * 60 + mm;
@@ -37,6 +37,21 @@ const tests = {
     assert.equal(JSON.stringify(f.focusGaps(f.focusDay(events, T)).map(g => [g.s, g.e])), JSON.stringify([[h(11), h(13, 30)]]));
     const tight = [ev('a', h(9), h(10)), ev('b', h(10) + f.FOCUS_GAP_MIN - 1, h(12))];
     assert.equal(f.focusGaps(f.focusDay(tight, T)).length, 0);
+  },
+  'free time knows the event it leads to; its note is stored there, per day, and an empty note removes it'() {
+    const gaps = f.focusGaps(f.focusDay(events, T));
+    assert.equal(gaps[0].next, 'late');
+    const e = ev('x', h(9), h(10));
+    f.setGapNote(e, T, 'Anfahrt');
+    assert.equal(f.gapNoteOf(e, T), 'Anfahrt');
+    assert.equal(f.gapNoteOf(e, '2026-11-09'), '', 'another day has its own');
+    f.setGapNote(e, T, '');
+    assert.equal(e.gapNotes, undefined);
+  },
+  'moving an event moves the notes on the free time before it'() {
+    const e = ev('x', h(9), h(10), { gapNotes: { [T]: 'Pause' }, todosByDate: {} });
+    f.shiftSeries(e, 1);
+    assert.equal(f.gapNoteOf(e, '2026-11-03'), 'Pause');
   },
   'the week strip: Monday to Sunday around the day, also from a Sunday'() {
     assert.equal(f.weekOf('2026-11-04').join(), ['2026-11-02', '2026-11-03', '2026-11-04', '2026-11-05', '2026-11-06', '2026-11-07', '2026-11-08'].join());
