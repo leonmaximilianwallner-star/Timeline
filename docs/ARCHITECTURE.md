@@ -74,7 +74,7 @@ The split (step 2) loads the files as **classic scripts** (`<script src="…">`)
 Like a building, the app has structure, services and fit-out. They change at different speeds, so they mustn't be cast into each other.
 
 ```
-  views/        canvas · timeline · day · (single day)   ← changes weekly (looks, interactions)
+  views/        canvas · timeline · day · focus          ← changes weekly (looks, interactions)
   ui/           editor shell · settings · pickers
   input/        the one pointer pipeline
   ────────────────────────────────────────────────
@@ -201,7 +201,7 @@ Whether push is on is read from the browser's own subscription, not stored. On e
 1. **Canvas**: the free, endless dot grid. The page's "header".
 2. **Timeline**: months and weeks, endless horizontally.
 3. **Day grid**: hours by days, horizontally tied to the timeline.
-4. **Single day**: one day at a time. Not designed yet; the layout leaves room for it.
+4. ~~**Single day**~~ → the **focus view** (*Fokus*), built 1 Nov as a full-screen layer over the page, not a fourth band (**Max**): it needs no shared horizontal scale, so it doesn't wait for `views/viewport.js`. It has its own vertical scroll, like the editor.
 
 **Why one page (and what it replaces).** The merge's frames let two finished apps meet without either losing anything. As a foundation, they're a second architecture: two copies of the state, the undo, the styles and the sync, kept in step by messages. One page has one store, one undo, one set of design tokens. A step dragged into the day becomes an ordinary drag instead of a message between pages. It also matches what fixed mobile lag before: a single scroll container.
 
@@ -308,6 +308,7 @@ core/                       rules with no screen
   text.js                   escaping and cleaning text
   repeat.js                 on which days a repeating event occurs
   todos.js                  which todos belong to which day of an event; carry-over within a series
+  focus.js                  the focus view's rules: a day's events, which one is open, free time, the week
   actuals.js                actuals: which plan "record" means, stopping, packing plans and actuals in separate layers
 
 data/
@@ -324,6 +325,7 @@ views/
   timeline/lanes.js         packs phases into lanes
   timeline/render.js        draws the timeline view
   day/render.js             draws the day view
+  focus/render.js           the focus view: one day over the app, its listeners, the back gesture
 
 input/
   pointer.js                pointer helpers and edge auto-pan
@@ -340,7 +342,7 @@ ui/
   day-todos.js              todos of a day without an event: the dots in the day header, the day's panel
   recording.js              the add menu above the + button: record and stop an actual
 
-styles/   tokens · base · timeline · day · add-button · lists (rows, overlines, switches: shared by editor and settings) · editor · todos (todo rows, the celebration) · settings · time-budget · toast · device · loader
+styles/   tokens · base · timeline · day · focus · add-button · lists (rows, overlines, switches: shared by editor and settings) · editor · todos (todo rows, the celebration) · settings · time-budget · toast · device · loader
 
 supabase/
   schema.sql                the plan's table (records): who may read it, the server's two rules

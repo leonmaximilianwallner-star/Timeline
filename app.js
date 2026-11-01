@@ -2,7 +2,7 @@
 "use strict";
 /* ════════════════════════════════════════════════════════════
    keyboard + escape hatches — the "never stuck" principle
-   layer order: time budget > editor > a day's todos > settings > add mode
+   layer order: time budget > editor > a day's todos > focus view > settings > add mode
    ════════════════════════════════════════════════════════════ */
 document.addEventListener("keydown", e=>{
   const typing = /INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName) || document.activeElement?.isContentEditable;
@@ -10,11 +10,13 @@ document.addEventListener("keydown", e=>{
     if(UI.budgetOpen) closeBudget();
     else if(UI.editor) editorEscape();          // the category list first, then the editor
     else if(UI.dayTodos) dayTodosEscape();      // a day's todos: its category list first
+    else if(UI.focus) closeFocus();             // the focus view, back to the week
     else if(UI.settingsOpen) toggleSettings(false);
     else if(UI.addMode) setAddMode(false);
     return;
   }
   if(typing) return;
+  if(UI.focus && !e.ctrlKey && !e.metaKey) return;  // the week's shortcuts (A, T) don't act under the focus view
   if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==="z"){ e.preventDefault(); e.shiftKey ? redo() : undo(); }
   else if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==="y"){ e.preventDefault(); redo(); }
   else if(e.key.toLowerCase()==="a" && !e.ctrlKey && !e.metaKey){ e.preventDefault(); setAddMode(!UI.addMode); }

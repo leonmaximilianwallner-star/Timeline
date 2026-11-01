@@ -18,7 +18,8 @@ function renderAll(){
   renderDays();
   renderTopdate();
   positionNowLine();
-  showRecording();                         // the add button's recording sign (ui/recording.js): another device may have started or stopped one
+  showRecording();
+  renderFocus();                           // the focus view, if open (views/focus/render.js), redraws with the plan                         // the add button's recording sign (ui/recording.js): another device may have started or stopped one
 }
 
 function renderTopdate(){

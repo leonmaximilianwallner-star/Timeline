@@ -297,6 +297,35 @@ await step('the time row never makes the editor slide sideways, even with a phon
   await page.evaluate(() => closeEditor(true));
 });
 
+/* the focus view (1 Nov): reached from the event editor, the event open, todos tick, the back gesture closes it */
+await step('the editor\'s expand button opens the focus view of that day, with that event open', async () => {
+  const id = await page.evaluate(() => { const ev = S.events.find(e => e.repeat === 'none'); openEditor({ type: 'event', edit: ev, occurrence: ev.date }); return ev.id; });
+  await page.waitForTimeout(300);
+  await page.click('#editorFocus'); await page.waitForTimeout(500);
+  assert.equal(await page.evaluate(() => !!UI.focus && !UI.editor), true);
+  assert.equal(await page.locator('.focus-event.open').getAttribute('data-ev'), id);
+  assert.equal(await page.locator('.focus-pill').count(), 7);
+});
+await step('a todo ticks in the focus view and is stored for that day', async () => {
+  await page.fill('#focusNewTodo', 'im Fokus'); await page.press('#focusNewTodo', 'Enter');
+  await page.locator('.focus-event.open .todoRow', { hasText: 'im Fokus' }).locator('.tcheck').tap();
+  assert.equal(await page.evaluate(() => { const f = UI.focus, ev = S.events.find(e => e.id === f.open); return todosOf(ev, f.day).find(t => t.text === 'im Fokus').state; }), 'done');
+});
+await step('a tap on another event opens it; its header opens the editor over the focus view', async () => {
+  await page.evaluate(() => mutate(s => s.events.push({ id: 'fx', title: 'Zweiter', categoryId: null, date: UI.focus.day, startMin: 20 * 60, endMin: 21 * 60, repeat: 'none', reminderMin: null, todosByDate: {} })));
+  await page.locator('[data-open="fx"]').tap();
+  assert.equal(await page.evaluate(() => UI.focus.open), 'fx');
+  await page.locator('.fe-head').tap(); await page.waitForTimeout(300);
+  assert.equal(await page.evaluate(() => UI.editor && UI.editor.edit.id), 'fx');
+  await page.evaluate(() => closeEditor(true));
+  assert.equal(await page.evaluate(() => !!UI.focus), true, 'still in the focus view');
+});
+await step('the phone\'s back gesture closes the focus view, not the app', async () => {
+  await page.goBack(); await page.waitForTimeout(400);
+  assert.equal(await page.evaluate(() => UI.focus === null && !document.querySelector('.focus-view')), true);
+  assert.ok(page.url().startsWith(APP));
+});
+
 await browser.close(); server.close();
 console.log(failed ? `\n${failed} editor-phone test(s) FAILED` : '\nEditor-phone tests passed.');
 process.exit(failed ? 1 : 0);

@@ -172,3 +172,12 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **Todos lost between devices: an editor left open wrote its old copy back.** The editor works on its own copy of an event's todos. Changes from the other device reached the plan, not that copy; the next tick, new todo or tap outside then stored the old list as the newest change, on both devices. Reproduced with two simulated devices. Now an open editor takes the new data when it arrives (`editorTakeRemote`); deleted elsewhere, it closes. Phases and events hid it: they are rarely open in an editor while the other device changes them. *Max (found); Claude (cause)*
 - **A tap on an actual opens the actual**, in the editor's shell (kind *Ist*). Before, actuals let taps through to the plan behind. A finger still scrolls over an actual; dragging it is correction mode, next. *Max*
 - **The editor's time row never slides sideways.** A phone's own time and date fields bring their own width (Android, 12-hour times) and pushed the row past the editor. They now shrink to the row, and the body scrolls only down. The phase editor's odd gap after the first date went with it. *Max (found); Claude (cause)*
+
+## 1 Nov 2026 — the focus view, part 1 (pull request #21)
+
+- **Fokus: one day, about the now.** The highest level of detail: the event of now open with its todos, the rest of the day as rows, the week as pills. After the mockup "Tag, ruhig" where it doesn't touch earlier logic. *Max (the view, the name); Claude (the rules for which event is open)*
+- **A layer over the app, not a fourth band of the page.** It needs no shared horizontal scale, so it doesn't wait for the viewport module. *Max*
+- **Todos unchanged.** The mockup's two levels (a todo with sub-items and notes) come with steps, later. *Max*
+- **From the mockup, left out on purpose:** location and per-category icons (fields that don't exist; Max: no note on events for now); its amber now (now is red); its radii 20/23 (ours: 16, 24, round); its 28px heading (ours: 20); dashed free time (dashed is a drag preview, so plain). *Claude*
+- **The phone's back gesture closes Fokus**, through one history step, instead of leaving the app. *Claude*
+- **Reached by an expand button in the editor's header** for now; the pull-up gesture with a rubber band and the morph is the next pull request (commit on release, Claude's recommendation; Max to judge by feel). *Claude*

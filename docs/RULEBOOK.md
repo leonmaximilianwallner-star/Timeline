@@ -221,7 +221,7 @@ One of the levels stacked on the one page, reached by scrolling down. **Never sa
 
 **Day view** · *Tagesansicht* · `day` — the hour grid with 3, 5 or 7 day columns (the **density**, `density`). Events and their todos. **Never say:** daily view, calendar view, week view.
 
-**Single day view** — one day at a time. Not designed; no name until it is.
+**Focus view** · *Fokus* · `focus` — one day, about the now (**Max**, 1 Nov): what exactly, rather than when. The week as seven pills, then the day as a list (time on the left), one event **open**: its colour as header (*noch 1h 20min*, *in 2h*, *vorbei*), its todos below, tickable. The others are rows; a tap opens one. Free time between events of at least 30 min (`FOCUS_GAP_MIN`) is a row that creates an event there. Today the event of now is open, else the next one; another day opens with its first. A layer over the app, not a band of the page (**Max**). Reached from the event editor (the expand button; the pull-up gesture is next); closed by its button, Escape or the phone's back gesture. `views/focus/render.js`, rules in `core/focus.js`. **Never say:** single day view, zoom, detail view, Jetzt (a canvas idea of Sept).
 
 ### Parts
 
@@ -414,7 +414,7 @@ monospace → DM Sans with tabular figures
 
 ## B.6 Views
 
-- One page, stacked: canvas → timeline → day view → (single day). **Max**, 20 Oct.
+- One page, stacked: canvas → timeline → day view. **Max**, 20 Oct. The focus view is a layer over it, not a fourth band (**Max**, 1 Nov).
 - Scrolling moves between views; zoom changes scale. They are never the same gesture.
 - **One editor everywhere** (**Max**, 2 Oct): a header in the item's colour (overline, name, delete | close | done) over a raised body. The overline says where the item sits; a block's overline is a breadcrumb to its phase. On the canvas the editor sits beside the focused item (never over it when there's room) and edits live, so close and ✓ both just close it. **Claude** *(2 Oct)*
 
@@ -446,7 +446,7 @@ The gate, the store and sync are defined in `ARCHITECTURE.md` §4–5. The rules
 - **Event length vs. weight** — equal weight for now.
 - **Where steps are stored** (in the body, or rows of their own) — decided when the canvas returns. *(ARCHITECTURE §8)*
 - **A deeper level** below todo — deferred. Todo stays the smallest action. *(Max)*
-- **Single day view** — not designed; no name yet.
+- **Focus view, next** (1 Nov): the pull-up from the editor (rubber band, a threshold, commit on release) and the editor's header morphing into the open event; then steps and their todos (the mockup's two levels), recording Soll/Ist from the open event, other weeks in the strip. The expand button in the editor's header crowds the title on a phone; it may go once the gesture exists.
 - **The rest of the design spec** (§1 global rules outside the reworked sections, §3–5, §8.1–8.3, §8.5–8.6, §8.9) — not yet done. **Claude**
 - **Contrast** — white text on amber, green, blue, pink and grey fills is below 4.5:1. **Max, 22 Oct:** white stays (the whole design points to it, and events and phases already do it); if it fails the eye test in the editor headers, it is revisited.
 - **Day todos, next steps** — changing an existing day todo's category; dragging one into the day view to give it a time (it becomes an event?); an undated list. *(29 Oct)*
