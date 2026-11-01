@@ -13,6 +13,7 @@ const UI = {
   dayTodos:null,         // the open day's todos panel: { date, newCat } (ui/day-todos.js)
   dropdownOpening:null,  // the phase whose dropdown is opening right now: only it animates (views/timeline/render.js)
   editor:null,          // the open editor's context
+  focus:null,           // the open focus view: { day, open } (views/focus/render.js)
   dragLive:false,
 };
 

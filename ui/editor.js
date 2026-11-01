@@ -53,6 +53,8 @@ const ICON = {
   sun:     '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   columns: '<path d="M4 5h16v14H4z"/><path d="M9.3 5v14M14.7 5v14"/>',
   out:     '<path d="M15 4h4v16h-4"/><path d="M10 8l-4 4 4 4"/><path d="M6 12h10"/>',
+  expand:  '<path d="M14 4h6v6"/><path d="M10 20H4v-6"/><path d="M20 4l-7 7"/><path d="M4 20l7-7"/>',
+  collapse:'<path d="M4 14h6v6"/><path d="M20 10h-6V4"/><path d="M14 10l7-7"/><path d="M3 21l7-7"/>',
 };
 const icon = name => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[name]}</svg>`;
 
@@ -97,6 +99,7 @@ function openEditor(ctx){
         <input type="hidden" id="fProj" value="${v.categoryId||""}">
         <input id="fTitle" type="text" autocomplete="off" aria-label="Titel" placeholder="${KIND_WORD[ctx.type]}" value="${esc(ctx.type==="actual" ? actualTitle(v) : v.title||"")}" ${ctx.type==="actual" ? "readonly" : ""}>
       </div>
+      ${ctx.type==="event" && ed ? `<button type="button" class="rbtn" id="editorFocus" title="Fokus: dieser Tag">${icon("expand")}</button>` : ""}
       <button type="button" class="rbtn" id="editorDelete" title="Löschen" ${ed?"":"hidden"}>${icon("bin")}</button>
       ${ed?`<span class="rbtn-gap"></span>`:""}
       <button type="button" class="rbtn outline" id="editorClose" title="Schließen ohne Speichern (Esc)">${icon("close")}</button>
@@ -110,6 +113,8 @@ function openEditor(ctx){
   });
   ov.querySelector("#editorClose").onclick = ()=>closeEditor();   // not closeEditor itself: the click event would read as "instant"
   ov.querySelector("#editorSave").onclick = saveEditor;
+  /* to the focus view of this day, with this event open; what was changed is kept, as with a tap outside */
+  ov.querySelector("#editorFocus")?.addEventListener("click", ()=>{ const day = ctx.occurrence, id = ed.id; saveEditor(); openFocus(day, id); });
   slideToClose(ov.querySelector(".editor"));
   renderEditorBody();
   /* the editor keeps the height it opened with: what is added later scrolls inside its body (Max, 22 Oct) */
