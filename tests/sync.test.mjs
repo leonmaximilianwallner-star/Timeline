@@ -181,6 +181,21 @@ const tests = {
     await syncNow(phone);
     assert.equal(await phone.page.evaluate(() => UI.undo.length), 0);
   },
+  async 'an editor left open goes on from todos added on the other device, instead of writing its old copy back'() {
+    await syncNow(phone); await syncNow(laptop);
+    const id = (await plan(phone)).events.find(e => e.title === 'Vom Laptop').id;
+    await phone.page.evaluate(i => { const ev = S.events.find(e => e.id === i); openEditor({ type: 'event', edit: ev, occurrence: ev.date }); }, id);
+    await phone.page.waitForTimeout(300);
+    await laptop.page.evaluate(i => mutate(s => { const ev = s.events.find(e => e.id === i); setTodosOf(ev, ev.date, [{ id: 'vomLaptop', text: 'vom Laptop', state: 'open' }]); }), id);
+    await syncNow(laptop);
+    await syncNow(phone);                                                     // arrives while the phone's editor is open
+    await phone.page.fill('#fNewTodo', 'vom Handy'); await phone.page.press('#fNewTodo', 'Enter');
+    await phone.page.mouse.click(5, 450); await phone.page.waitForTimeout(400);   // a tap outside saves
+    await syncNow(phone); await syncNow(laptop);
+    const texts = async dev => { const ev = (await plan(dev)).events.find(e => e.id === id); return Object.values(ev.todosByDate).flat().map(t => t.text).sort(); };
+    assert.deepEqual(await texts(phone), ['vom Handy', 'vom Laptop']);
+    assert.deepEqual(await texts(laptop), ['vom Handy', 'vom Laptop']);
+  },
   async 'an expired login is renewed without asking again'() {
     const before = phone.tokensIssued;
     await phone.page.evaluate(() => { login.expires_at = Date.now() - 1000; });

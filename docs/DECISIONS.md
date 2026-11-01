@@ -166,3 +166,9 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **Now is red again**, its line and a running recording (the dot on the + button). Amber (22 Oct) came from the mockup; red was the original meaning. A brighter red than the red category's. *Max*
 - **Actuals are not touchable yet**: taps reach the plan behind them. Correcting by drag is the next pull request. *Claude (scope); Max (functional first, step by step)*
 - **Found on the way:** the minute tick that grows a running actual redrew the day view after placing the now line, which hid the line. Fixed before merging. *Claude (own mistake)*
+
+## 1 Nov 2026 — three fixes from Max's tests (pull request #20)
+
+- **Todos lost between devices: an editor left open wrote its old copy back.** The editor works on its own copy of an event's todos. Changes from the other device reached the plan, not that copy; the next tick, new todo or tap outside then stored the old list as the newest change, on both devices. Reproduced with two simulated devices. Now an open editor takes the new data when it arrives (`editorTakeRemote`); deleted elsewhere, it closes. Phases and events hid it: they are rarely open in an editor while the other device changes them. *Max (found); Claude (cause)*
+- **A tap on an actual opens the actual**, in the editor's shell (kind *Ist*). Before, actuals let taps through to the plan behind. A finger still scrolls over an actual; dragging it is correction mode, next. *Max*
+- **The editor's time row never slides sideways.** A phone's own time and date fields bring their own width (Android, 12-hour times) and pushed the row past the editor. They now shrink to the row, and the body scrolls only down. The phase editor's odd gap after the first date went with it. *Max (found); Claude (cause)*

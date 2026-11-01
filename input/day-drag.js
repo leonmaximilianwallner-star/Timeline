@@ -26,6 +26,7 @@ $dayWrap.addEventListener("pointerdown", e=>{
   if(e.button!==undefined && e.button!==0) return;
   const grid = document.getElementById("dayGrid"); if(!grid) return;
   const eventEl = e.target.closest(".event");
+  if(eventEl && eventEl.dataset.actual) return;              // an actual: a tap opens it (below); no drag yet
   if(eventEl){ eventPointerDown(e, eventEl); return; }
   if(!grid.contains(e.target) && e.target!==grid) return;
 
@@ -43,6 +44,13 @@ $dayWrap.addEventListener("pointerdown", e=>{
     window.addEventListener("pointermove", cancel);
     window.addEventListener("pointerup", off); window.addEventListener("pointercancel", off);
   }
+});
+
+/* an actual in front of its plan: a tap opens the actual's editor, not the plan's (Max, 1 Nov) */
+$dayWrap.addEventListener("click", e=>{
+  const el = e.target.closest(".event.actual"); if(!el) return;
+  const a = S.actuals.find(x=>x.id===el.dataset.actual);
+  if(a) openEditor({ type:"actual", edit:a });
 });
 
 function startCreateDrag(e, p, fromHold=false){
