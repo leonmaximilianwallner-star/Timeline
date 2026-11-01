@@ -181,3 +181,11 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **From the mockup, left out on purpose:** location and per-category icons (fields that don't exist; Max: no note on events for now); its amber now (now is red); its radii 20/23 (ours: 16, 24, round); its 28px heading (ours: 20); dashed free time (dashed is a drag preview, so plain). *Claude*
 - **The phone's back gesture closes Fokus**, through one history step, instead of leaving the app. *Claude*
 - **Reached by an expand button in the editor's header** for now; the pull-up gesture with a rubber band and the morph is the next pull request (commit on release, Claude's recommendation; Max to judge by feel). *Claude*
+
+## 1 Nov 2026 — from the editor to Fokus: pull up, one motion (pull request #22)
+
+- **A container transform, not a fade** (Google's Material pattern): the editor's squircle reshapes into the open event while every shared element travels to where it lands (the date up into the header, the time into the open event, each todo to its row); what only the editor has leaves, what only Fokus has arrives, nearest first. *Max (the idea: every element moves to its new place); Claude (the map of elements, RULEBOOK C.5)*
+- **Shared elements cross over** rather than morph letter by letter: one path, the editor's copy fading out over the first half, Fokus's fading in over the second. Identical text reads as one thing moving; different text (12-hour time → 24-hour, *3h* → *noch 1h 50min*) changes on the way. *Claude*
+- **The pull up is a rubber band, armed past a line, committed on release** (Max left the choice open; Claude's recommendation): until the finger lifts, it can still be undone by moving back. A tick and the filled expand button say "let go now". *Claude; Max to judge by feel*
+- **Plain Web Animations, measured in place**: Fokus is built under the editor, both are measured, then everything moves at once. The browser's own View Transitions were considered: less code, but they can't start from where a finger left the editor, and older phones lack them. *Claude*
+- **Only the way in moves for now.** Closing Fokus still fades to the week. *Claude (scope)*

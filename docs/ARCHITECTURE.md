@@ -341,6 +341,7 @@ ui/
   settings.js               settings: one panel, four pages (main, a colour, new, sync)
   day-todos.js              todos of a day without an event: the dots in the day header, the day's panel
   recording.js              the add menu above the + button: record and stop an actual
+  focus-morph.js            from the event editor to Fokus in one motion (a container transform)
 
 styles/   tokens · base · timeline · day · focus · add-button · lists (rows, overlines, switches: shared by editor and settings) · editor · todos (todo rows, the celebration) · settings · time-budget · toast · device · loader
 

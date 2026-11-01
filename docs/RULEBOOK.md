@@ -446,7 +446,7 @@ The gate, the store and sync are defined in `ARCHITECTURE.md` §4–5. The rules
 - **Event length vs. weight** — equal weight for now.
 - **Where steps are stored** (in the body, or rows of their own) — decided when the canvas returns. *(ARCHITECTURE §8)*
 - **A deeper level** below todo — deferred. Todo stays the smallest action. *(Max)*
-- **Focus view, next** (1 Nov): the pull-up from the editor (rubber band, a threshold, commit on release) and the editor's header morphing into the open event; then steps and their todos (the mockup's two levels), recording Soll/Ist from the open event, other weeks in the strip. The expand button in the editor's header crowds the title on a phone; it may go once the gesture exists.
+- **Focus view, next** (1 Nov): ~~the pull-up and the morph~~ (built 1 Nov, to be tuned by feel: `PULL_FOCUS`, `PULL_GIVE`, `MORPH_MS`); the way back from Fokus to the editor or the week as a motion; then steps and their todos (the mockup's two levels), recording Soll/Ist from the open event, other weeks in the strip. The expand button in the editor's header crowds the title on a phone; it may go once the gesture exists.
 - **The rest of the design spec** (§1 global rules outside the reworked sections, §3–5, §8.1–8.3, §8.5–8.6, §8.9) — not yet done. **Claude**
 - **Contrast** — white text on amber, green, blue, pink and grey fills is below 4.5:1. **Max, 22 Oct:** white stays (the whole design points to it, and events and phases already do it); if it fails the eye test in the editor headers, it is revisited.
 - **Day todos, next steps** — changing an existing day todo's category; dragging one into the day view to give it a time (it becomes an event?); an undated list. *(29 Oct)*
@@ -502,6 +502,11 @@ The gate, the store and sync are defined in `ARCHITECTURE.md` §4–5. The rules
 - **Only a change of state animates.** Redrawing what is already open never replays its opening (the stutter of the time budget and the dropdown, 22 Oct). Easing `--soft`, no overshoot: an overshoot played backwards looks wrong.
 - A closing animation has its own keyframes (e.g. `editor-sink` for `editor-rise`): a browser restarts an animation only when its name changes.
 - **The editor keeps the height it opened with**; what is added later scrolls inside its body.
+- **From the editor to Fokus: a container transform** (**Max**, 1 Nov; Google's Material pattern), not a fade. Pulling the editor's header up is a rubber band: it gives at most 140px however far the finger goes (`PULL_GIVE`); past 96px of finger travel (`PULL_FOCUS`) it is armed (a tick, the expand button fills); on release it turns into Fokus, before that it springs back. A fast flick up counts too. The expand button runs the same motion. In the motion every element either travels or leaves or arrives:
+  - **travels** (one path; the editor's copy fades out over the first half, Fokus's fades in over the second, so identical text reads as one thing): the editor's squircle → the open event (two plates: its colour, its raised body), title → title, category → the category after the time, the time → the time, the length → *noch …*, the date line → the header's date, each todo → the same todo, *Todo hinzufügen* → itself, the expand button → the close button;
+  - **leaves** (fades out and sinks, in the first third): repeat, reminder, the header's other buttons, the grip;
+  - **arrives** (fades in and rises, nearest to the open event first): the overline, the week, the other events, free time, the open event's time column. The dim layer clears while Fokus's ground fills in.
+  `ui/focus-morph.js`, tunables at its top (`MORPH_MS` 460 ms). With reduced motion: no motion, Fokus just opens.
 
 ## C.6 Not yet in this design *(the whole-app pass)*
 

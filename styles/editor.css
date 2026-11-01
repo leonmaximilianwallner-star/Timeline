@@ -101,6 +101,10 @@ html[data-theme="light"] .when input{color-scheme:light}
 .editor{position:relative}
 /* the editor rises in and sinks out the same way (desktop: a short rise and fade; phone: from the bottom edge) */
 /* the closing keyframes mirror the opening ones under their own names: a browser restarts an animation only when its name changes */
+/* on the way to Fokus (ui/focus-morph.js): the plates carry the colours, the editor's own surfaces give way */
+.editor.morphing, .editor.morphing .editor-body, .editor.morphing .list{background:transparent; border-color:transparent; animation:none}
+/* pulled up past the line: the expand button fills, as done does: let go now and it turns into Fokus */
+.editor.armed #editorFocus{background:#ededec; color:#111118}
 @keyframes editor-rise{from{opacity:0; transform:translateY(24px)}}
 @keyframes editor-sink{to{opacity:0; transform:translateY(24px)}}
 @keyframes editor-slide{from{transform:translateY(100%)}}
