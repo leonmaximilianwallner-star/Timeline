@@ -189,3 +189,12 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **The pull up is a rubber band, armed past a line, committed on release** (Max left the choice open; Claude's recommendation): until the finger lifts, it can still be undone by moving back. A tick and the filled expand button say "let go now". *Claude; Max to judge by feel*
 - **Plain Web Animations, measured in place**: Fokus is built under the editor, both are measured, then everything moves at once. The browser's own View Transitions were considered: less code, but they can't start from where a finger left the editor, and older phones lack them. *Claude*
 - **Only the way in moves for now.** Closing Fokus still fades to the week. *Claude (scope)*
+
+## 1 Nov 2026 — the motion, second pass: the way back, the threshold, the edges (pull request #23)
+
+- **Fokus closes with a container transform into the week**, the same grammar as the way in: each event reshapes into its squircle in the day grid, the weekdays and dates travel into the day header, the rest leaves or arrives. *Max (every motion the same feeling in reverse, RULEBOOK C.5); Claude (the map)*
+- **Only what can be seen travels.** An event above or below the visible hours, or a day outside the visible columns, leaves instead of flying under the day header. The date travels into the app's header only where that header shows a date (not on a phone). *Claude (found in the frames)*
+- **Pulling up grows the editor from the bottom edge** instead of lifting it, so nothing behind it shows. On a phone its coloured bottom line is gone (border-bottom 0), as when the category list opens: the editor sits 1px lower. *Max (found); Claude (cause)*
+- **The pull has two phases**: it holds back before the line, springs forward at it, follows loosely after. The old rubber band asked the same strength for every pixel. *Max*
+- **Corners round off in the first 40 % of the motion**, not along all of it (the "beat" before the squircle). *Max (found)*
+- **While the week is moving into place, it doesn't extend or redraw itself** (the drag guard `UI.dragLive`), so nothing is swapped out mid-motion. *Claude*
