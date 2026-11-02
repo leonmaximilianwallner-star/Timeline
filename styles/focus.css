@@ -34,8 +34,11 @@
 
 /* the day: time on the left, the event beside it */
 .focus-list{display:flex; flex-direction:column; gap:12px}
-.focus-row{display:grid; grid-template-columns:48px 1fr; gap:8px; align-items:start}
-.focus-time{display:flex; flex-direction:column; padding-top:12px; font-variant-numeric:tabular-nums}
+.focus-row{display:grid; grid-template-columns:48px 1fr; gap:8px; align-items:stretch}
+/* the start at the top of the event, its end at the bottom, dots between, all centred in the column (Max, 2 Nov) */
+.focus-time{display:flex; flex-direction:column; align-items:center; padding:10px 0; font-variant-numeric:tabular-nums}
+.focus-time .ft-dots{flex:1; min-height:0; width:4px; margin:4px 0;
+  background:radial-gradient(circle, var(--fg-muted) 1px, transparent 1.5px) center top / 4px 8px repeat-y; opacity:.7}
 .focus-time .ft-start{font-size:var(--fs-lead); line-height:22px; font-weight:600}
 .focus-time .ft-end{font-size:var(--fs-small); line-height:16px; color:var(--fg-muted)}
 .focus-time.past .ft-start{color:var(--fg-muted)}
@@ -59,7 +62,19 @@ button.focus-event.past{opacity:.6}
 .fe-head .fe-title{font-size:var(--fs-title); line-height:26px; font-weight:600; white-space:normal; hyphens:auto; overflow-wrap:anywhere}
 .fe-head .fe-when, .fe-head .fe-sub{font-size:var(--fs-body); line-height:20px; font-variant-numeric:tabular-nums; white-space:nowrap}
 .fe-head .fe-sub{white-space:normal; opacity:.85}
-.fe-body{background:var(--raised); border-radius:var(--r-row) var(--r-row) 0 0; padding:8px 0; min-height:120px}
+.fe-body{background:var(--raised); border-radius:var(--r-row) var(--r-row) 0 0; padding:8px 0}
+.fe-body:empty{padding:0}                                       /* all done: the event is all colour */
+/* ticked off: on the event's colour, a thin line above each (RULEBOOK C.3, Max, 2 Nov) */
+.fe-done .todoRow, .fe-done .row.add{color:#ededec}
+.fe-done .todoRow .tx-wrap, .fe-done .row.add .row-main{border-top:1px solid color-mix(in srgb, #ededec 28%, transparent)}
+.fe-done .todoRow .tx{color:#ededec; opacity:.8}
+.fe-done .todoRow:hover{background:transparent}
+.fe-done .tcheck{border-color:#ededec; color:#ededec}
+.fe-done .tdel{color:#ededec}
+.fe-done .todoRow[data-state="done"] .tcheck{background:#ededec; color:var(--cat)}
+.fe-done .todoRow[data-state="cancelled"] .tcheck{background:transparent; border-color:color-mix(in srgb, #ededec 60%, transparent)}
+.fe-done .row-input, .fe-done .row-input::placeholder{color:#ededec}
+.fe-done:last-child{padding-bottom:8px}
 
 /* free time: three dots, its length and a note typed in place ("Pause", "Anfahrt"); no surface, it isn't an event (Max, 1 Nov) */
 .focus-gap{min-height:var(--row-h); padding:0 4px 0 12px; display:flex; align-items:center; gap:8px; color:var(--fg-muted); cursor:text}
@@ -73,7 +88,8 @@ button.focus-event.past{opacity:.6}
 
 /* the day's own todos, before the first event: plain rows, no surface; a thin line under them (Max, 1 Nov) */
 .focus-todos{padding-bottom:12px; margin-bottom:20px; border-bottom:1px solid var(--hairline)}
-.focus-todos .todoRow{padding-left:4px}
+/* the same columns as the events: the circle where the times sit, the text where the events start (Max, 2 Nov) */
+.focus-todos .todoRow, .focus-todos .row.add{display:grid; grid-template-columns:48px 1fr; column-gap:8px; padding:0}
+.focus-todos .tcheck, .focus-todos .row-icon{justify-self:center}
 .focus-todos .todoRow:hover{background:transparent}
-.focus-todos .row.add{padding-left:4px}
 .focus-empty{margin:0; padding:12px 4px; font-size:var(--fs-body); color:var(--fg-muted)}

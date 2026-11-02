@@ -208,3 +208,10 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **Free time from 15 min on** (was 30): a short walk between two rooms can need a note too. *Claude*
 - **A new todo of the day in Fokus takes the category last chosen in the day's panel** (or frei); choosing one in Fokus comes later if needed. *Claude*
 - **A redraw while typing keeps what is typed** (a sync arriving mid-word), for every field in Fokus. *Claude*
+
+## 2 Nov 2026 — Fokus: the keyboard, ticked todos in colour, the time column (pull request #25)
+
+- **The keyboard bug.** A phone's keyboard resizes the window as it opens and closes; every resize redrew the app, and Fokus rebuilt itself. Since #24 a rebuild put the cursor back into the field being typed in: closing the keyboard (back) reopened it, and rebuilding mid-word cut into the keyboard's suggestions, so letters vanished. Fokus now redraws only when what it shows changed. *Max (found); Claude (cause, own mistake in #24)*
+- **Ticked todos move into the event's colour**, the raised body slides down past them; all done, the event is all colour. Done and cancelled count as ticked off. *Max*
+- **The time column reads start (top) to end (bottom)**, dots between: room for showing the time passing later. *Max*
+- **The day's todos use the events' columns.** *Max*
