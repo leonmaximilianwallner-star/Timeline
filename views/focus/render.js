@@ -53,16 +53,18 @@ function renderFocus(){
       <label class="focus-gap"><span class="gap-dots">${icon("dots")}</span><span class="gap-len">${fmtDur(g.e - g.s)}</span>
         <input class="gap-note" data-gap-for="${g.next}" value="${esc(gapNoteOf(next, f.day))}" placeholder="Pause, Anfahrt …" aria-label="Notiz vor ${esc(next.title)}" autocomplete="off" enterkeyhint="done"></label></div>`; }
     const ev = o.ev, c = cat(ev.categoryId), todos = todosOf(ev, f.day), done = todos.filter(t => t.state === "done").length;
-    const time = `<div class="focus-time${past(o) ? " past" : ""}"><span class="ft-start">${fmtMin(o.s)}</span><span class="ft-end">${fmtMin(o.e)}</span></div>`;
+    /* the start at the event's top, its end at its bottom, dots between (later: the time passing) */
+    const time = `<div class="focus-time${past(o) ? " past" : ""}"><span class="ft-start">${fmtMin(o.s)}</span><span class="ft-dots"></span><span class="ft-end">${fmtMin(o.e)}</span></div>`;
+    /* ticked off, a todo moves up into the event's colour; the raised body holds what is still to do. All done: all colour (Max, 2 Nov) */
+    const finished = todos.filter(t => t.state === "done" || t.state === "cancelled"), rest = todos.filter(t => !finished.includes(t));
+    const add = `<label class="row add"><span class="row-icon">${icon("plus")}</span><span class="row-main"><input id="focusNewTodo" class="row-input" placeholder="Todo hinzufügen" autocomplete="off" enterkeyhint="done"></span></label>`;
     if(ev.id === f.open) return `<div class="focus-row">${time}
       <article class="focus-event open" style="--cat:${c.color}" data-ev="${ev.id}">
         <button type="button" class="fe-head" data-edit="${ev.id}" title="Bearbeiten">
           <span class="fe-line"><span class="fe-title">${esc(ev.title)}</span><span class="fe-when">${when(o)}</span></span>
           <span class="fe-sub"><span class="fe-times">${fmtMin(o.s)} – ${fmtMin(o.e)}</span> · <span class="fe-cat">${esc(ev.categoryId ? c.name : "Frei")}</span></span></button>
-        <div class="fe-body">
-          <div class="todoList">${todos.map(todoRowHTML).join("")}</div>
-          <label class="row add"><span class="row-icon">${icon("plus")}</span><span class="row-main"><input id="focusNewTodo" class="row-input" placeholder="Todo hinzufügen" autocomplete="off" enterkeyhint="done"></span></label>
-        </div></article></div>`;
+        <div class="fe-done todoList">${finished.map(todoRowHTML).join("")}${rest.length ? "" : add}</div>
+        <div class="fe-body">${rest.length ? `<div class="todoList">${rest.map(todoRowHTML).join("")}</div>${add}` : ""}</div></article></div>`;
     const meta = [ev.categoryId ? c.name : "Frei", when(o), todos.length ? `${done} von ${todos.length}` : ""].filter(Boolean).join(" · ");
     return `<div class="focus-row">${time}
       <button type="button" class="focus-event${past(o) ? " past" : ""}" style="--cat:${c.color}" data-open="${ev.id}">
@@ -77,10 +79,7 @@ function renderFocus(){
       <label class="row add"><span class="row-icon">${icon("plus")}</span><span class="row-main"><input id="focusNewDayTodo" class="row-input" placeholder="Todo für diesen Tag" autocomplete="off" enterkeyhint="done"></span></label>
     </section>`;
 
-  /* a redraw (a tick, a sync) keeps the place, and whatever is being typed */
-  const scroll = el.scrollTop, a = document.activeElement;
-  const typing = a && el.contains(a) && a.tagName === "INPUT" ? { key: a.id ? "#" + a.id : `[data-gap-for="${a.dataset.gapFor}"]`, value: a.value, at: a.selectionStart } : null;
-  el.innerHTML = `<div class="focus-inner">
+  const html = `<div class="focus-inner">
     <header class="focus-head">
       <div class="focus-name"><span class="overline">Fokus · ${dayWords(f.day)}</span>
         <h1 class="focus-title">${WD_LONG[d.getDay()]}, ${d.getDate()}. ${MONTHS[d.getMonth()]}</h1></div>
@@ -90,9 +89,23 @@ function renderFocus(){
     ${todos}
     <div class="focus-list">${rows || `<p class="focus-empty">Keine Termine</p>`}</div>
   </div>`;
+  /* Redraw only what changed. renderAll runs on every resize, and a phone's keyboard resizes the window as it opens
+     and closes: rebuilding then put the cursor back into the field, which opened the keyboard again (stuck), and
+     cut into the keyboard's word suggestions (letters lost). Max, 2 Nov. */
+  if(html === el.dataset.html) return;
+  el.dataset.html = html;
+  /* a real redraw (a tick, a new todo, a sync) keeps the place, and whatever is being typed */
+  const scroll = el.scrollTop, a = document.activeElement;
+  const typing = a && el.contains(a) && a.tagName === "INPUT" ? { key: a.id ? "#" + a.id : `[data-gap-for="${a.dataset.gapFor}"]`, value: a.value, at: a.selectionStart } : null;
+  const body = el.querySelector(".focus-event.open .fe-body"), was = body && { id: body.parentNode.dataset.ev, top: body.offsetTop };
+  el.innerHTML = html;
   el.scrollTop = scroll;
   const back = typing && el.querySelector(typing.key);
   if(back){ back.value = typing.value; back.focus(); try{ back.setSelectionRange(typing.at, typing.at); }catch(_){} }
+  /* a todo ticked off: the raised body slides down past it (or back up), so the change is seen, not just swapped */
+  const nowBody = el.querySelector(".focus-event.open .fe-body");
+  if(was && nowBody && nowBody.parentNode.dataset.ev === was.id && nowBody.offsetTop !== was.top && !matchMedia("(prefers-reduced-motion: reduce)").matches)
+    nowBody.animate([{ transform:`translateY(${was.top - nowBody.offsetTop}px)` }, { transform:"none" }], { duration:260, easing: getComputedStyle(document.documentElement).getPropertyValue("--soft").trim() || "ease-out" });
 }
 
 /* one set of listeners on the layer; the content is redrawn under them */

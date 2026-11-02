@@ -340,6 +340,35 @@ await step('free time between events: three dots, its length, a note typed in pl
   assert.equal(await page.evaluate(() => gapNoteOf(S.events.find(e => e.id === 'g2'), UI.focus.day)), 'Anfahrt');
   assert.equal(await page.locator('.focus-gap button, .focus-gap[data-gap]').count(), 0, 'no "create an event" here (Max, 1 Nov)');
 });
+await step('typing in Fokus survives the keyboard: a resize neither rebuilds it nor puts the cursor back after it closed', async () => {
+  const input = page.locator('#focusNewTodo');
+  await input.tap(); await page.keyboard.type('Tast');
+  await page.evaluate(() => { window.__kept = document.getElementById('focusNewTodo'); });
+  await page.setViewportSize({ width: 390, height: 520 }); await page.waitForTimeout(300);     // the keyboard opens: the window shrinks
+  assert.equal(await page.evaluate(() => document.getElementById('focusNewTodo') === window.__kept), true, 'not rebuilt');
+  assert.equal(await input.inputValue(), 'Tast');
+  await page.evaluate(() => document.activeElement.blur());                                  // back: the keyboard closes …
+  await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(300);     // … and the window grows again
+  assert.notEqual(await page.evaluate(() => document.activeElement.id), 'focusNewTodo', 'the keyboard does not come back');
+  await input.fill('');
+});
+await step('ticked off, a todo moves into the event\'s colour; all done, the event is all colour', async () => {
+  const day = await page.evaluate(() => UI.focus.day);
+  await page.evaluate(d => mutate(s => { const ev = s.events.find(e => e.id === UI.focus.open);
+    setTodosOf(ev, d, [{ id: 't1', text: 'eins', state: 'open' }, { id: 't2', text: 'zwei', state: 'open' }]); }), day);
+  await page.locator('.focus-event.open .todoRow[data-tid="t1"] .tcheck').tap();
+  assert.equal(await page.locator('.focus-event.open .fe-done .todoRow[data-tid="t1"]').count(), 1, 'in the colour');
+  assert.equal(await page.locator('.focus-event.open .fe-body .todoRow[data-tid="t2"]').count(), 1, 'still to do: in the raised body');
+  await page.locator('.focus-event.open .todoRow[data-tid="t2"] .tcheck').tap();
+  assert.equal(await page.evaluate(() => document.querySelector('.focus-event.open .fe-body').offsetHeight), 0, 'no raised body left');
+});
+await step('the time column: the start at the event\'s top, its end at its bottom, dots between', async () => {
+  const r = await page.evaluate(() => { const row = document.querySelector('.focus-event.open').closest('.focus-row'), ev = row.querySelector('.focus-event').getBoundingClientRect();
+    const s = row.querySelector('.ft-start').getBoundingClientRect(), e = row.querySelector('.ft-end').getBoundingClientRect(), d = row.querySelector('.ft-dots').getBoundingClientRect();
+    return { top: s.top - ev.top, bottom: ev.bottom - e.bottom, dots: d.height }; });
+  assert.ok(r.top < 16 && r.bottom < 16, JSON.stringify(r));
+  assert.ok(r.dots > 20, 'dots between');
+});
 await step('the phone\'s back gesture closes the focus view, not the app', async () => {
   await page.goBack(); await page.waitForTimeout(400);
   assert.equal(await page.evaluate(() => UI.focus === null && !document.querySelector('.focus-view')), true);
