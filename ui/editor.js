@@ -51,6 +51,7 @@ const ICON = {
   import:  '<path d="M12 20V9"/><path d="M7 14l5-5 5 5"/><path d="M5 4h14"/>',
   moon:    '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
   sun:     '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  phase:   '<rect x="3" y="9" width="18" height="6" rx="3"/>',
   columns: '<path d="M4 5h16v14H4z"/><path d="M9.3 5v14M14.7 5v14"/>',
   out:     '<path d="M15 4h4v16h-4"/><path d="M10 8l-4 4 4 4"/><path d="M6 12h10"/>',
   expand:  '<path d="M14 4h6v6"/><path d="M10 20H4v-6"/><path d="M20 4l-7 7"/><path d="M4 20l7-7"/>',
@@ -72,6 +73,11 @@ const REMINDERS = [["","Keine"],["0","Zum Start"],["5","5 min vorher"],["15","15
 const KIND_WORD = { event:"Termin", phase:"Phase", milestone:"Meilenstein", actual:"Ist" };
 const KIND_LIST = { event:"events", phase:"phases", milestone:"milestones", actual:"actuals" };
 /* an actual has no name of its own: it shows its plan's, or "Ohne Plan" (RULEBOOK A.6) */
+/* a phase's span in a few characters: "3.–15. Nov." or "28. Okt.–5. Nov." */
+function shortSpan(p){
+  const a = parseISO(p.start), b = parseISO(lastDay(p.end)), mon = d => MONTHS[d.getMonth()].slice(0,3)+".";
+  return a.getMonth()===b.getMonth() ? `${a.getDate()}.–${b.getDate()}. ${mon(b)}` : `${a.getDate()}. ${mon(a)}–${b.getDate()}. ${mon(b)}`;
+}
 const actualTitle = a => { const plan = a.eventId && S.events.find(ev=>ev.id===a.eventId); return plan ? plan.title : "Ohne Plan"; };
 
 function openEditor(ctx){
@@ -251,7 +257,14 @@ function renderEditorBody(){
       <span class="when-sub"><span id="fWeekday"></span><input id="fDate" type="date" aria-label="Datum" value="${v.date||todayISO()}"><span id="fDayWords"></span></span></div>`;
   }
   if(kind==="event"){
+    /* the phase it belongs to, or none: given or changed here, from below (RULEBOOK B.1.8) */
+    const { onDay, later } = phaseChoices(S, v.date||todayISO(), todayISO(), v.parentId);
+    const phaseOpt = p => `<option value="${p.id}" ${p.id===v.parentId?"selected":""}>${esc(p.title)} · ${shortSpan(p)}</option>`;
+    const phaseOpts = `<option value="">Keine</option>`
+      + (onDay.length ? `<optgroup label="An diesem Tag">${onDay.map(phaseOpt).join("")}</optgroup>` : "")
+      + (later.length ? `<optgroup label="Weitere">${later.map(phaseOpt).join("")}</optgroup>` : "");
     h += `<div class="list">
+      ${rowHTML({ icon:"phase", label:"Phase", value:`<span id="fParentText"></span>`, pick:`<select id="fParent" class="row-pick" aria-label="Phase">${phaseOpts}</select>` })}
       ${rowHTML({ icon:"repeat", label:"Wiederholung", value:`<span id="fRepeatText"></span>`, pick:`<select id="fRepeat" class="row-pick" aria-label="Wiederholung">${optionsHTML(REPEATS, v.repeat||"none")}</select>` })}
       ${rowHTML({ icon:"bell", label:"Erinnerung", value:`<span id="fRemText"></span>`, pick:`<select id="fRem" class="row-pick" aria-label="Erinnerung">${optionsHTML(REMINDERS, v.reminderMin??"")}</select>` })}
     </div>`;
@@ -329,12 +342,27 @@ function renderEditorBody(){
     if(kind==="event"){
       set("fRepeatText", REPEATS.find(r=>r[0]===val("fRepeat"))[1]);
       set("fRemText", REMINDERS.find(r=>r[0]===val("fRem"))[1]);
+      const ph = val("fParent") && S.phases.find(p=>p.id===val("fParent"));
+      set("fParentText", ph ? ph.title : "Keine");
     }
     if(kind==="phase"){
       let a = val("fStart2"), b = val("fEnd2");
       if(a && b){ if(b < a) [a,b] = [b,a]; set("fLen", daysWords(diffDays(a,b)+1)); set("fSpanWords", spanWords(a, dayAfter(b))); }
     }
   };
+  /* an event in a phase wears the phase's colour: choosing a phase sets the category;
+     choosing another category leaves the phase (RULEBOOK B.3, B.1.8) */
+  const fParent = document.getElementById("fParent");
+  if(fParent){
+    fParent.addEventListener("change", ()=>{
+      const ph = S.phases.find(p=>p.id===fParent.value);
+      if(ph && (ph.categoryId||"") !== fProj.value){ fProj.value = ph.categoryId||""; fProj.dispatchEvent(new Event("change")); }
+    });
+    fProj.addEventListener("change", ()=>{
+      const ph = S.phases.find(p=>p.id===fParent.value);
+      if(ph && (ph.categoryId||"") !== fProj.value){ fParent.value = ""; words(); }
+    });
+  }
   words();
   B.addEventListener("input", words); B.addEventListener("change", words);
   /* a click on a time or date opens its picker, instead of putting the cursor into its digits (Max, 22 Oct) */
@@ -401,7 +429,7 @@ function renderEditorBody(){
     if(k==="event" && ed.repeat && ed.repeat!=="none"){ askSeriesDelete(); return; }   // one occurrence, or this and the following (Max, 22 Oct)
     mutate(s=>{
       if(k==="event") s.events = s.events.filter(x=>x.id!==ed.id);
-      else if(k==="phase") s.phases = s.phases.filter(x=>x.id!==ed.id);
+      else if(k==="phase"){ s.phases = s.phases.filter(x=>x.id!==ed.id); freeChildren(s, ed.id); }
       else if(k==="milestone") s.milestones = s.milestones.filter(x=>x.id!==ed.id);
       else if(k==="actual") s.actuals = s.actuals.filter(x=>x.id!==ed.id);
     });
@@ -452,6 +480,7 @@ function saveEditor(opts = {}){
     let s = clamp(mins("fStart")??9*60, HOUR_START*60, HOUR_END*60);
     let e = clamp(mins("fEnd")??s+60, HOUR_START*60, HOUR_END*60);
     if(e<=s) e = Math.min(s+SNAP, HOUR_END*60);
+    const parentId = val("fParent")||"";
     const data = { title, categoryId: val("fProj")||null,
       date: val("fDate")||todayISO(), startMin:s, endMin:e,
       repeat: val("fRepeat")||"none",
@@ -473,8 +502,10 @@ function saveEditor(opts = {}){
     const allDone = list => list.length>0 && list.every(t=>t.state==="done");
     const finished = !ed && allDone(ctx.todos);       // a new event born finished; a stored one celebrated at the tick
     const where = document.querySelector("#editorOverlay .editor").getBoundingClientRect();
-    mutate(st=>{ if(ed){ const t = st.events.find(x=>x.id===ed.id); delete t.end; delete t.except; Object.assign(t, data); }
-                 else st.events.push({ id:uid(), ...data }); });
+    mutate(st=>{ let t;
+                 if(ed){ t = st.events.find(x=>x.id===ed.id); delete t.end; delete t.except; Object.assign(t, data); }
+                 else st.events.push(t = { id:uid(), ...data });
+                 if(parentId) t.parentId = parentId; else delete t.parentId; });
     if(finished) celebrate(data, where);
     if(UI.addMode) setAddMode(false);                 // add-mode auto-exits after one creation
   }
@@ -484,7 +515,7 @@ function saveEditor(opts = {}){
     const data = { title:(val("fTitle")||"").trim()||"Phase",
       categoryId: val("fProj")||null, start:a, end:dayAfter(b),           // the field shows the last day; stored end is the day after
       details: sanitize(B.querySelector("#fDetails").innerHTML) };
-    mutate(st=>{ if(ed) Object.assign(st.phases.find(x=>x.id===ed.id), data);
+    mutate(st=>{ if(ed){ Object.assign(st.phases.find(x=>x.id===ed.id), data); carryCategory(st, ed.id, data.categoryId); }
                  else st.phases.push({ id:uid(), ...data }); });
     if(UI.addMode) setAddMode(false);
   }

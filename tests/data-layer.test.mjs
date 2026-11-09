@@ -191,7 +191,9 @@ const tests = {
     await page.click('#editorKindBtn'); await page.waitForTimeout(400);
     const [list, ed] = await Promise.all([page.locator('#editorCatList').boundingBox(), page.locator('#editorOverlay .editor').boundingBox()]);
     assert.ok(list.y >= 0 && list.y + list.height <= ed.y, `list ${Math.round(list.y)}–${Math.round(list.y + list.height)}, editor from ${Math.round(ed.y)}`);
-    assert.ok(ed.y + ed.height <= 900, 'the editor stays on screen');
+    /* the header stays on screen; the body may leave it while a category is chosen (RULEBOOK C.3) */
+    const head = await page.locator('#editorOverlay .editor-header').boundingBox();
+    assert.ok(head.y + head.height <= 900, 'the editor header stays on screen: ' + Math.round(head.y) + '+' + Math.round(head.height));
     await page.click('#editorKindBtn'); await page.waitForTimeout(400);
     assert.equal(await page.evaluate(() => document.querySelector('#editorOverlay .editor-stack').style.transform), '', 'and glides back');
     await page.keyboard.press('Escape');

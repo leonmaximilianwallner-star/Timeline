@@ -58,7 +58,7 @@ $tlWrap.addEventListener("pointerdown", e=>{
   }
 
   /* expand arrow / edit clicks are handled in the click handler below */
-  if(e.target.closest(".ph-exp,.phase,.milestone-chip,.milestone-dot,.projLabel")) return;
+  if(e.target.closest(".ph-exp,.phase,.milestone-chip,.milestone-dot,.projLabel,.dropdown")) return;   // a dropdown is a thing: holding it creates nothing
 
   if(UI.addMode){ startPhaseCreate(e, false); return; }   // mouse/touch: add-mode → drag to create
 
@@ -126,6 +126,16 @@ $tlWrap.addEventListener("click", e=>{
     dd.classList.remove("opening"); dd.classList.add("closing");   // …and closes with the same animation, reversed (Max, 22 Oct)
     let done = false; const once = ()=>{ if(!done){ done = true; close(); } };
     dd.addEventListener("animationend", once, { once:true }); setTimeout(once, 400);   // closed even if the motion's end goes unnoticed
+    return;
+  }
+  /* in a phase's dropdown: one of its events, or a new event that belongs to it (RULEBOOK B.1.8) */
+  const evEl = e.target.closest("[data-open-event]");
+  if(evEl){ const ev = S.events.find(x=>x.id===evEl.dataset.openEvent); if(ev) openEditor({ type:"event", edit:ev, occurrence:evEl.dataset.day }); return; }
+  const inEl = e.target.closest("[data-create-in-phase]");
+  if(inEl){
+    const ph = S.phases.find(p=>p.id===inEl.dataset.createInPhase); if(!ph) return;
+    const t = todayISO(), date = t < ph.start ? ph.start : t < ph.end ? t : lastDay(ph.end);   // today if inside, else the nearest day of the phase
+    openEditor({ type:"event", initial:{ date, startMin:9*60, endMin:10*60, categoryId:ph.categoryId||null, parentId:ph.id } });
     return;
   }
   const phEl = e.target.closest(".phase");
