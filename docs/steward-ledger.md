@@ -6,7 +6,7 @@
 ## Open
 | ID | Tier | Area | Finding | Rule / source | Since |
 |---|---|---|---|---|---|
-| S1 | C | hierarchy | Nothing links the day to the plan: no event, todo or day todo references a phase or step (`phaseId`/`stepId`: zero hits in the code). The principle ranked first exists only in the docs. | RULEBOOK B.1.1, B.2, B.6 "Scheduling a step"; ARCHITECTURE §8 | 2026-11-10 |
+| S1 | C → accepted | hierarchy | **Accepted 10 Nov (Max: "a core principle, not an add-on"); step 1 in PR #27 (event ↔ phase), steps next.** Nothing links the day to the plan: no event, todo or day todo references a phase or step (`phaseId`/`stepId`: zero hits in the code). The principle ranked first exists only in the docs. | RULEBOOK B.1.1, B.2, B.6 "Scheduling a step"; ARCHITECTURE §8 | 2026-11-10 |
 | S2 | B | loader | The wordmark gates every start: a fixed 1.8 s floor (`ui/loader.js`) plus a 1.6 s fade (`styles/loader.css`), ~3.4 s, though the app draws from local data at once. The comment says "2.9s draw + 0.4s hold" and no longer matches the timer. | C.5 "only a change of state animates"; brief: the app makes small decisions on your behalf | 2026-11-10 |
 | S3 | B | time budget | Computes from **planned** events, while the dictionary calls it time actually spent, and actuals (Soll/Ist, #19) now exist: two measures of time that disagree. Still the older look. | RULEBOOK A.8, C.6; one strategy per mechanic | 2026-11-10 |
 | S4 | C | todos | A todo has two homes (an event's occurrence, a day todo) and Fokus adds a third small store (free-time notes). A day todo can't be placed in the day grid. | B.8 "Day todos, next steps"; one strategy per mechanic | 2026-11-10 |
@@ -24,9 +24,11 @@
 |---|---|---|---|
 
 ## Rule candidates (seen 2+ times → propose for guideline)
+- **Adopted 10 Nov as RULEBOOK B.1.8 (Max):** structure supports, never demands; links from either end, may skip levels.
 - *Tie-break for equal options:* when two options are equally good, pick the one that strengthens the hierarchy (B.1.1), then the one that removes a thing. Proposed 2026-11-10 because the same worry ("least terrible by convenience") recurs.
 
 ## Runs
 | Date | Mode | Area | Summary | Jury scores (1–7) |
 |---|---|---|---|---|
 | 2026-11-10 | Jury | whole app | First Jury, baseline. Strong foundation (gate, sync, push, tests, dictionary); all recent work in the execution layer; the hierarchy link is still unbuilt. | 1 · 3 · 2 · 4 · 3 · 3 · 3 |
+| 2026-11-10 | — | hierarchy | S1 accepted; PR #27 builds its first link (parentId, event ↔ phase). Opened B.8 "one way to say belongs to" (blocks list vs parentId). | — |
