@@ -283,6 +283,7 @@ The editor is a window (see Parts). Code: `openEditor(ctx)`, `UI.editor`, IDs `#
 **Device state** · `device` — what belongs to this screen, not the plan: theme, number of days, open dropdowns. Saved per device, never synced, not undoable.
 **The gate** · `mutate(fn)` — the one way to change the plan; stamps what changed (ARCHITECTURE §4).
 **Progress** · `progress` — a number from 0 to 1, shown as a fill or a count.
+**Parent** · *gehört zu* · `parentId` — the one thing a thing belongs to (B.1.8), stored on the lower thing. May skip levels; absent means free. A parent that no longer exists (deleted on another device) reads as none. Read through `core/hierarchy.js`. Today only an event has one (a phase); steps will use the same field. **Never say:** owner, container, group (that's the canvas's word).
 **Open** · `open` — whether something that unfolds is unfolded: a phase on the canvas, a phase dropdown. **Never say:** expanded, fold, collapsed.
 
 ## A.10 Verbs
@@ -353,6 +354,7 @@ monospace → DM Sans with tabular figures
 5. **Role comes from relation.** An idea is a block *because* a phase lists it. Nothing is stored twice.
 6. **Planning above, execution below.** Canvas and timeline are for planning; the day view is for doing. A feature that blurs this line needs a strong reason.
 7. **Structure emerges.** Nothing asks for structure before there's thinking to structure.
+8. **Structure supports, it never demands.** *(Max, 10 Nov)* Every thing may belong to one thing above it, however far up (an event straight into a phase, skipping block and step), or to nothing at all. The link can be given, changed or removed at any time, **from either end**: top-down (a project, its phases, then the week planned around them) or bottom-up (a loose event or todo that later goes into a phase), like changing a heading's level in a text. Nothing is ever forced into a place, and nothing loses its place silently.
 
 ## B.2 The hierarchy
 
@@ -371,6 +373,16 @@ monospace → DM Sans with tabular figures
 **Max:** a step can be scheduled more than once. It's then no longer done until the new event is. *(29 Sept)*
 **Max:** a project is a category with a span. A named canvas group *may* later become a project — a possibility, not a necessity. *(30 Sept)*
 **Max:** exams are milestones. *(30 Sept)*
+**Max:** structure supports, it never demands; links can be made from either end, and may skip levels (B.1.8). *(10 Nov)*
+
+### B.2.2 An event in a phase *(built 10 Nov; steps come next)*
+
+- An event may belong to a phase (`parentId`), chosen in its editor (row *Phase*: the phases on its day first, then the ones not yet over), or created in the phase's dropdown (*Termin in dieser Phase*). A series belongs as a whole.
+- **It wears the phase's colour.** Choosing a phase sets the event's category; choosing another category leaves the phase. A recoloured phase takes its events along (B.3).
+- **The phase's dropdown lists its events**: the next ones by day and time, then a count of the rest; its count is the phase's progress.
+- **Progress:** each occurrence weighs the same (B.1.4). A plain event counts wherever it is (it was put there on purpose); a series only on its days inside the phase's span. An occurrence is done when its todos are (cancelled ones don't count); **without todos it is done once its day is over.** *(Claude, 10 Nov: there is no hand tick for events yet; revisit with steps.)*
+- **Deleting a phase frees its events**; none is deleted with it. Undo brings the links back.
+- When steps arrive, an event belongs to a step or still straight to a phase; both count toward the phase, the same rule one level deeper.
 
 **Derived rules.**
 - A step with events can't be ticked by hand; its tick shows its events. A step with none is ticked directly.
@@ -439,11 +451,14 @@ The gate, the store and sync are defined in `ARCHITECTURE.md` §4–5. The rules
 - **Step ids survive edits.** Every write to a body goes through `setBody`. Ids are unique everywhere.
 - **Deleting a phase or milestone** deletes it everywhere; its blocks become free ideas and its links go with it. Undoing restores it whole. Deleting a dated idea or block *in the timeline* only removes its date. **Claude**
 - **Something made in the timeline** gets a place on the canvas: a row under everything there, two cells clear, on the lattice. **Claude**
+- **Deleting a phase** frees its events (their `parentId` goes); it never deletes them. *(10 Nov)*
 - **Deleting a category** only removes the name from its colour; its items keep their colour.
 - **Device state is never synced:** canvas camera, scroll position, which dropdowns are open.
 
 ## B.8 Open questions
 
+- **One way to say "belongs to".** Events store their parent (`parentId`, B.1.8); the canvas build stored a phase's blocks as a list on the phase (`blocks`, B.7). Two strategies for one mechanic. A list keeps the blocks' order; a parent link allows exactly one parent and re-parenting from below. Decide when blocks return; recommendation on record: `parentId` everywhere, order as a field of its own. *(Claude, 10 Nov)*
+- **How the hierarchy is shown** in each view, so it informs instead of repeating itself (the same thing drawn three ways). The dropdown's list and count are the minimum for now. *(Max, 10 Nov: a design question of its own, later)*
 - **Colour, category, project** — how they should align with the philosophy. *(Max)*
 - **Group as project** — possible later, not needed now. *(Max)*
 - **Event length vs. weight** — equal weight for now.

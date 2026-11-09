@@ -308,6 +308,7 @@ core/                       rules with no screen
   text.js                   escaping and cleaning text
   repeat.js                 on which days a repeating event occurs
   todos.js                  which todos belong to which day of an event; carry-over within a series
+  hierarchy.js              what belongs to what (parentId), a phase's events and progress (RULEBOOK B.1.8, B.2.2)
   focus.js                  the focus view's rules: a day's events, which one is open, free time, the week
   actuals.js                actuals: which plan "record" means, stopping, packing plans and actuals in separate layers
 

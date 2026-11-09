@@ -215,3 +215,17 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **Ticked todos move into the event's colour**, the raised body slides down past them; all done, the event is all colour. Done and cancelled count as ticked off. *Max*
 - **The time column reads start (top) to end (bottom)**, dots between: room for showing the time passing later. *Max*
 - **The day's todos use the events' columns.** *Max*
+
+## 10 Nov 2026 — the hierarchy, first link: an event in a phase (pull request #27)
+
+- **The steward's first Jury found the hierarchy unbuilt:** nothing linked the day view to the timeline view (no event referenced a phase). Max: the hierarchy is a core principle, not an add-on; build it now, without waiting for the canvas. *Max*
+- **Structure supports, it never demands** (RULEBOOK B.1.8): a thing may belong to one thing above it, however far up, or to nothing; the link is made, changed or removed from either end, like changing a heading's level. *Max*
+- **The link is stored on the lower thing, `parentId`, one field for every level.** One parent at most, re-parenting from below is a one-field change, and steps will use the same field (an event then belongs to a step or straight to a phase). A `phaseId` would have been a second link for steps to replace. *Claude*
+- **First from below and above at once, for events only:** the event editor's row *Phase*; the phase dropdown's list of its events and *Termin in dieser Phase*. Steps next. *Claude (order); Max to veto*
+- **An event in a phase wears its colour**: choosing a phase sets the category, another category leaves the phase, a recoloured phase takes its events along. Otherwise the colour would say one thing and the link another. *Claude*
+- **Progress:** equal weight per occurrence; a series counts only inside the phase's span; without todos an occurrence is done once its day is over (no hand tick exists). *Claude, revisit with steps*
+- **Deleting a phase frees its events.** A link to a phase deleted on another device reads as none. *Claude*
+- **Holding a phase dropdown no longer starts a new phase** underneath it: the dropdown is a thing now, with rows to tap. *Claude*
+- **The event editor is one row taller.** On a 900px desktop screen its body now leaves the screen by about 20px while the category list is open, as RULEBOOK C.3 allows ("the body may leave the screen while a category is chosen"); the test now checks the header, as the rule says. *Claude*
+- **Not in this step, on purpose:** how the hierarchy is drawn (fill on the pill, a phase's name on events), day todos in a phase, steps. Max: the visual communication is its own design question. *Max*
+

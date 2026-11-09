@@ -82,7 +82,21 @@
 @keyframes disappear{to{opacity:0; transform:scale(.94) translateY(8px)}}   /* "appear" backwards, under its own name */
 .dropdown b,.dropdown strong{color:var(--text)}
 .dropdown ul,.dropdown ol{padding-left:18px; margin:4px 0}
-.dropdown:empty::after{content:"Keine Beschreibung"; color:var(--fg-muted); font-style:italic}
+.dropdown-note:empty{display:none}
+/* the phase's events (RULEBOOK B.1.8): rows of one line, the note above them */
+.dropdown-events{display:flex; flex-direction:column}
+.dropdown-note:not(:empty) + .dropdown-events{margin-top:8px; padding-top:8px; border-top:1px solid var(--hairline)}
+.dropdown-head{display:flex; justify-content:space-between; align-items:baseline; padding-bottom:4px}
+.dropdown-event{
+  display:flex; align-items:center; gap:8px; min-height:var(--row-h); padding:0;   /* a touch target (RULEBOOK C.4) */
+  background:none; border:0; color:var(--text); font:inherit; text-align:left; cursor:pointer;
+}
+.dropdown-event .de-when{color:var(--fg-muted); font-variant-numeric:tabular-nums; white-space:nowrap}
+.dropdown-event .de-title{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.dropdown-event .de-mark{color:var(--fg-muted); font-variant-numeric:tabular-nums}
+.dropdown-event.add{color:var(--fg-muted)}
+.dropdown-event.add svg{width:16px; height:16px}
+.dropdown-more{color:var(--fg-muted); min-height:24px}
 #milestoneRow{height:52px}
 .milestone-chip{
   position:absolute; top:6px; transform:translateX(-50%);
