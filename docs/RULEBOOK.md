@@ -477,6 +477,14 @@ The canvas is above the timeline. **A switch never takes longer than a button wo
 - **In the canvas:** scroll or drag the empty grid to pan; T goes to today; Escape goes back to the week; the add button and add mode belong to the week.
 - **Not yet:** a touch way in (the phone can't reach the canvas), zoom levels (B.5), anything on the grid.
 
+### B.6.2 An open phase: its plan ("Fahrplan") *(built 10 Nov; Max's spec)*
+
+- **The phase pill** is its wash with a 1px edge in its colour; its **fill** is its progress (B.2); its name, a chevron and `done/total` sit inside (`· n ohne Tag`: steps with no event yet). Finished: the whole pill at 45 % (the done rule). Under 90px wide: no count.
+- **The chevron opens the plan; one phase is open at a time.** A click on the pill still opens the phase editor *(Max to decide: the spec makes the whole pill the toggle, which would leave the editor without a way in)*.
+- **The plan:** under the lane, pushing everything below down; no box, no shadow, no colour. One cell per day of the phase, exactly on the day columns, with their lines and weekend shade. The today line runs behind it.
+- **A cell:** every event under the phase on that day (straight, or through a step), by time: a head (its step's name, or its own; `done/total` of its todos; ✓ when done). Past days: heads only, muted. Today and later: up to 3 open todos under each head, then `+n`. Done todos never show. A ring ticks a todo; a head opens its event.
+- **Not built (Max to decide):** open todos of past days moving to today; dragging a todo to another day.
+
 ## B.7 Data
 
 The gate, the store and sync are defined in `ARCHITECTURE.md` §4–5. The rules that belong to the product:

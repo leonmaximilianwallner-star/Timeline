@@ -274,3 +274,10 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **Found on the way:** scroll anchoring moved the canvas off its floor when the rail opened or closed, so the next pull down didn't start (`overflow-anchor:none`); a short pull's spring-back swallowed the next pull's first events (a new pull now takes it over); a busy frame could end the switching gesture early and let its momentum scroll on (it now ends only after landing). *Claude*
 - **Result:** about 0.5 s from flick to landed, the motion ~0.3 s, no frame over 34 ms, no long task after landing. The week pixel-identical. *Claude; Max to judge on his desktop*
 
+## 10 Nov 2026 — an open phase shows its plan (pull request #33)
+
+- **The dropdown card becomes a plan of day cells** (Max's spec "Phase offen · D"): borrowed structure (the day columns), the thing not a measurement (todo text), position as meaning (the day), one colour per thing, state by value. RULEBOOK B.6.2. *Max*
+- **Mapped to the model:** steps have no days; events do. A cell lists the events under the phase on that day; the head is the step's name; "ohne Tag" counts steps with no event. *Claude*
+- **Kept, against the spec:** a click on the pill opens the phase editor; only the chevron toggles. Otherwise the editor has no way in. **Left out:** overdue todos moving to today, drag between days (the spec's own open decisions); the note and "Termin in dieser Phase" (both in editors). *Claude; Max to decide*
+- **The wash is computed** (`washOf`, core/model.js): the colour at 0x38 on the base, the spec's table. A `--weekend` token now serves the day view and the plan. *Claude*
+

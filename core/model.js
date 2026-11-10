@@ -12,6 +12,9 @@ const HOUR_START = 0, HOUR_END = 24, HOUR_PX = 52;
 let   TL_PPD     = 160;              // unified px/day — both views share one grid
 const SNAP       = 15;               // minutes
 const PALETTE    = ["#f4971f","#e9473a","#40838b","#6498c0","#8fc14e","#90909a","#a060c8","#d86e9a"];
+/* a colour's wash: the colour at 0x38, pre-blended on the base (#111118), solid (RULEBOOK B.3) */
+const washOf = hex => "#" + [1, 3, 5].map((i, k) => { const c = parseInt(hex.slice(i, i + 2), 16), b = [0x11, 0x11, 0x18][k];
+  return Math.round(b + (c - b) * 0x38 / 255).toString(16).padStart(2, "0"); }).join("");
 
 const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-3);
 
