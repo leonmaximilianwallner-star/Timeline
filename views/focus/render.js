@@ -68,7 +68,7 @@ function renderFocus(){
     const meta = [ev.categoryId ? c.name : "Frei", when(o), todos.length ? `${done} von ${todos.length}` : ""].filter(Boolean).join(" · ");
     return `<div class="focus-row">${time}
       <button type="button" class="focus-event${past(o) ? " past" : ""}" style="--cat:${c.color}" data-open="${ev.id}">
-        <span class="fe-dot">${todos.length && done === todos.length ? icon("done") : ""}</span>
+        <span class="fe-dot">${eventDone(ev, f.day) ? icon("done") : ""}</span>
         <span class="fe-main"><span class="fe-title">${esc(ev.title)}</span><span class="fe-meta">${esc(meta)}</span></span></button></div>`;
   }).join("");
 

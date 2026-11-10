@@ -37,7 +37,7 @@ const STEPS = [
   ['phase-editor',     async p => { await p.locator('[data-phase]').first().click(); }],
   ['closed',           async p => p.keyboard.press('Escape')],
   ['event-click',      async p => { await p.locator('.event, .evcard').nth(1).click(); }],   // until 22 Oct the todo panel, now the editor
-  ['todo-ticked',      async p => { await p.locator('#todoPanel .tcheck, #pop .tcheck, .editor .tcheck').first().click(); }],
+  ['todo-ticked',      async p => { await p.locator('#todoPanel .tcheck, #pop .tcheck, .editor .todoList .tcheck').first().click(); }],   // a todo's mark, not the event's own tick (10 Nov)
   ['event-editor',     async p => { const b = p.locator('#todoPanelEdit, #popEdit'); if (await b.count()) await b.click(); }],
   ['closed-2',         async p => p.keyboard.press('Escape')],
   ['undo',             async p => p.click('#btnUndo')],

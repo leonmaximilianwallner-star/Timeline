@@ -135,11 +135,11 @@ function appendPhaseLanes(frag, phases, W){
 const DROPDOWN_EVENTS = 6;    // upcoming occurrences listed; the rest is a count
 function phaseEventsHTML(ph){
   const today = todayISO();
-  const occ = phaseOccurrences(S, ph), { done, total } = phaseProgress(S, ph, today);
+  const occ = phaseOccurrences(S, ph), { done, total } = phaseProgress(S, ph);
   const next = occ.filter(o => o.day >= today), shown = next.slice(0, DROPDOWN_EVENTS);
   const row = ({ ev, day }) => {
     const d = parseISO(day), todos = todosOf(ev, day).filter(t => t.state !== "cancelled");
-    const mark = occurrenceDone(ev, day, today) ? "✓" : todos.length ? `${todos.filter(t=>t.state==="done").length}/${todos.length}` : "";
+    const mark = eventDone(ev, day) ? "✓" : todos.length ? `${todos.filter(t=>t.state==="done").length}/${todos.length}` : "";
     return `<button type="button" class="dropdown-event" data-open-event="${ev.id}" data-day="${day}">
       <span class="de-when">${WD[d.getDay()]} ${d.getDate()}.${d.getMonth()+1}. · ${fmtMin(ev.startMin)}</span>
       <span class="de-title">${esc(ev.title)}</span><span class="de-mark">${mark}</span></button>`;

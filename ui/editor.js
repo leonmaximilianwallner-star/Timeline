@@ -270,7 +270,8 @@ function renderEditorBody(){
     </div>`;
     h += `<div class="part">
       <div class="part-head"><h3 class="overline">Todos</h3><span class="count" id="editorTodoCount"></span></div>
-      <div class="list"><div class="todoList" id="editorTodos"></div>
+      <div class="list"><div class="todoRow event-tick" id="editorEventTick" data-state="open" hidden><button type="button" class="tcheck" title="Erledigt"></button><div class="tx-wrap"><span class="tx">Erledigt</span></div></div>
+        <div class="todoList" id="editorTodos"></div>
         <label class="row add"><span class="row-icon">${icon("plus")}</span><span class="row-main"><input id="fNewTodo" class="row-input" placeholder="Todo hinzufügen" autocomplete="off" enterkeyhint="done"></span></label>
       </div>
       <p class="hint" id="editorCarryHint" hidden></p></div>`;
@@ -378,23 +379,39 @@ function renderEditorBody(){
   function showTodos(){
     const list = B.querySelector("#editorTodos"), hint = B.querySelector("#editorCarryHint");
     if(list) list.innerHTML = ctx.todos.map(todoRowHTML).join("");
-    countTodos();
+    countTodos(); showTick();
     if(hint){ hint.textContent = "↻ aus einem früheren Termin übernommen (war verschoben)"; hint.hidden = !ctx.todos.some(t=>t.carried); }
   }
   function countTodos(){
     const el = B.querySelector("#editorTodoCount"); if(!el) return;
     el.textContent = ctx.todos.length ? `${ctx.todos.filter(t=>t.state==="done").length}/${ctx.todos.length}` : "";
   }
-  if(kind==="event"){ showTodos(); ctx.showTodos = showTodos; }
+  /* without todos to count, an event is ticked by hand (RULEBOOK B.2; Max, 10 Nov): no todo needed to say "done".
+     A stored event's tick applies at once, like a todo's; a new one's waits for ✓ */
+  function showTick(){
+    const r = B.querySelector("#editorEventTick"); if(!r) return;
+    r.hidden = todosDone(ctx.todos) !== null;
+    r.dataset.state = ctx.ticked ? "done" : "open";
+    r.querySelector(".tcheck").textContent = ctx.ticked ? "✓" : "";
+  }
+  if(kind==="event"){
+    ctx.ticked = !!(ed && (S.events.find(x=>x.id===ed.id) || ed).doneByDate?.[ctx.occurrence]);
+    B.querySelector("#editorEventTick .tcheck").onclick = ()=>{
+      ctx.ticked = !ctx.ticked; showTick();
+      if(!ed) return;
+      mutate(st=>{ const e2 = st.events.find(x=>x.id===ed.id); if(e2) tickEvent(e2, ctx.occurrence, ctx.ticked); });
+      if(ctx.ticked) celebrate(ed, document.querySelector("#editorOverlay .editor").getBoundingClientRect());
+    };
+    showTodos(); ctx.showTodos = showTodos;
+  }
   /* todos of a stored event apply at once, as ticking is doing, not planning (Max, 22 Oct): ✕ and sliding
      down discard only the event's own changes. A new event's todos wait for ✓ with the rest. */
-  const allDone = list => list.length>0 && list.every(t=>t.state==="done");
   function todosChanged(){
-    countTodos();
+    countTodos(); showTick();
     if(!ed) return;
-    const before = allDone(todosOf(S.events.find(x=>x.id===ed.id) || ed, ctx.occurrence));
+    const before = eventDone(S.events.find(x=>x.id===ed.id) || ed, ctx.occurrence);
     mutate(st=>{ const e2 = st.events.find(x=>x.id===ed.id); if(e2) setTodosOf(e2, ctx.occurrence, JSON.parse(JSON.stringify(ctx.todos))); });
-    if(!before && allDone(ctx.todos)) celebrate(ed, document.querySelector("#editorOverlay .editor").getBoundingClientRect());
+    if(!before && todosDone(ctx.todos) === true) celebrate(ed, document.querySelector("#editorOverlay .editor").getBoundingClientRect());
   }
   const newTodo = B.querySelector("#fNewTodo");
   if(newTodo) newTodo.addEventListener("keydown", e=>{
@@ -492,18 +509,22 @@ function saveEditor(opts = {}){
     if(data.repeat === "none") byDate = {};                        // a plain event has one day: its own
     byDate[data.repeat === "none" ? data.date : day] = ctx.todos;
     data.todosByDate = JSON.parse(JSON.stringify(byDate));
-    if(ed && ed.gapNotes && shift) data.gapNotes = shiftTodos(ed.gapNotes, shift);   // the notes on the free time before it go along (core/focus.js)
+    if(ed && ed.gapNotes && shift) data.gapNotes = shiftTodos(ed.gapNotes, shift);
+    /* hand ticks (core/hierarchy.js): read from the plan, as a tick applied while the editor was open is newer than ed */
+    const ticks = ed ? shiftTodos((S.events.find(x=>x.id===ed.id) || ed).doneByDate, shift) : (ctx.ticked ? { [data.date]: true } : {});
+    if(data.repeat === "none") Object.keys(ticks).forEach(d => { if(d !== data.date) delete ticks[d]; });   // a plain event has one day
+    data.doneByDate = Object.keys(ticks).length ? ticks : undefined;   // the notes on the free time before it go along (core/focus.js)
     /* a series' end and removed days move with its start; a plain event has neither */
     const moved = d => isoDate(addDays(parseISO(d), shift));
     data.end    = data.repeat !== "none" && ed && ed.end ? moved(ed.end) : undefined;
     data.except = data.repeat !== "none" && ed && ed.except ? ed.except.map(moved) : undefined;
     if(data.end === undefined) delete data.end; if(data.except === undefined) delete data.except;
+    const noTicks = data.doneByDate === undefined; if(noTicks) delete data.doneByDate;
     if(data.reminderMin!=null) requestNotifPermission();
-    const allDone = list => list.length>0 && list.every(t=>t.state==="done");
-    const finished = !ed && allDone(ctx.todos);       // a new event born finished; a stored one celebrated at the tick
+    const finished = !ed && (todosDone(ctx.todos) ?? ctx.ticked) === true;   // a new event born finished; a stored one celebrated at the tick
     const where = document.querySelector("#editorOverlay .editor").getBoundingClientRect();
     mutate(st=>{ let t;
-                 if(ed){ t = st.events.find(x=>x.id===ed.id); delete t.end; delete t.except; Object.assign(t, data); }
+                 if(ed){ t = st.events.find(x=>x.id===ed.id); delete t.end; delete t.except; if(noTicks) delete t.doneByDate; Object.assign(t, data); }
                  else st.events.push(t = { id:uid(), ...data });
                  if(parentId) t.parentId = parentId; else delete t.parentId; });
     if(finished) celebrate(data, where);

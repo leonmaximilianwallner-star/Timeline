@@ -115,7 +115,7 @@ function renderEvent(ev, dIso, x, w, outline){
   const h   = Math.max(minToY(ev.endMin) - top - 2, 18);
   const el = document.createElement("div");
   const todos = todosOf(ev, dIso);                 // this occurrence's todos only
-  const allDone = todos.length>0 && todos.every(t=>t.state==="done");
+  const allDone = eventDone(ev, dIso);             // by its todos, or ticked by hand (core/hierarchy.js)
   const narrow = w < EVENT_NARROW;
   el.className = "event" + (allDone ? " complete" : "") + (narrow ? " narrow" : "") + (outline ? " outline" : "");   // outline: it has an actual
   const col = cat(ev.categoryId).color;
