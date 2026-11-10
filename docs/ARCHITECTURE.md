@@ -31,7 +31,7 @@ None of this is about skill or the size of the app. It's about **boundaries**: w
 | 1 | Plain JavaScript, no framework, no build step. Classic scripts; modules only when a present problem needs them | proposed |
 | 2 | Layers that only depend downward: **core → data → views** | proposed |
 | 3 | **One gate for every change:** `mutate()` stamps what changed. Named commands: dropped (§4) | **Claude, 21 Oct**, after Max asked for the simplest solution |
-| 4 | One page, one scroll container; the levels stack like a website | **Max, 20 Oct** |
+| 4 | One page, one scroll container; the levels stack like a website. The canvas: a second scroller, never in step with the first (§6.1) | **Max, 20 Oct**; **Claude, 10 Nov** (§6.1) |
 | 5 | Supabase, one row per record (not one blob), offline-first on the device's localStorage. No secret in the app | proposed |
 | 6 | Where steps live (in a block's body, or their own table) | deferred until the canvas returns |
 | 7 | Agent access | **Max, 20 Oct: later.** Design kept possible, nothing built |
@@ -213,6 +213,20 @@ In v2_7 the timeline and day grid already share one scroller and one scale relat
 
 ---
 
+### 6.1 The canvas view: a second native scroller *(as built, 10 Nov)*
+
+**Decided (Claude, flagged to Max before building):** the canvas view is its own native scroller (`#canvasScene`), stacked over the week's (`#scene`) in `#views`. **Why not the one scroller:** one native scroller has one scale, and the canvas's (a day per 40px cell) is not the week's (a day per column). Two scales in one scroller would mean scaling by hand on every frame, which is exactly the main-thread work the single scroller removed.
+
+**Why this is not the old multi-scroller problem.** The lag of the old build came from scrollers kept *in step every frame* by scroll events. These two never move together: only one is in use at a time; the other is hidden (`visibility`, not `display`, so it keeps its scroll position). Position passes between them **once, at the switch**: the day at the left edge (`weekLeftDay` / `canvasLeftDay` / `canvasScrollToDay`, `views/viewport.js`). Each scroller pans on the compositor with native momentum.
+
+**The rail rides the canvas's scroller.** It is pinned to the floor with `position:sticky` inside the canvas, so it moves sideways with it on the compositor, never a frame behind. Its sticky labels follow the canvas's scroller; the rail clips with `overflow:clip`, not `hidden` (hidden would make it a scroller of its own and break them, as on the timeline).
+
+**One renderer at two scales.** `buildTimeline(ppd, rail)` draws the timeline view at any scale; the week calls it with `TL_PPD`, the rail with `CANVAS_CELL`. Pixel-identical for the week (fingerprint).
+
+**The motions** (`ui/canvas-morph.js`) move only `transform` and `opacity`, with Web Animations, like the Fokus motions. Measured on a desktop screen: no frame over 17 ms.
+
+**Nothing of the canvas touches the week while it isn't in play:** no layer (`will-change`), no stacking context, no focusable scroller; each of these changed the week's pixels (found by the fingerprint test, removed).
+
 ## 7. Agents — **Max, 20 Oct: later**
 
 **Decided.** First the app has to work for Max. Agent access comes after sync works.
@@ -322,9 +336,10 @@ data/
 views/
   range.js                  which days are drawn, pixels per day
   render-all.js             draws everything (renderAll)
-  viewport.js               the one scroll container
+  viewport.js               the week's scroll container; the day at the left edge of each view (§6.1)
   timeline/lanes.js         packs phases into lanes
-  timeline/render.js        draws the timeline view
+  timeline/render.js        draws the timeline view, at any scale: the week's, and the canvas's rail (buildTimeline)
+  canvas/render.js          the canvas view: its grid, its floor, its rail (§6.1)
   day/render.js             draws the day view
   focus/render.js           the focus view: one day over the app, its listeners, the back gesture
 
@@ -332,7 +347,8 @@ input/
   pointer.js                pointer helpers and edge auto-pan
   add-mode.js               add mode (the + button)
   day-drag.js               creating, moving and resizing events by drag
-  timeline-drag.js          creating and resizing phases, opening editors on the timeline
+  timeline-drag.js          creating and resizing phases, opening editors on the timeline (onTimelineClick: also the rail's)
+  canvas-pull.js            the pull between the week and the canvas; panning the canvas; the rail on hover
 
 ui/
   loader.js                 loading screen
@@ -343,8 +359,9 @@ ui/
   day-todos.js              todos of a day without an event: the dots in the day header, the day's panel
   recording.js              the add menu above the + button: record and stop an actual
   focus-morph.js            from the event editor to Fokus in one motion (a container transform)
+  canvas-morph.js           between the week and the canvas: the timeline becomes the rail and back (§6.1)
 
-styles/   tokens · base · timeline · day · focus · add-button · lists (rows, overlines, switches: shared by editor and settings) · editor · todos (todo rows, the celebration) · settings · time-budget · toast · device · loader
+styles/   tokens · base · timeline · canvas · day · focus · add-button · lists (rows, overlines, switches: shared by editor and settings) · editor · todos (todo rows, the celebration) · settings · time-budget · toast · device · loader
 
 supabase/
   schema.sql                the plan's table (records): who may read it, the server's two rules

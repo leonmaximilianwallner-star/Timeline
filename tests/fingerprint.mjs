@@ -120,10 +120,15 @@ async function settle(page) {
 }
 
 // Every visible element's place and size, in document order.
+// Skipped, as they show nothing of their own (10 Nov, the canvas view): what can't be seen (visibility hidden,
+// opacity 0), and an element whose box is exactly its parent's (a wrapper: its place is its parent's, already listed).
 function layoutOf(page) {
   return page.evaluate(() => [...document.body.querySelectorAll('*')].map(el => {
     const r = el.getBoundingClientRect();
     if (!r.width && !r.height) return null;
+    if (!el.checkVisibility({ visibilityProperty: true, opacityProperty: true })) return null;
+    const p = el.parentElement && el.parentElement.getBoundingClientRect();
+    if (p && p.x === r.x && p.y === r.y && p.width === r.width && p.height === r.height) return null;
     const label = el.tagName.toLowerCase() + (el.id ? '#' + el.id : '') +
       (typeof el.className === 'string' && el.className ? '.' + el.className.trim().split(/\s+/).join('.') : '');
     return `${label} ${Math.round(r.x)},${Math.round(r.y)} ${Math.round(r.width)}×${Math.round(r.height)}`;

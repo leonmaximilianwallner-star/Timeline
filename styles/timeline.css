@@ -14,7 +14,7 @@
 }
 .tlRow{ z-index:1 }
 .tlRow{position:relative}
-#monthRow{display:flex; height:30px; align-items:center}
+.month-row{display:flex; height:30px; align-items:center}
 .monthSpan{position:relative; height:100%; display:flex; align-items:center}
 .monthLabel{
   position:sticky; left:var(--sticky-left); display:inline-block;
@@ -106,7 +106,7 @@
   color:var(--fg-muted); display:flex; align-items:center; justify-content:center; cursor:pointer}
 .dropdown-event .de-add svg{width:16px; height:16px}
 .dropdown-head.sub{padding-top:8px}
-#milestoneRow{height:52px}
+.milestone-row{height:52px}
 .milestone-chip{
   position:absolute; top:6px; transform:translateX(-50%);
   border-radius:9999px; padding:3px 14px 4px; text-align:center;

@@ -110,7 +110,8 @@ function startPhaseCreate(e, fromHold=false){
 }
 
 /* click routing on the timeline (expand, edit) */
-$tlWrap.addEventListener("click", e=>{
+/* a click on the timeline view, or on the canvas's rail (input/canvas-pull.js): it opens what it hits */
+function onTimelineClick(e){
   const exp = e.target.closest("[data-expand]");
   if(exp){
     const id = exp.dataset.expand, isOpen = device.openPhases.includes(id);
@@ -156,4 +157,5 @@ $tlWrap.addEventListener("click", e=>{
   if(mEl){ const m = S.milestones.find(v=>v.id===mEl.dataset.editMilestone); if(m) openEditor({ type:"milestone", edit:m }); return; }
   const prEl = e.target.closest("[data-edit-project]");
   if(prEl){ toggleSettings(true, { name:"colour", id:prEl.dataset.editProject }); }   // the project's own page
-});
+}
+$tlWrap.addEventListener("click", onTimelineClick);

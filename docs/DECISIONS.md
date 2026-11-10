@@ -250,3 +250,19 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **The event row is renamed *Gehört zu*, its empty value *Nichts***: it now chooses a phase or a step. *Claude*
 - **Left for later:** renaming and reordering steps, names following between a step and its events, drag into the day, how all of this is drawn on the pills and in the week (Max: its own design question; the phone's room is getting scarce). *Claude (scope)*
 
+## 10 Nov 2026 — merging #28 and #29 (pull request #30)
+
+- **#28 and #29 were merged into the branches they were stacked on, not `main`.** GitHub retargets a stacked pull request only when its base branch is deleted. Pull request #30 brought both to `main` unchanged. **From now on every pull request targets `main`**; one that builds on another says "merge #N first". *Claude (own mistake)*
+
+## 10 Nov 2026 — the canvas view, first step (pull request #31)
+
+- **The canvas is above the timeline, desktop first, with nothing on it yet:** the dot grid, the rail, the way in and out. Zoom levels and ideas follow, one session each. *Max*
+- **The grid: a dot where lines would cross, no lines; one cell a day, 40px:** about a month across a laptop screen. *Max (dots, a month); Claude (40px, tunable `CANVAS_CELL`)*
+- **The canvas is a second native scroller, never kept in step with the week's** (ARCHITECTURE §6.1). One scroller has one scale; position passes between them once, at the switch, as the day at the left edge. A deviation from "one scroll container", flagged before building. *Claude*
+- **The rail is the timeline view drawn by its own rule at the canvas scale** (`buildTimeline`), pinned to the floor with sticky: it moves with the canvas on the compositor, never a frame behind. Closed: months, then lines; open on hover. *Max (the rail, hover); Claude (one renderer, sticky)*
+- **In and out by the editor's pull into Fokus, one mechanic** (RULEBOOK B.6.1): heavy before the line, armed at it, commit on release (a wheel's pause). Only a gesture that starts at the edge pulls, so a fling never commits. *Max ("no early commit", "persistence past a threshold"); Claude (the same curve and release)*
+- **The motion: the timeline becomes the rail and back**, in the Fokus motions' grammar: compositor only, shapes stretch, text doesn't. The day at the left edge stays. Measured: no frame over 17 ms. *Max ("like the editor into Fokus"); Claude*
+- **Found by the fingerprint test, fixed:** a permanent `will-change`, a stacking context and a focusable scroller each changed the week's pixels slightly. All three now apply only while the canvas is in play, or not at all. The test itself now skips what can't be seen and wrappers whose box is their parent's: positions are compared one by one, so an invisible new element shifted every comparison after it. *Claude*
+- **Found in the dictionary:** "board" is banned for the canvas (A.8) but wasn't in the list the test reads (A.11); the first draft used it. Added, and renamed to *grid*. *Claude*
+- **Open:** cell size vs. the 32px block geometry; the canvas on a phone; which view opens at start (RULEBOOK B.8). *Claude*
+

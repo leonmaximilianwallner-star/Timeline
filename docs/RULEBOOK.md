@@ -219,6 +219,7 @@ Changing a todo's state is **ticking** it (`tickTodo`). **Never say:** completed
 One of the levels stacked on the one page, reached by scrolling down. **Never say:** level (that's the hierarchy's word), page, screen, frame.
 
 **Canvas view** · *Leinwand* · `canvas` — the free, endless dot grid at the top. Ideas, phases, groups, links. **Never say:** board, whiteboard, notes.
+*In the app (10 Nov):* the **grid** (`#canvasGrid`): a dot where grid lines would cross, no lines; one cell a day (B.4). Its **floor** (`floor`) is its bottom edge, where the rail sits; it grows upward without end. Desktop first. B.6.1.
 
 **Timeline view** · *Zeitleiste* · `timeline` — months and weeks across, endless sideways. Projects, phases, milestones. Its collapsed strip under the canvas is the **rail** (`rail`), still the Zeitleiste, just docked.
 
@@ -337,6 +338,7 @@ bubble → dropdown
 expanded → open
 fold → open
 level → view
+board → canvas (the view) / grid (its dots)
 mono → DM Sans with tabular figures (font-variant-numeric: tabular-nums)
 monospace → DM Sans with tabular figures
 ```
@@ -431,7 +433,7 @@ monospace → DM Sans with tabular figures
 
 ## B.4 Time
 
-- **The day is the unit everywhere.** On the canvas and the rail, 1 grid cell = 1 day at 100 %. *(Max)*
+- **The day is the unit everywhere.** On the canvas and the rail, 1 grid cell = 1 day at 100 %. *(Max)* A cell is 40px (`CANVAS_CELL`): about a month across a laptop screen (**Max**, 10 Nov: "a month on the largest zoom").
 - An item's place on the canvas is not its date; its mark on the timeline is.
 - The timeline shows exactly what the rail shows: the same rule, not a copy of the marks. **Claude**
 - A dated block is drawn inside its phase's pill.
@@ -463,6 +465,17 @@ monospace → DM Sans with tabular figures
 6. A step with events shows a second ring. On the canvas a tap on it says why it can't be ticked; in the timeline a tap goes to its next event.
 7. Names follow both ways: renaming the step renames its events, and the reverse (same step id). **Claude**
 
+### B.6.1 Between the canvas and the timeline *(built 10 Nov; Max)*
+
+The canvas is above the timeline. **One mechanic for both directions, the editor's pull into Fokus** (B.2.3: no new logic):
+- **The pull.** From the timeline's top, scroll further up; from the canvas's floor, further down. Before the line it holds back, at the line it springs and is **armed** (the hint fills); it **commits on release**: for a wheel, the pause after its gesture. Pulled back short of the line, it springs back.
+- **No early commit.** Only a gesture that *starts* at the edge pulls. A fling that runs into the edge, or a scroll that keeps going past it, stops there; the next gesture pulls. A sideways gesture never pulls.
+- **The motion.** The timeline sinks to the bottom and closes up sideways to the canvas's scale, becoming the rail; the canvas comes down with it, its floor on the timeline's top edge; the day view leaves. Back: the same, reversed (C.5). **Shapes stretch, text doesn't:** the leaving view's labels fade at once, the arriving view's appear as the shapes land (the Fokus motions' rule).
+- **The same day stays at the left edge** both ways. The week lands on whole days (it snaps to them).
+- **The rail** is the timeline view drawn by its own rule at the canvas's scale (B.4: the same rule, not a copy), pinned to the floor. **Closed:** the months, then every row as a line. **Open** while the pointer rests on it, and while a pull grows it. A click on it opens what it hits, as on the timeline. No dropdowns there.
+- **In the canvas:** scroll or drag the empty grid to pan; T goes to today; Escape goes back to the week; the add button and add mode belong to the week.
+- **Not yet:** a touch way in (the phone can't reach the canvas), zoom levels (B.5), anything on the grid.
+
 ## B.7 Data
 
 The gate, the store and sync are defined in `ARCHITECTURE.md` §4–5. The rules that belong to the product:
@@ -478,6 +491,9 @@ The gate, the store and sync are defined in `ARCHITECTURE.md` §4–5. The rules
 
 ## B.8 Open questions
 
+- **Cell size vs. block geometry.** A cell is 40px (a month across a laptop, Max 10 Nov); B.2.1 sized blocks in 32px cells (7×6). Blocks scale with the cell when they return, or the cell becomes 32px at 100 % and a month is a zoom level. *(Claude, 10 Nov)*
+- **The canvas on a phone** — how to get in by touch (the timeline's top is also where the day view's pull-to-scroll lands), and whether it's wanted there. *(Max: desktop first)*
+- **Which view opens at start** — always the week for now; remembering the canvas per device is possible (device state). *(Claude)*
 - **One way to say "belongs to" — blocks.** Steps and events store their parent (`parentId`, B.1.8), steps keep their order in `order`. The canvas build stored a phase's blocks as a list on the phase (`blocks`, B.7). When blocks return, they follow steps: `parentId` and `order`. *(Claude, 10 Nov)*
 - **How the hierarchy is shown** in each view, so it informs instead of repeating itself (the same thing drawn three ways). The dropdown's list and count are the minimum for now. *(Max, 10 Nov: a design question of its own, later)*
 - **Colour, category, project** — how they should align with the philosophy. *(Max)*

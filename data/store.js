@@ -15,6 +15,7 @@ const UI = {
   editor:null,          // the open editor's context
   focus:null,           // the open focus view: { day, open } (views/focus/render.js)
   dragLive:false,
+  canvas:null,          // the canvas view: shown, active, moving, its rail (views/canvas/render.js)
 };
 
 function loadFromStorage(){
