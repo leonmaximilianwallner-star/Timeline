@@ -14,6 +14,9 @@
 | S6 | A* | tokens | Raw hex in 9 style files outside `tokens.css` (focus.css 10, add-button.css 7, editor.css 4, timeline.css 3, others 1). *Tier A only for lines that duplicate an existing token; to verify line by line.* | ARCHITECTURE §10.6, §13.6 | 2026-11-10 |
 | S7 | C | timeline view | Untouched since 22 Oct and without its design pass, while the last 7 PRs all went to the day view, editor and Fokus. The brief calls it the most important view. | Brief; RULEBOOK C.6 | 2026-11-10 |
 | S8 | C | process | Trials marked "Max to judge by feel" are not recorded as judged: day snapping (#6), edge-pan speed-up (#11), the pull-up line (#22/#23), free-time notes stored with the next event (#24), Fokus not creating events (#24). Unjudged trials become defaults by convenience. | ways of working: feel-gated iteration | 2026-11-10 |
+| S9 | B | done | Four definitions of "event done" disagreed (day view, editor, Fokus, phase count); events without todos couldn't be ticked. **Fixed in PR #28** (one rule, hand tick). | B.1.4; one strategy per mechanic | 2026-11-10 |
+| S10 | C | visual | The hierarchy now exists in data but is drawn only as lists and counts; the phone's room is getting scarce (Max). Needs its own design pass: what each view must show, so the same information isn't repeated three ways. | B.8; Max 10 Nov | 2026-11-10 |
+| S11 | B | steps | Steps and todos can't be renamed or reordered; names don't follow between a step and its events (B.6.7). | B.2.3 "not yet" | 2026-11-10 |
 
 ## Rejected (do not re-propose without new reason)
 | ID | Idea | Max's reason | Date |
@@ -24,6 +27,7 @@
 |---|---|---|---|
 
 ## Rule candidates (seen 2+ times → propose for guideline)
+- **Adopted 10 Nov as RULEBOOK B.2.3 (Max): one mechanic for every level.** A new level or feature reuses how the app already makes, ticks, schedules and moves things; it adds no logic of its own. Check every proposal against it.
 - **Adopted 10 Nov as RULEBOOK B.1.8 (Max):** structure supports, never demands; links from either end, may skip levels.
 - *Tie-break for equal options:* when two options are equally good, pick the one that strengthens the hierarchy (B.1.1), then the one that removes a thing. Proposed 2026-11-10 because the same worry ("least terrible by convenience") recurs.
 
@@ -32,3 +36,4 @@
 |---|---|---|---|---|
 | 2026-11-10 | Jury | whole app | First Jury, baseline. Strong foundation (gate, sync, push, tests, dictionary); all recent work in the execution layer; the hierarchy link is still unbuilt. | 1 · 3 · 2 · 4 · 3 · 3 · 3 |
 | 2026-11-10 | — | hierarchy | S1 accepted; PR #27 builds its first link (parentId, event ↔ phase). Opened B.8 "one way to say belongs to" (blocks list vs parentId). | — |
+| 2026-11-10 | — | hierarchy | Max: one rule for done (Word headings), one mechanic per action. PR #28 (hand tick, S9), PR #29 (steps as records). Opened S10 (visual pass), S11. | — |
