@@ -19,6 +19,7 @@
 | S11 | B | steps | Steps and todos can't be renamed or reordered; names don't follow between a step and its events (B.6.7). | B.2.3 "not yet" | 2026-11-10 |
 | S12 | B | process | Stacked PRs merged into their bases, not `main` (#28, #29), and a ledger commit pushed after its PR merged: three times in one day, live app silently behind. **Fixed:** #30 brought them in; every PR now targets `main`, dependencies said in words. | ways of working | 2026-11-10 |
 | S13 | C | canvas | Open after the canvas's first step: cell 40px vs. 32px block geometry; touch entry on the phone; which view opens at start; zoom levels (B.5). | RULEBOOK B.8 | 2026-11-10 |
+| S15 | B | canvas | **Fixed in PR #32:** the switch took 2.7 s and stalled frames (commit waited for trackpad momentum; the week's scroller moved; the canvas was built and the week repainted at the wrong moments). Now ~0.5 s, no frame over 34 ms. Max's bar: never longer than a button. | RULEBOOK B.6.1; Max 10 Nov | 2026-11-10 |
 | S14 | B | tests | The fingerprint compared positions one by one, so any new invisible element failed every later step; it now skips what can't be seen and wrappers. Also: `desktop · event-click` differs by 2px between identical builds about 1 run in 8 (existing noise). | ARCHITECTURE §10.2 | 2026-11-10 |
 
 ## Rejected (do not re-propose without new reason)
@@ -30,6 +31,7 @@
 |---|---|---|---|
 
 ## Rule candidates (seen 2+ times → propose for guideline)
+- *Measure before tuning feel:* a motion's cost is decided by what moves (layer size, repaint), not by its curve. Each new motion gets a frame-and-long-task measurement at 4× slower CPU before it ships. Proposed 10 Nov after #31. 
 - *A dictionary word that isn't in the list the test reads isn't enforced:* "board" was banned in A.8, not in A.11, and the canvas's first draft used it. Proposed: every "Never say" in Part A goes into A.11. (10 Nov)
 - **Adopted 10 Nov as RULEBOOK B.2.3 (Max): one mechanic for every level.** A new level or feature reuses how the app already makes, ticks, schedules and moves things; it adds no logic of its own. Check every proposal against it.
 - **Adopted 10 Nov as RULEBOOK B.1.8 (Max):** structure supports, never demands; links from either end, may skip levels.
@@ -42,3 +44,4 @@
 | 2026-11-10 | — | hierarchy | S1 accepted; PR #27 builds its first link (parentId, event ↔ phase). Opened B.8 "one way to say belongs to" (blocks list vs parentId). | — |
 | 2026-11-10 | — | hierarchy | Max: one rule for done (Word headings), one mechanic per action. PR #28 (hand tick, S9), PR #29 (steps as records). Opened S10 (visual pass), S11. | — |
 | 2026-11-10 | — | canvas | Canvas first step (PR #31): grid, rail (timeline at canvas scale), pull in/out reusing the editor's pull, morph in the Fokus grammar. Week pixel-identical. Opened S12–S14. | — |
+| 2026-11-10 | Sweep | canvas switch | Max: the switch lags and costs more time than a button. Measured, found five causes, fixed (PR #32): 2.7 s → 0.5 s, worst frame 233 → under 34 ms. | — |
