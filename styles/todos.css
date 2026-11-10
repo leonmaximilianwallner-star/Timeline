@@ -17,6 +17,14 @@
 .todoRow .tdel{width:32px; height:32px; flex:0 0 32px; border:0; background:transparent; color:var(--fg-muted); border-radius:9999px; cursor:pointer; opacity:0}
 .todoRow:hover .tdel, .todoRow .tdel:focus-visible{opacity:1}
 @media (hover:none){ .todoRow .tdel{opacity:1} }
+.event-tick .tx{color:var(--fg-muted)}
+.event-tick[data-state="done"] .tx{color:var(--text); text-decoration:none}   /* "Erledigt" is a state, not a crossed-out todo */
+.event-tick[hidden]{display:none}
+.event-tick:not([hidden]) + .todoList .todoRow:first-child .tx-wrap, .event-tick:not([hidden]) + .todoList + .row > .row-main{border-top:1px solid var(--hairline)}
+/* a step's row (the phase editor): + for its next event, like the delete button but always visible */
+.todoRow .tsched{width:32px; height:32px; flex:0 0 32px; border:0; background:transparent; color:var(--fg-muted); border-radius:9999px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center}
+.todoRow .tsched svg{width:16px; height:16px}
 .todoRow .carry{color:var(--fg-muted); font-size:12px}
 .todoList:empty + .row > .row-main{border-top:0}
 

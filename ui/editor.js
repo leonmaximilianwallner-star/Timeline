@@ -78,6 +78,27 @@ function shortSpan(p){
   const a = parseISO(p.start), b = parseISO(lastDay(p.end)), mon = d => MONTHS[d.getMonth()].slice(0,3)+".";
   return a.getMonth()===b.getMonth() ? `${a.getDate()}.–${b.getDate()}. ${mon(b)}` : `${a.getDate()}. ${mon(a)}–${b.getDate()}. ${mon(b)}`;
 }
+/* a step's row: its mark (by its events, or by hand), its name, how many of its events are done, + to make the next */
+function stepRowHTML(plan, step, canSchedule){
+  const done = stepDone(plan, step), occ = canSchedule ? stepOccurrences(plan, step) : [];
+  const count = occ.length ? `${occ.filter(o=>eventDone(o.ev, o.day)).length}/${occ.length}` : "";
+  return `<div class="todoRow step-row" data-state="${done?"done":"open"}" data-sid="${step.id}">
+    <button type="button" class="tcheck" title="${occ.length ? "Erledigt über seine Termine" : "Erledigt"}">${done?"✓":""}</button>
+    <div class="tx-wrap"><span class="tx">${esc(step.title)}</span>${count?`<span class="count">${count}</span>`:""}
+    ${canSchedule?`<button type="button" class="tsched" title="Termin für diesen Schritt">${icon("plus")}</button>`:""}
+    <button type="button" class="tdel" title="Löschen">✕</button></div></div>`;
+}
+/* a new event inside a step: named after it, in its phase's colour, on today if the phase runs, else its nearest day.
+   The same as "Termin in dieser Phase", one step further down (RULEBOOK B.2.3) */
+function scheduleStep(stepId){
+  const step = S.steps.find(x=>x.id===stepId), ph = step && phaseOf(S, step); if(!step) return;
+  openEditor({ type:"event", initial:{ title:step.title, date:dayInPhase(ph), startMin:9*60, endMin:10*60, categoryId:ph ? ph.categoryId||null : null, parentId:step.id } });
+}
+/* today if a phase runs today, else its nearest day (its first, or its last once it's over) */
+function dayInPhase(ph){
+  const t = todayISO(); if(!ph) return t;
+  return t < ph.start ? ph.start : t < ph.end ? t : lastDay(ph.end);
+}
 const actualTitle = a => { const plan = a.eventId && S.events.find(ev=>ev.id===a.eventId); return plan ? plan.title : "Ohne Plan"; };
 
 function openEditor(ctx){
@@ -257,20 +278,24 @@ function renderEditorBody(){
       <span class="when-sub"><span id="fWeekday"></span><input id="fDate" type="date" aria-label="Datum" value="${v.date||todayISO()}"><span id="fDayWords"></span></span></div>`;
   }
   if(kind==="event"){
-    /* the phase it belongs to, or none: given or changed here, from below (RULEBOOK B.1.8) */
-    const { onDay, later } = phaseChoices(S, v.date||todayISO(), todayISO(), v.parentId);
-    const phaseOpt = p => `<option value="${p.id}" ${p.id===v.parentId?"selected":""}>${esc(p.title)} · ${shortSpan(p)}</option>`;
-    const phaseOpts = `<option value="">Keine</option>`
-      + (onDay.length ? `<optgroup label="An diesem Tag">${onDay.map(phaseOpt).join("")}</optgroup>` : "")
-      + (later.length ? `<optgroup label="Weitere">${later.map(phaseOpt).join("")}</optgroup>` : "");
+    /* what it belongs to, or nothing: given or changed here, from below (RULEBOOK B.1.8).
+       Read like a table of contents: each phase, its steps indented under it */
+    const { onDay, later } = parentChoices(S, v.date||todayISO(), todayISO(), v.parentId);
+    const opt = (id, label) => `<option value="${id}" ${id===v.parentId?"selected":""}>${label}</option>`;
+    const phaseOpts = ({ phase, steps }) => opt(phase.id, `${esc(phase.title)} · ${shortSpan(phase)}`)
+      + steps.map(st => opt(st.id, `\u2003› ${esc(st.title)}`)).join("");
+    const parentOpts = `<option value="">Nichts</option>`
+      + (onDay.length ? `<optgroup label="An diesem Tag">${onDay.map(phaseOpts).join("")}</optgroup>` : "")
+      + (later.length ? `<optgroup label="Weitere">${later.map(phaseOpts).join("")}</optgroup>` : "");
     h += `<div class="list">
-      ${rowHTML({ icon:"phase", label:"Phase", value:`<span id="fParentText"></span>`, pick:`<select id="fParent" class="row-pick" aria-label="Phase">${phaseOpts}</select>` })}
+      ${rowHTML({ icon:"phase", label:"Gehört zu", value:`<span id="fParentText"></span>`, pick:`<select id="fParent" class="row-pick" aria-label="Gehört zu">${parentOpts}</select>` })}
       ${rowHTML({ icon:"repeat", label:"Wiederholung", value:`<span id="fRepeatText"></span>`, pick:`<select id="fRepeat" class="row-pick" aria-label="Wiederholung">${optionsHTML(REPEATS, v.repeat||"none")}</select>` })}
       ${rowHTML({ icon:"bell", label:"Erinnerung", value:`<span id="fRemText"></span>`, pick:`<select id="fRem" class="row-pick" aria-label="Erinnerung">${optionsHTML(REMINDERS, v.reminderMin??"")}</select>` })}
     </div>`;
     h += `<div class="part">
       <div class="part-head"><h3 class="overline">Todos</h3><span class="count" id="editorTodoCount"></span></div>
-      <div class="list"><div class="todoList" id="editorTodos"></div>
+      <div class="list"><div class="todoRow event-tick" id="editorEventTick" data-state="open" hidden><button type="button" class="tcheck" title="Erledigt"></button><div class="tx-wrap"><span class="tx">Erledigt</span></div></div>
+        <div class="todoList" id="editorTodos"></div>
         <label class="row add"><span class="row-icon">${icon("plus")}</span><span class="row-main"><input id="fNewTodo" class="row-input" placeholder="Todo hinzufügen" autocomplete="off" enterkeyhint="done"></span></label>
       </div>
       <p class="hint" id="editorCarryHint" hidden></p></div>`;
@@ -280,6 +305,11 @@ function renderEditorBody(){
       <div class="when-top">
         <span class="when-big"><input id="fStart2" type="date" aria-label="Beginn" value="${v.start||todayISO()}">–<input id="fEnd2" type="date" aria-label="Ende (letzter Tag)" value="${v.end ? lastDay(v.end) : todayISO()}"></span></div>
       <div class="when-top"><span class="when-sub" id="fSpanWords"></span><span class="when-len" id="fLen"></span></div></div>`;
+    h += `<div class="part">
+      <div class="part-head"><h3 class="overline">Schritte</h3><span class="count" id="editorStepCount"></span></div>
+      <div class="list"><div class="todoList" id="editorSteps"></div>
+        <label class="row add"><span class="row-icon">${icon("plus")}</span><span class="row-main"><input id="fNewStep" class="row-input" placeholder="Schritt hinzufügen" autocomplete="off" enterkeyhint="done"></span></label>
+      </div></div>`;
     h += `<div class="part"><h3 class="overline" style="padding:0 4px">Notiz</h3>
       <div class="list">
         <div class="text-tools">
@@ -342,8 +372,8 @@ function renderEditorBody(){
     if(kind==="event"){
       set("fRepeatText", REPEATS.find(r=>r[0]===val("fRepeat"))[1]);
       set("fRemText", REMINDERS.find(r=>r[0]===val("fRem"))[1]);
-      const ph = val("fParent") && S.phases.find(p=>p.id===val("fParent"));
-      set("fParentText", ph ? ph.title : "Keine");
+      const parent = val("fParent") && parentOf(S, { parentId: val("fParent") });
+      set("fParentText", parent ? parent.title : "Nichts");
     }
     if(kind==="phase"){
       let a = val("fStart2"), b = val("fEnd2");
@@ -355,11 +385,11 @@ function renderEditorBody(){
   const fParent = document.getElementById("fParent");
   if(fParent){
     fParent.addEventListener("change", ()=>{
-      const ph = S.phases.find(p=>p.id===fParent.value);
+      const ph = phaseOf(S, { parentId: fParent.value });               // a step's colour is its phase's
       if(ph && (ph.categoryId||"") !== fProj.value){ fProj.value = ph.categoryId||""; fProj.dispatchEvent(new Event("change")); }
     });
     fProj.addEventListener("change", ()=>{
-      const ph = S.phases.find(p=>p.id===fParent.value);
+      const ph = phaseOf(S, { parentId: fParent.value });
       if(ph && (ph.categoryId||"") !== fProj.value){ fParent.value = ""; words(); }
     });
   }
@@ -378,23 +408,39 @@ function renderEditorBody(){
   function showTodos(){
     const list = B.querySelector("#editorTodos"), hint = B.querySelector("#editorCarryHint");
     if(list) list.innerHTML = ctx.todos.map(todoRowHTML).join("");
-    countTodos();
+    countTodos(); showTick();
     if(hint){ hint.textContent = "↻ aus einem früheren Termin übernommen (war verschoben)"; hint.hidden = !ctx.todos.some(t=>t.carried); }
   }
   function countTodos(){
     const el = B.querySelector("#editorTodoCount"); if(!el) return;
     el.textContent = ctx.todos.length ? `${ctx.todos.filter(t=>t.state==="done").length}/${ctx.todos.length}` : "";
   }
-  if(kind==="event"){ showTodos(); ctx.showTodos = showTodos; }
+  /* without todos to count, an event is ticked by hand (RULEBOOK B.2; Max, 10 Nov): no todo needed to say "done".
+     A stored event's tick applies at once, like a todo's; a new one's waits for ✓ */
+  function showTick(){
+    const r = B.querySelector("#editorEventTick"); if(!r) return;
+    r.hidden = todosDone(ctx.todos) !== null;
+    r.dataset.state = ctx.ticked ? "done" : "open";
+    r.querySelector(".tcheck").textContent = ctx.ticked ? "✓" : "";
+  }
+  if(kind==="event"){
+    ctx.ticked = !!(ed && (S.events.find(x=>x.id===ed.id) || ed).doneByDate?.[ctx.occurrence]);
+    B.querySelector("#editorEventTick .tcheck").onclick = ()=>{
+      ctx.ticked = !ctx.ticked; showTick();
+      if(!ed) return;
+      mutate(st=>{ const e2 = st.events.find(x=>x.id===ed.id); if(e2) tickEvent(e2, ctx.occurrence, ctx.ticked); });
+      if(ctx.ticked) celebrate(ed, document.querySelector("#editorOverlay .editor").getBoundingClientRect());
+    };
+    showTodos(); ctx.showTodos = showTodos;
+  }
   /* todos of a stored event apply at once, as ticking is doing, not planning (Max, 22 Oct): ✕ and sliding
      down discard only the event's own changes. A new event's todos wait for ✓ with the rest. */
-  const allDone = list => list.length>0 && list.every(t=>t.state==="done");
   function todosChanged(){
-    countTodos();
+    countTodos(); showTick();
     if(!ed) return;
-    const before = allDone(todosOf(S.events.find(x=>x.id===ed.id) || ed, ctx.occurrence));
+    const before = eventDone(S.events.find(x=>x.id===ed.id) || ed, ctx.occurrence);
     mutate(st=>{ const e2 = st.events.find(x=>x.id===ed.id); if(e2) setTodosOf(e2, ctx.occurrence, JSON.parse(JSON.stringify(ctx.todos))); });
-    if(!before && allDone(ctx.todos)) celebrate(ed, document.querySelector("#editorOverlay .editor").getBoundingClientRect());
+    if(!before && todosDone(ctx.todos) === true) celebrate(ed, document.querySelector("#editorOverlay .editor").getBoundingClientRect());
   }
   const newTodo = B.querySelector("#fNewTodo");
   if(newTodo) newTodo.addEventListener("keydown", e=>{
@@ -423,13 +469,52 @@ function renderEditorBody(){
     });
   }
 
+  /* a phase's steps (RULEBOOK B.2.3): typed and ticked like an event's todos. A stored phase's apply at once,
+     a new phase's wait for ✓. A step with events takes its state from them; its + makes the next one */
+  if(kind==="phase"){
+    if(!ed) ctx.steps = ctx.steps || [];
+    const stepsNow = ()=> ed ? stepsOf(S, ed) : ctx.steps;
+    const findStep = id => ed ? S.steps.find(x=>x.id===id) : ctx.steps.find(x=>x.id===id);
+    const showSteps = ()=>{
+      const list = stepsNow();
+      B.querySelector("#editorSteps").innerHTML = list.map(st => stepRowHTML(S, st, !!ed)).join("");
+      B.querySelector("#editorStepCount").textContent = list.length ? `${list.filter(st=>stepDone(S, st)).length}/${list.length}` : "";
+    };
+    showSteps();
+    const newStep = B.querySelector("#fNewStep");
+    newStep.addEventListener("keydown", e=>{
+      if(e.key!=="Enter") return;
+      e.preventDefault();
+      const title = newStep.value.trim(); if(!title) return;
+      newStep.value = "";
+      if(ed) mutate(st=>{ st.steps.push({ id:uid(), title, parentId:ed.id, order:nextStepOrder(st, ed.id) }); });
+      else ctx.steps.push({ id:uid(), title, order:ctx.steps.length + 1 });
+      showSteps(); newStep.scrollIntoView({ block:"nearest" });
+    });
+    B.querySelector("#editorSteps").addEventListener("click", e=>{
+      const row = e.target.closest(".todoRow"); if(!row) return;
+      const step = findStep(row.dataset.sid); if(!step) return;
+      if(e.target.closest(".tdel")){
+        if(ed) mutate(st=>deleteStep(st, step.id)); else ctx.steps.splice(ctx.steps.indexOf(step), 1);
+        showSteps(); return;
+      }
+      if(e.target.closest(".tsched")){ saveEditor({ stay:true }); scheduleStep(step.id); return; }   // the phase as typed is kept, as with a tap outside
+      if(e.target.closest(".tcheck")){
+        if(ed && stepHasEvents(S, step)){ toast("Erledigt über seine Termine"); return; }
+        const done = !stepDone(S, step);
+        if(ed) mutate(st=>tickStep(st.steps.find(x=>x.id===step.id), done)); else tickStep(step, done);
+        showSteps();
+      }
+    });
+  }
+
   const del = document.getElementById("editorDelete");
   del.onclick = ()=>{
     const k = ctx.type;
     if(k==="event" && ed.repeat && ed.repeat!=="none"){ askSeriesDelete(); return; }   // one occurrence, or this and the following (Max, 22 Oct)
     mutate(s=>{
       if(k==="event") s.events = s.events.filter(x=>x.id!==ed.id);
-      else if(k==="phase"){ s.phases = s.phases.filter(x=>x.id!==ed.id); freeChildren(s, ed.id); }
+      else if(k==="phase") deletePhase(s, ed.id);                     // its steps go with it, its events stay, free
       else if(k==="milestone") s.milestones = s.milestones.filter(x=>x.id!==ed.id);
       else if(k==="actual") s.actuals = s.actuals.filter(x=>x.id!==ed.id);
     });
@@ -492,18 +577,22 @@ function saveEditor(opts = {}){
     if(data.repeat === "none") byDate = {};                        // a plain event has one day: its own
     byDate[data.repeat === "none" ? data.date : day] = ctx.todos;
     data.todosByDate = JSON.parse(JSON.stringify(byDate));
-    if(ed && ed.gapNotes && shift) data.gapNotes = shiftTodos(ed.gapNotes, shift);   // the notes on the free time before it go along (core/focus.js)
+    if(ed && ed.gapNotes && shift) data.gapNotes = shiftTodos(ed.gapNotes, shift);
+    /* hand ticks (core/hierarchy.js): read from the plan, as a tick applied while the editor was open is newer than ed */
+    const ticks = ed ? shiftTodos((S.events.find(x=>x.id===ed.id) || ed).doneByDate, shift) : (ctx.ticked ? { [data.date]: true } : {});
+    if(data.repeat === "none") Object.keys(ticks).forEach(d => { if(d !== data.date) delete ticks[d]; });   // a plain event has one day
+    data.doneByDate = Object.keys(ticks).length ? ticks : undefined;   // the notes on the free time before it go along (core/focus.js)
     /* a series' end and removed days move with its start; a plain event has neither */
     const moved = d => isoDate(addDays(parseISO(d), shift));
     data.end    = data.repeat !== "none" && ed && ed.end ? moved(ed.end) : undefined;
     data.except = data.repeat !== "none" && ed && ed.except ? ed.except.map(moved) : undefined;
     if(data.end === undefined) delete data.end; if(data.except === undefined) delete data.except;
+    const noTicks = data.doneByDate === undefined; if(noTicks) delete data.doneByDate;
     if(data.reminderMin!=null) requestNotifPermission();
-    const allDone = list => list.length>0 && list.every(t=>t.state==="done");
-    const finished = !ed && allDone(ctx.todos);       // a new event born finished; a stored one celebrated at the tick
+    const finished = !ed && (todosDone(ctx.todos) ?? ctx.ticked) === true;   // a new event born finished; a stored one celebrated at the tick
     const where = document.querySelector("#editorOverlay .editor").getBoundingClientRect();
     mutate(st=>{ let t;
-                 if(ed){ t = st.events.find(x=>x.id===ed.id); delete t.end; delete t.except; Object.assign(t, data); }
+                 if(ed){ t = st.events.find(x=>x.id===ed.id); delete t.end; delete t.except; if(noTicks) delete t.doneByDate; Object.assign(t, data); }
                  else st.events.push(t = { id:uid(), ...data });
                  if(parentId) t.parentId = parentId; else delete t.parentId; });
     if(finished) celebrate(data, where);
@@ -516,7 +605,8 @@ function saveEditor(opts = {}){
       categoryId: val("fProj")||null, start:a, end:dayAfter(b),           // the field shows the last day; stored end is the day after
       details: sanitize(B.querySelector("#fDetails").innerHTML) };
     mutate(st=>{ if(ed){ Object.assign(st.phases.find(x=>x.id===ed.id), data); carryCategory(st, ed.id, data.categoryId); }
-                 else st.phases.push({ id:uid(), ...data }); });
+                 else { const id = uid(); st.phases.push({ id, ...data });
+                        (ctx.steps||[]).forEach(x => st.steps.push({ ...x, parentId:id })); } });   // a new phase's steps come with ✓
     if(UI.addMode) setAddMode(false);
   }
   else if(kind==="actual"){

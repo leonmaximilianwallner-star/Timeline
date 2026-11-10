@@ -229,3 +229,24 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **The event editor is one row taller.** On a 900px desktop screen its body now leaves the screen by about 20px while the category list is open, as RULEBOOK C.3 allows ("the body may leave the screen while a category is chosen"); the test now checks the header, as the rule says. *Claude*
 - **Not in this step, on purpose:** how the hierarchy is drawn (fill on the pill, a phase's name on events), day todos in a phase, steps. Max: the visual communication is its own design question. *Max*
 
+## 10 Nov 2026 — one rule for done; events ticked by hand (pull request #28)
+
+- **An event without todos is ticked by hand.** Before, it could only be done through todos, so a todo had to be invented to tick something off. #27 had made it worse ("done once its day is over"). *Max*
+- **One rule for done, for every level** (RULEBOOK B.2): a thing with children to count takes its state from them; without, the hand tick decides. Max's analogy: a section of a text, with or without subheadings. *Max (the analogy); Claude (the rule)*
+- **Found on the way: four definitions of "event done" that disagreed.** The day view and the celebration needed every todo `done` (one cancelled todo and the event never looked complete); Fokus counted cancelled as ticked off but showed its ✓ only when all were `done`; the phase count ignored cancelled ones. All now ask `eventDone` / `todosDone`. Visible change: an event whose todos are done and cancelled now shows as complete. *Claude*
+- **The tick is per occurrence** (`doneByDate`): this week's meeting, not every week's. It moves with the event and the series. *Claude*
+- **All todos cancelled counts as none to count**: the hand tick decides. *Claude*
+- **With todos to count, a stored tick is ignored, not deleted**: remove the todos and the tick is back. *Claude*
+- **The row *Erledigt* sits where the todos would be**, as the first row of their list, only while there are none to count. A stored event's tick applies at once (ticking is doing, as with todos) and plays the celebration; a new event's waits for ✓. *Claude; Max to judge on the phone*
+- **Not yet:** ticking from Fokus or the day view directly (a tap still opens the editor). *Claude (scope)*
+## 10 Nov 2026 — steps (pull request #29)
+
+- **Steps are their own records** (`steps`, data version 8), not lines in a phase's text. A step moves by one field and syncs on its own. Supersedes ARCHITECTURE §8's recommendation. *Max*
+- **No mechanism of their own** (Max: "not each feature its own logic"). Typed like todos in the phase editor; ticked with the todo mark; scheduled like *Termin in dieser Phase*, one step further down (its + opens a new event inside it); moved from below with the event's row *Gehört zu*, which lists each phase with its steps indented, like a table of contents. RULEBOOK B.2.3 has the table. *Max (the principle); Claude (the mapping)*
+- **Scheduling is creating an event inside the step**, not a separate "plan" action. Drag into the day comes later as a second gesture for the same thing, as dragging already creates events. *Claude*
+- **Done, one step further down:** a step with events is done when all its occurrences are; without events, by hand. A tap on the mark of a step with events says why it can't be ticked. *Claude (from B.2)*
+- **The phase's progress counts its children the same**: each step, and each occurrence straight under it. *Claude*
+- **Deleting a phase deletes its steps** (until the canvas returns they'd be invisible) and frees every event under it; deleting a step frees its events. Undo restores everything. *Claude; Max to veto*
+- **The event row is renamed *Gehört zu*, its empty value *Nichts***: it now chooses a phase or a step. *Claude*
+- **Left for later:** renaming and reordering steps, names following between a step and its events, drag into the day, how all of this is drawn on the pills and in the week (Max: its own design question; the phone's room is getting scarce). *Claude (scope)*
+

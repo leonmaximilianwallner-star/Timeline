@@ -9,7 +9,7 @@
    back (undo) is stamped again and leaves `deleted`.
    Pure: no screen, no storage. Tested in tests/changes.test.mjs.
    ════════════════════════════════════════════════════════════ */
-const RECORD_LISTS = ["categories", "phases", "milestones", "events", "dayTodos", "actuals"];
+const RECORD_LISTS = ["categories", "phases", "steps", "milestones", "events", "dayTodos", "actuals"];
 
 /* a record's content, without its stamp — two records are "the same" when this matches */
 function recordContent(record){
