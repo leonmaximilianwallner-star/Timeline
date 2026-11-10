@@ -225,9 +225,9 @@ In v2_7 the timeline and day grid already share one scroller and one scale relat
 
 ---
 
-## 8. Steps — deferred
+## 8. Steps — **Max, 10 Nov: own records**
 
-v2_7 has no steps: they come from the canvas's blocks. The question of where they're stored (inside a block's body with permanent ids, as in the step-D build, or as rows of their own) is decided when the canvas returns. Recommendation on record: inside the body, because it's already built and tested and keeps "nothing stored twice" true.
+Steps are rows of their own (`steps`: `{ id, title, parentId, order, done }`, data version 8), not checkbox lines inside a body. A step moves to another phase by one field; it syncs, stamps and is deleted like every record (`RECORD_LISTS`); an event points at it by the same `parentId` it uses for a phase. The rules live in `core/hierarchy.js`. The earlier recommendation (inside the body, as in the step-D build) was for the canvas; it lost to re-parenting from below and per-record sync. The canvas, when it returns, shows these records; it doesn't own them.
 
 ---
 
@@ -308,7 +308,7 @@ core/                       rules with no screen
   text.js                   escaping and cleaning text
   repeat.js                 on which days a repeating event occurs
   todos.js                  which todos belong to which day of an event; carry-over within a series
-  hierarchy.js              what belongs to what (parentId), a phase's events and progress (RULEBOOK B.1.8, B.2.2)
+  hierarchy.js              what belongs to what (parentId), steps, the one rule for done, progress (RULEBOOK B.1.8, B.2)
   focus.js                  the focus view's rules: a day's events, which one is open, free time, the week
   actuals.js                actuals: which plan "record" means, stopping, packing plans and actuals in separate layers
 

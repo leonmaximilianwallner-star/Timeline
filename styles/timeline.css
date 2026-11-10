@@ -97,6 +97,15 @@
 .dropdown-event.add{color:var(--fg-muted)}
 .dropdown-event.add svg{width:16px; height:16px}
 .dropdown-more{color:var(--fg-muted); min-height:24px}
+/* a step in the dropdown: its mark (a todo's mark, RULEBOOK A.7), its name, when it is next, + for its next event */
+.dropdown-event.step{cursor:default}
+.dropdown-event.step .de-title{background:none; border:0; padding:0; color:inherit; font:inherit; text-align:left; cursor:pointer}
+.dropdown-event.step[data-state="done"] .tcheck{background:var(--text); border-color:var(--text)}
+.dropdown-event.step[data-state="done"] .de-title{color:var(--fg-muted); text-decoration:line-through}
+.dropdown-event .de-add{width:var(--row-h); height:var(--row-h); margin-right:-12px; flex:0 0 auto; border:0; background:none;
+  color:var(--fg-muted); display:flex; align-items:center; justify-content:center; cursor:pointer}
+.dropdown-event .de-add svg{width:16px; height:16px}
+.dropdown-head.sub{padding-top:8px}
 #milestoneRow{height:52px}
 .milestone-chip{
   position:absolute; top:6px; transform:translateX(-50%);

@@ -5,9 +5,9 @@ import vm from 'node:vm';
 import assert from 'node:assert/strict';
 
 const box = { SNAP: 15, HOUR_START: 0, HOUR_END: 24 };
-vm.runInNewContext(['core/dates.js', 'core/repeat.js', 'core/todos.js', 'core/hierarchy.js', 'data/changes.js'].map(f => readFileSync(f, 'utf8')).join('\n') +
-  '\nthis.f = { shiftSeries, phaseOf, phaseOccurrences, eventDone, todosDone, tickEvent, phaseProgress, phaseChoices, freeChildren, carryCategory, stampChanges };', box);
-const { shiftSeries, phaseOf, phaseOccurrences, eventDone, todosDone, tickEvent, phaseProgress, phaseChoices, freeChildren, carryCategory, stampChanges } = box.f;
+vm.runInNewContext(['core/dates.js', 'core/repeat.js', 'core/todos.js', 'core/hierarchy.js', 'data/changes.js', 'data/merge.js'].map(f => readFileSync(f, 'utf8')).join('\n') +
+  '\nthis.f = { shiftSeries, parentOf, phaseOf, stepsOf, nextStepOrder, phaseOccurrences, stepOccurrences, eventDone, todosDone, tickEvent, stepDone, tickStep, phaseProgress, parentChoices, deleteStep, deletePhase, carryCategory, stampChanges, rowsToSend, RECORD_LISTS };', box);
+const { shiftSeries, parentOf, phaseOf, stepsOf, nextStepOrder, phaseOccurrences, stepOccurrences, eventDone, todosDone, tickEvent, stepDone, tickStep, phaseProgress, parentChoices, deleteStep, deletePhase, carryCategory, stampChanges, rowsToSend, RECORD_LISTS } = box.f;
 
 const T = '2026-11-10';   // a Tuesday
 const todo = (state) => ({ id: Math.random().toString(36).slice(2), text: 'x', state });
@@ -27,6 +27,17 @@ const plan = () => ({
     { id: 'gone', title: 'Waise', categoryId: 'seminar', date: '2026-11-10', startMin: 480, endMin: 540, repeat: 'none', parentId: 'deleted-elsewhere', todosByDate: {} },
   ],
 });
+
+const withSteps = () => {
+  const p = plan();
+  p.steps = [
+    { id: 's2', title: 'Quellen', parentId: 'p1', order: 2 },
+    { id: 's1', title: 'Gliederung', parentId: 'p1', order: 1 },
+  ];
+  p.events.push({ id: 's1e', title: 'Gliederung', categoryId: 'seminar', date: '2026-11-11', startMin: 540, endMin: 600, repeat: 'none', parentId: 's1',
+    todosByDate: { '2026-11-11': [todo('open')] } });
+  return p;
+};
 
 const tests = {
   'an event knows its phase; none, or a link to a deleted phase, reads as none'() {
@@ -74,20 +85,67 @@ const tests = {
     shiftSeries(w, 1);
     assert.deepEqual({ ...w.doneByDate }, { '2026-11-10': true });
   },
-  'the editor offers the phases on the day first, then those not over; the current one always'() {
-    const c = phaseChoices(plan(), '2026-11-10', T, null);
-    assert.deepEqual([...c.onDay].map(p => p.id), ['p1']);
-    assert.deepEqual([...c.later].map(p => p.id), ['p2']);
-    assert.deepEqual([...phaseChoices(plan(), '2026-11-10', T, 'old').later].map(p => p.id), ['old', 'p2']);
+
+
+
+  'a step belongs to its phase; an event under a step sits in that phase too'() {
+    const p = withSteps();
+    assert.equal(parentOf(p, p.events.find(e => e.id === 's1e')).id, 's1');
+    assert.equal(phaseOf(p, p.events.find(e => e.id === 's1e')).id, 'p1');
+    assert.deepEqual([...stepsOf(p, p.phases[0])].map(x => x.id), ['s1', 's2'], 'in their order');
+    assert.equal(nextStepOrder(p, 'p1'), 3);
   },
-  'deleting a phase frees its events and deletes none of them'() {
-    const p = plan(); freeChildren(p, 'p1');
-    assert.equal(p.events.length, 5);
-    assert.equal(p.events.filter(e => e.parentId === 'p1').length, 0);
+  'a step is done by its events; without any, by its hand tick'() {
+    const p = withSteps(), s1 = p.steps.find(x => x.id === 's1'), s2 = p.steps.find(x => x.id === 's2');
+    assert.equal(stepDone(p, s1), false);                        // its event has an open todo
+    p.events.find(e => e.id === 's1e').todosByDate['2026-11-11'][0].state = 'done';
+    assert.equal(stepDone(p, s1), true);
+    assert.equal(stepDone(p, s2), false);
+    tickStep(s2, true); assert.equal(stepDone(p, s2), true);
+    tickStep(s2, false); assert.equal(s2.done, undefined);
   },
-  'a recoloured phase takes its events along; others stay'() {
-    const p = plan(); carryCategory(p, 'p1', 'work');
-    assert.deepEqual(p.events.map(e => e.categoryId), ['work', 'work', 'work', null, 'seminar']);
+  'a step scheduled again is open again until the new event is done (B.2)'() {
+    const p = withSteps(); p.events.find(e => e.id === 's1e').todosByDate['2026-11-11'][0].state = 'done';
+    p.events.push({ id: 'again', title: 'Gliederung', date: '2026-11-13', startMin: 600, endMin: 660, repeat: 'none', parentId: 's1', todosByDate: {} });
+    const s1 = p.steps.find(x => x.id === 's1');
+    assert.equal(stepDone(p, s1), false);
+    tickEvent(p.events.find(e => e.id === 'again'), '2026-11-13', true);
+    assert.equal(stepDone(p, s1), true);
+  },
+  'phase progress counts its children the same: steps, and the occurrences straight under it'() {
+    const p = withSteps(); tickStep(p.steps.find(x => x.id === 's2'), true);
+    assert.deepEqual({ ...phaseProgress(p, p.phases[0]) }, { done: 2, total: 6 });   // s2 + event a; of s1, s2 and 4 occurrences
+  },
+  'the editor offers each phase with its steps under it; on the day first; the current parent always'() {
+    const p = withSteps();
+    const c = parentChoices(p, '2026-11-10', T, null);
+    assert.deepEqual([...c.onDay].map(x => x.phase.id + ':' + [...x.steps].map(s => s.id).join(',')), ['p1:s1,s2']);
+    assert.deepEqual([...c.later].map(x => x.phase.id), ['p2']);
+    p.steps.push({ id: 'olds', title: 'alt', parentId: 'old', order: 1 });
+    assert.deepEqual([...parentChoices(p, '2026-11-10', T, 'olds').later].map(x => x.phase.id), ['old', 'p2'], 'a past phase stays offered while a step of it is chosen');
+  },
+  'deleting a step frees its events'() {
+    const p = withSteps(); deleteStep(p, 's1');
+    assert.equal(p.steps.length, 1);
+    assert.equal(p.events.find(e => e.id === 's1e').parentId, undefined);
+  },
+  'deleting a phase deletes its steps and frees every event under it, none deleted'() {
+    const p = withSteps(), n = p.events.length; deletePhase(p, 'p1');
+    assert.equal(p.phases.find(x => x.id === 'p1'), undefined);
+    assert.equal(p.steps.length, 0);
+    assert.equal(p.events.length, n);
+    assert.equal(p.events.filter(e => e.parentId === 'p1' || e.parentId === 's1').length, 0);
+  },
+  'a recoloured phase takes along everything under it, through its steps too'() {
+    const p = withSteps(); carryCategory(p, 'p1', 'work');
+    assert.deepEqual(p.events.map(e => e.categoryId), ['work', 'work', 'work', null, 'seminar', 'work']);
+  },
+  'steps are records: stamped, sent and deleted like the rest'() {
+    assert.ok([...RECORD_LISTS].includes('steps'));
+    const before = { categories: [], phases: [], steps: [{ id: 'x', title: 'a', parentId: 'p1', order: 1 }], milestones: [], events: [], deleted: {} };
+    const after = JSON.parse(JSON.stringify(before)); after.steps = []; after.deleted = {};
+    stampChanges(before, after, '2026-11-10T10:00:00.000Z');
+    assert.equal(after.deleted.x.in, 'steps');
   },
   'the link is a change like any other: linking stamps the event, so it syncs'() {
     const before = { categories: [], phases: [], milestones: [], events: [{ id: 'e', title: 't', date: T, todosByDate: {} }], deleted: {} };
