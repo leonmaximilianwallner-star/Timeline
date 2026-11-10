@@ -239,3 +239,14 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **With todos to count, a stored tick is ignored, not deleted**: remove the todos and the tick is back. *Claude*
 - **The row *Erledigt* sits where the todos would be**, as the first row of their list, only while there are none to count. A stored event's tick applies at once (ticking is doing, as with todos) and plays the celebration; a new event's waits for ✓. *Claude; Max to judge on the phone*
 - **Not yet:** ticking from Fokus or the day view directly (a tap still opens the editor). *Claude (scope)*
+## 10 Nov 2026 — steps (pull request #29)
+
+- **Steps are their own records** (`steps`, data version 8), not lines in a phase's text. A step moves by one field and syncs on its own. Supersedes ARCHITECTURE §8's recommendation. *Max*
+- **No mechanism of their own** (Max: "not each feature its own logic"). Typed like todos in the phase editor; ticked with the todo mark; scheduled like *Termin in dieser Phase*, one step further down (its + opens a new event inside it); moved from below with the event's row *Gehört zu*, which lists each phase with its steps indented, like a table of contents. RULEBOOK B.2.3 has the table. *Max (the principle); Claude (the mapping)*
+- **Scheduling is creating an event inside the step**, not a separate "plan" action. Drag into the day comes later as a second gesture for the same thing, as dragging already creates events. *Claude*
+- **Done, one step further down:** a step with events is done when all its occurrences are; without events, by hand. A tap on the mark of a step with events says why it can't be ticked. *Claude (from B.2)*
+- **The phase's progress counts its children the same**: each step, and each occurrence straight under it. *Claude*
+- **Deleting a phase deletes its steps** (until the canvas returns they'd be invisible) and frees every event under it; deleting a step frees its events. Undo restores everything. *Claude; Max to veto*
+- **The event row is renamed *Gehört zu*, its empty value *Nichts***: it now chooses a phase or a step. *Claude*
+- **Left for later:** renaming and reordering steps, names following between a step and its events, drag into the day, how all of this is drawn on the pills and in the week (Max: its own design question; the phone's room is getting scarce). *Claude (scope)*
+

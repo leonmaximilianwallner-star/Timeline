@@ -124,29 +124,40 @@ function appendPhaseLanes(frag, phases, W){
         bb.className = "dropdown" + (UI.dropdownOpening===ph.id ? " opening" : "");   // only the one just opened animates: redraws don't replay it
         bb.dataset.dropdown = ph.id;
         bb.style.borderTopColor = cat(ph.categoryId).color;
-        bb.innerHTML = `<div class="dropdown-note">${sanitize(ph.details||"")}</div>` + phaseEventsHTML(ph);
+        bb.innerHTML = `<div class="dropdown-note">${sanitize(ph.details||"")}</div>` + phaseChildrenHTML(ph);
         anchor.appendChild(bb); row.el.appendChild(anchor);
       });
   }
 }
 
-/* a phase's events in its dropdown: top-down, what is planned inside it (RULEBOOK B.1.8).
-   The count is the phase's progress (core/hierarchy.js); the rows are what comes next. */
+/* a phase's children in its dropdown, top-down (RULEBOOK B.1.8, B.2.3): its steps, then the events straight
+   under it. The count is the phase's progress (core/hierarchy.js). Each + makes a new event inside its row's thing. */
 const DROPDOWN_EVENTS = 6;    // upcoming occurrences listed; the rest is a count
-function phaseEventsHTML(ph){
+function phaseChildrenHTML(ph){
   const today = todayISO();
-  const occ = phaseOccurrences(S, ph), { done, total } = phaseProgress(S, ph);
-  const next = occ.filter(o => o.day >= today), shown = next.slice(0, DROPDOWN_EVENTS);
-  const row = ({ ev, day }) => {
-    const d = parseISO(day), todos = todosOf(ev, day).filter(t => t.state !== "cancelled");
+  const steps = stepsOf(S, ph), { done, total } = phaseProgress(S, ph);
+  const next = phaseOccurrences(S, ph).filter(o => o.day >= today), shown = next.slice(0, DROPDOWN_EVENTS);
+  const dayWord = day => { const d = parseISO(day); return `${WD[d.getDay()]} ${d.getDate()}.${d.getMonth()+1}.`; };
+  const stepRow = st => {
+    const occ = stepOccurrences(S, st), coming = occ.find(o => o.day >= today);
+    return `<div class="dropdown-event step" data-state="${stepDone(S, st) ? "done" : "open"}">
+      <button type="button" class="tcheck" data-tick-step="${st.id}" title="${occ.length ? "Erledigt über seine Termine" : "Erledigt"}">${stepDone(S, st) ? "✓" : ""}</button>
+      <button type="button" class="de-title" data-open-step="${st.id}">${esc(st.title)}</button>
+      <span class="de-when">${coming ? dayWord(coming.day) : occ.length ? `${occ.filter(o=>eventDone(o.ev, o.day)).length}/${occ.length}` : ""}</span>
+      <button type="button" class="de-add" data-schedule-step="${st.id}" title="Termin für diesen Schritt">${icon("plus")}</button></div>`;
+  };
+  const eventRow = ({ ev, day }) => {
+    const todos = todosOf(ev, day).filter(t => t.state !== "cancelled");
     const mark = eventDone(ev, day) ? "✓" : todos.length ? `${todos.filter(t=>t.state==="done").length}/${todos.length}` : "";
     return `<button type="button" class="dropdown-event" data-open-event="${ev.id}" data-day="${day}">
-      <span class="de-when">${WD[d.getDay()]} ${d.getDate()}.${d.getMonth()+1}. · ${fmtMin(ev.startMin)}</span>
+      <span class="de-when">${dayWord(day)} · ${fmtMin(ev.startMin)}</span>
       <span class="de-title">${esc(ev.title)}</span><span class="de-mark">${mark}</span></button>`;
   };
   return `<div class="dropdown-events">
-    <div class="dropdown-head"><span class="overline">Termine</span><span class="count">${total ? `${done}/${total}` : ""}</span></div>
-    ${shown.map(row).join("")}
+    <div class="dropdown-head"><span class="overline">${steps.length ? "Schritte" : "Termine"}</span><span class="count">${total ? `${done}/${total}` : ""}</span></div>
+    ${steps.map(stepRow).join("")}
+    ${steps.length && shown.length ? `<div class="dropdown-head sub"><span class="overline">Termine</span></div>` : ""}
+    ${shown.map(eventRow).join("")}
     ${next.length > shown.length ? `<div class="dropdown-more">+ ${next.length - shown.length} weitere</div>` : ""}
     <button type="button" class="dropdown-event add" data-create-in-phase="${ph.id}">${icon("plus")}<span class="de-title">Termin in dieser Phase</span></button>
   </div>`;

@@ -92,9 +92,9 @@ In the app: `phases` records; end exclusive since 21 Oct. *Today in the app:* th
 A chunk of a phase, sized to sit down and work through. An idea is a block *because* a phase lists it; pulled out, it's an idea again. **Not:** an event — blocks aren't on a day (**Max**, 29 Sept). **Never say:** kids, chapter, work package, card.
 *Today in the app:* doesn't exist yet; returns with the canvas view.
 
-**Step** · *Schritt* · `step` · the n-th checkbox line of a body ↔ `steps[n]` (a permanent id)
-One concrete thing to get done inside a block, and the unit you schedule: dragged into the day view, it gets an event. It can be scheduled more than once. **Not:** a todo (todos live in events, **Max**, 29 Sept). **Never say:** task, Aufgabe.
-*Today in the app:* doesn't exist yet; returns with the canvas view.
+**Step** · *Schritt* · `step` · `steps` row `{ title, parentId, order, done }`
+One concrete thing to get done inside a phase (later: inside a block), and the unit you schedule: a new event inside it is its next session. It can be scheduled more than once. **Not:** a todo (todos live in events, **Max**, 29 Sept). **Never say:** task, Aufgabe.
+In the app *(10 Nov)*: its own record, one per step (**Max**, 10 Nov: "own records", not lines of a body), belonging to its phase by `parentId` and kept in order by `order`. Typed in the phase editor like an event's todos; shown in the phase dropdown. B.2.3.
 
 **Event** · *Termin* · `event` · `events` row
 ![Event](dictionary/event.svg)
@@ -283,7 +283,7 @@ The editor is a window (see Parts). Code: `openEditor(ctx)`, `UI.editor`, IDs `#
 **Device state** · `device` — what belongs to this screen, not the plan: theme, number of days, open dropdowns. Saved per device, never synced, not undoable.
 **The gate** · `mutate(fn)` — the one way to change the plan; stamps what changed (ARCHITECTURE §4).
 **Progress** · `progress` — a number from 0 to 1, shown as a fill or a count.
-**Parent** · *gehört zu* · `parentId` — the one thing a thing belongs to (B.1.8), stored on the lower thing. May skip levels; absent means free. A parent that no longer exists (deleted on another device) reads as none. Read through `core/hierarchy.js`. Today only an event has one (a phase); steps will use the same field. **Never say:** owner, container, group (that's the canvas's word).
+**Parent** · *gehört zu* · `parentId` — the one thing a thing belongs to (B.1.8), stored on the lower thing. May skip levels; absent means free. A parent that no longer exists (deleted on another device) reads as none. Read through `core/hierarchy.js`. Today: a step's parent is a phase; an event's is a step or a phase. The event editor's row says *Gehört zu*, its empty value *Nichts*. **Never say:** owner, container, group (that's the canvas's word).
 **Open** · `open` — whether something that unfolds is unfolded: a phase on the canvas, a phase dropdown. **Never say:** expanded, fold, collapsed.
 
 ## A.10 Verbs
@@ -382,7 +382,26 @@ monospace → DM Sans with tabular figures
 - **The phase's dropdown lists its events**: the next ones by day and time, then a count of the rest; its count is the phase's progress.
 - **Progress:** each occurrence weighs the same (B.1.4). A plain event counts wherever it is (it was put there on purpose); a series only on its days inside the phase's span. An occurrence is done by the one rule below (*Done*).
 - **Deleting a phase frees its events**; none is deleted with it. Undo brings the links back.
-- When steps arrive, an event belongs to a step or still straight to a phase; both count toward the phase, the same rule one level deeper.
+- With steps (B.2.3), an event belongs to a step or still straight to a phase; both count toward the phase, the same rule one step further down.
+
+### B.2.3 Steps *(built 10 Nov)*
+
+**One mechanic for every level** (**Max**, 10 Nov: "not each feature its own logic, one continuous stream of information in hierarchical order"). Steps add no mechanism of their own; each thing they need, the app already does somewhere:
+
+| To … | done like … |
+|---|---|
+| make a step | an event's todos: typed as rows in its parent's editor (the phase editor's *Schritte*), Enter for the next |
+| tick a step | a todo: the same mark; with events it takes its state from them (*Done*, above) |
+| schedule a step | *Termin in dieser Phase*, one step further down: its + opens a new event inside it, named after it, in its phase's colour |
+| move an event to another step or phase | the event editor's row *Gehört zu*: each phase with its steps indented under it, like a table of contents |
+| see a phase's steps | the phase dropdown: its steps (mark, name, when next, +), then the events straight under it |
+
+- A stored phase's steps apply at once (like a stored event's todos); a new phase's wait for ✓.
+- A step's events: every occurrence counts; a series only inside its phase's span. The step is done when all are; with none, by its hand tick. Scheduled again, it is open again until the new event is done (B.2).
+- A tap on the mark of a step with events says why it can't be ticked ("Erledigt über seine Termine").
+- The phase's progress counts its children the same: each step, and each occurrence straight under the phase.
+- **Deleting a step frees its events. Deleting a phase deletes its steps** (until the canvas returns they have nowhere else to be shown) and frees every event under it. Undo brings all of it back. *(Claude, 10 Nov; Max to veto)*
+- **Not yet:** renaming a step (as with todos: delete and type again), reordering, names following between a step and its events (B.6.7), dragging a step into the day (a second gesture for the same action, later).
 
 **Done: one rule for every level** *(Max, 10 Nov: "forcing a todo just to tick something off is the wrong approach")*. Like a section in a text: one with subheadings is complete when they are; one without is complete on its own. **A thing with children to count takes its state from them; a thing without is ticked by hand.** For an event: its todos decide (cancelled ones don't count); with none to count (none at all, or all cancelled) its **hand tick** decides. The tick belongs to one occurrence (`doneByDate`, like `todosByDate`) and moves with the event. With todos to count, a stored tick is ignored, not deleted. Every view asks the same functions (`eventDone`, `todosDone`; `core/hierarchy.js`). A day alone never makes anything done.
 
@@ -453,18 +472,18 @@ The gate, the store and sync are defined in `ARCHITECTURE.md` §4–5. The rules
 - **Step ids survive edits.** Every write to a body goes through `setBody`. Ids are unique everywhere.
 - **Deleting a phase or milestone** deletes it everywhere; its blocks become free ideas and its links go with it. Undoing restores it whole. Deleting a dated idea or block *in the timeline* only removes its date. **Claude**
 - **Something made in the timeline** gets a place on the canvas: a row under everything there, two cells clear, on the lattice. **Claude**
-- **Deleting a phase** frees its events (their `parentId` goes); it never deletes them. *(10 Nov)*
+- **Deleting a phase** deletes its steps and frees its events (their `parentId` goes); it never deletes an event. *(10 Nov)*
 - **Deleting a category** only removes the name from its colour; its items keep their colour.
 - **Device state is never synced:** canvas camera, scroll position, which dropdowns are open.
 
 ## B.8 Open questions
 
-- **One way to say "belongs to".** Events store their parent (`parentId`, B.1.8); the canvas build stored a phase's blocks as a list on the phase (`blocks`, B.7). Two strategies for one mechanic. A list keeps the blocks' order; a parent link allows exactly one parent and re-parenting from below. Decide when blocks return; recommendation on record: `parentId` everywhere, order as a field of its own. *(Claude, 10 Nov)*
+- **One way to say "belongs to" — blocks.** Steps and events store their parent (`parentId`, B.1.8), steps keep their order in `order`. The canvas build stored a phase's blocks as a list on the phase (`blocks`, B.7). When blocks return, they follow steps: `parentId` and `order`. *(Claude, 10 Nov)*
 - **How the hierarchy is shown** in each view, so it informs instead of repeating itself (the same thing drawn three ways). The dropdown's list and count are the minimum for now. *(Max, 10 Nov: a design question of its own, later)*
 - **Colour, category, project** — how they should align with the philosophy. *(Max)*
 - **Group as project** — possible later, not needed now. *(Max)*
 - **Event length vs. weight** — equal weight for now.
-- **Where steps are stored** (in the body, or rows of their own) — decided when the canvas returns. *(ARCHITECTURE §8)*
+- ~~Where steps are stored~~ — decided 10 Nov: rows of their own (**Max**). *(ARCHITECTURE §8)*
 - **A deeper level** below todo — deferred. Todo stays the smallest action. *(Max)*
 - **Focus view, next** (1 Nov): ~~the pull-up and the morph, both ways~~ (built 1 Nov, to be tuned by feel: `PULL_FOCUS`, `PULL_HEAVY`, `PULL_SPRING`, `PULL_FREE`, `MORPH_MS`); a gesture out of Fokus (pulling it down?); then steps and their todos (the mockup's two levels), recording Soll/Ist from the open event, other weeks in the strip. The expand button in the editor's header crowds the title on a phone; it may go once the gesture exists.
 - **The rest of the design spec** (§1 global rules outside the reworked sections, §3–5, §8.1–8.3, §8.5–8.6, §8.9) — not yet done. **Claude**

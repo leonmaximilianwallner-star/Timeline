@@ -77,6 +77,10 @@ function toCurrentShape(d, takeDeviceState){
     d.actuals = d.actuals || [];
     d.version = 7;
   }
+  if(d.version < 8){                                       // version 8 (10 Nov): steps, the things to do inside a phase (core/hierarchy.js)
+    d.steps = d.steps || [];
+    d.version = 8;
+  }
   RECORD_LISTS.forEach(list => (d[list]||[]).forEach(r => { if(!r.updatedAt) r.updatedAt = now; }));
   d.deleted = d.deleted || {};
   return d;

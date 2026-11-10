@@ -134,10 +134,22 @@ $tlWrap.addEventListener("click", e=>{
   const inEl = e.target.closest("[data-create-in-phase]");
   if(inEl){
     const ph = S.phases.find(p=>p.id===inEl.dataset.createInPhase); if(!ph) return;
-    const t = todayISO(), date = t < ph.start ? ph.start : t < ph.end ? t : lastDay(ph.end);   // today if inside, else the nearest day of the phase
-    openEditor({ type:"event", initial:{ date, startMin:9*60, endMin:10*60, categoryId:ph.categoryId||null, parentId:ph.id } });
+    openEditor({ type:"event", initial:{ date:dayInPhase(ph), startMin:9*60, endMin:10*60, categoryId:ph.categoryId||null, parentId:ph.id } });
     return;
   }
+  /* a step in the dropdown: + makes its next event, the mark ticks it (without events), its name opens its phase */
+  const schEl = e.target.closest("[data-schedule-step]");
+  if(schEl){ scheduleStep(schEl.dataset.scheduleStep); return; }
+  const tickEl = e.target.closest("[data-tick-step]");
+  if(tickEl){
+    const st = S.steps.find(x=>x.id===tickEl.dataset.tickStep); if(!st) return;
+    if(stepHasEvents(S, st)){ toast("Erledigt über seine Termine"); return; }
+    const done = !stepDone(S, st);
+    mutate(s=>tickStep(s.steps.find(x=>x.id===st.id), done));
+    return;
+  }
+  const stEl = e.target.closest("[data-open-step]");
+  if(stEl){ const ph = phaseOf(S, S.steps.find(x=>x.id===stEl.dataset.openStep)); if(ph) openEditor({ type:"phase", edit:ph }); return; }
   const phEl = e.target.closest(".phase");
   if(phEl){ const ph = S.phases.find(p=>p.id===phEl.dataset.phase); if(ph) openEditor({ type:"phase", edit:ph }); return; }
   const mEl = e.target.closest("[data-edit-milestone]");
