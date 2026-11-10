@@ -26,7 +26,8 @@ const $rail        = document.getElementById("rail");
 const $railInner   = document.getElementById("railInner");
 
 UI.canvas = {
-  shown:false,      // drawn: during a pull, a motion, or while it is the view
+  shown:false,      // in play: during a pull, a motion, or while it is the view
+  stale:true,       // the rail needs drawing (the plan changed while the canvas was out of play)
   active:false,     // the canvas is the view in use
   moving:false,     // a motion between the views runs
   rows:CANVAS_ROWS,
@@ -35,9 +36,27 @@ UI.canvas = {
 };
 document.documentElement.style.setProperty("--cell", CANVAS_CELL + "px");
 
-/* draws the grid's size and the rail; only while the canvas is shown (renderAll calls it every time) */
+/* draws the grid's size and the rail. renderAll calls it on every change: in play it draws at once; out of play
+   it only notes the change and draws when the browser is idle, so the first wheel of a pull finds it ready */
+const CANVAS_IDLE = 12;      // ms of a quiet stretch the drawing needs; in a shorter one it waits (it would delay a motion)
+let _idleCanvas = false;
 function renderCanvas(){
-  if(!UI.canvas.shown) return;
+  if(!UI.canvas.shown){ UI.canvas.stale = true; drawCanvasWhenIdle(); return; }
+  drawCanvas();
+}
+function drawCanvasWhenIdle(){
+  if(_idleCanvas) return;
+  _idleCanvas = true;
+  const idle = window.requestIdleCallback || (f => setTimeout(() => f({ timeRemaining: () => 50 }), 300));   // Safari: no idle callback
+  idle(deadline => {
+    _idleCanvas = false;
+    if(UI.canvas.shown || !UI.canvas.stale) return;
+    if(deadline.timeRemaining() < CANVAS_IDLE) return drawCanvasWhenIdle();   // not quiet enough: the next stretch
+    drawCanvas();
+  });
+}
+function drawCanvas(){
+  UI.canvas.stale = false;
   const w = UI.range.days * CANVAS_CELL;
   $canvasGrid.style.width = w + "px";
   $canvasGrid.style.height = UI.canvas.rows * CANVAS_CELL + "px";
@@ -65,24 +84,25 @@ function measureRail(){
 function setRailHeight(extra = 0){
   $rail.style.height = (UI.canvas.railOpen ? UI.canvas.railOpenH : UI.canvas.railThinH) + extra + "px";
 }
-function openRail(open){
+function openRail(open, instant){
   if(UI.canvas.railOpen === open) return;
   UI.canvas.railOpen = open;
+  if(instant) $rail.classList.add("measuring");                  // no motion: it isn't seen (under the timeline it replaces)
   $rail.classList.toggle("open", open);
   setRailHeight();
+  if(instant){ void $rail.offsetHeight; $rail.classList.remove("measuring"); }
 }
 
-/* puts the canvas in place under the week, at the week's day, its floor in view; nothing of it shows yet */
+/* puts the canvas in play under the week, at the week's day, its floor in view. Usually already drawn (idle) */
 function showCanvas(){
   UI.canvas.shown = true;
-  UI.canvas.railOpen = true; $rail.classList.add("open");        // a motion lands on the open rail: the same rows as the timeline
-  renderCanvas();
+  openRail(true, true);                                           // a motion lands on the open rail: the same rows as the timeline
+  if(UI.canvas.stale) drawCanvas();
   $canvasScene.scrollTop = $canvasScene.scrollHeight;            // the floor
   canvasScrollToDay(weekLeftDay());
 }
 function hideCanvas(){
-  UI.canvas.shown = UI.canvas.active = false;
-  $railInner.replaceChildren();                                   // nothing hidden is kept up to date
+  UI.canvas.shown = UI.canvas.active = false;                     // its drawing is kept: the next pull finds it ready
 }
 
 /* the grid grows upward when its top comes near; the days grow sideways like the week's (views/viewport.js) */

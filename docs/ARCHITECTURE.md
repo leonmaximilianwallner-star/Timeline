@@ -223,9 +223,20 @@ In v2_7 the timeline and day grid already share one scroller and one scale relat
 
 **One renderer at two scales.** `buildTimeline(ppd, rail)` draws the timeline view at any scale; the week calls it with `TL_PPD`, the rail with `CANVAS_CELL`. Pixel-identical for the week (fingerprint).
 
-**The motions** (`ui/canvas-morph.js`) move only `transform` and `opacity`, with Web Animations, like the Fokus motions. Measured on a desktop screen: no frame over 17 ms.
+**The motions** (`ui/canvas-morph.js`) move only `transform` and `opacity`, with Web Animations, like the Fokus motions.
 
-**Nothing of the canvas touches the week while it isn't in play:** no layer (`will-change`), no stacking context, no focusable scroller; each of these changed the week's pixels (found by the fingerprint test, removed).
+**What may move, measured (10 Nov, CPU slowed 4×, each piece alone):** the week's scroller: a 117 ms stall when it starts moving, since all of it is repainted. The timeline band, the canvas layer, the rail: 17 ms frames. So **the week's scroller never moves.** Only the timeline band travels (its own layer), the day view fades, and the canvas, beneath the week, shows through the week's ground, which is transparent only while the canvas is in play (the day grid draws on it otherwise: one colour level, found by the fingerprint).
+- **The week stays drawn under the canvas** (covered, not hidden): hidden, it had to be repainted at once on the way back (a 204 ms stall).
+- **The moving layers keep their layer while the canvas is in play**; dropped and rebuilt at each landing, they cost a long frame after every switch.
+- **The canvas is drawn ahead, in idle time** (only in a quiet stretch of 12 ms or more, so it never delays a motion), and kept between visits; the first wheel of a pull finds it ready.
+- **Scroll anchoring is off for the canvas** (`overflow-anchor:none`): the rail opening or closing made the browser move the canvas off its floor.
+- **Labels step out for the motion** (`visibility`), not fade: a fade gave each of ~100 labels its own layer.
+
+Result, from the start of a trackpad flick to landed: **about 0.5 s** (of which ~0.2 s is the flick reaching the line), the motion itself ~0.3 s, no frame over 34 ms; it was 2.7 s with frames up to 233 ms. CPU slowed 4×: 0.6 s. The harness: a flick with momentum, frame and long-task log, trace by kind of work.
+
+**Nothing of the canvas touches the week while it isn't in play:** no layer (`will-change`), no transparent ground, no focusable scroller; each of these changed the week's pixels (found by the fingerprint test). The week's scroller has a fixed stacking level (`z-index:1`), the same pixels.
+
+**The rail exists in the page even before the canvas is opened** (drawn ahead). Code that looks for timeline things page-wide would find them twice; it must look inside its view (`#tlWrap`, `#railInner`). Today only the dropdown is found page-wide, and the rail has none.
 
 ## 7. Agents — **Max, 20 Oct: later**
 

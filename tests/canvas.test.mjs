@@ -37,7 +37,7 @@ await page.waitForTimeout(600);
 
 const q = (fn, a) => page.evaluate(fn, a);
 const wheel = async (dy, n, dx = 0) => { for (let i = 0; i < n; i++) { await page.mouse.wheel(dx, dy); await page.waitForTimeout(16); } };
-const settle = () => page.waitForFunction(() => !UI.canvas.moving && !$views.classList.contains('pulling'), null, { timeout: 3000 });
+const settle = () => page.waitForFunction(() => !UI.canvas.moving && !pull.spring && !/pulling/.test($views.className), null, { timeout: 3000 });
 const view = () => q(() => document.documentElement.dataset.view || 'week');
 /* in: a fresh gesture up from the timeline's top, past the line */
 async function enter(){ await q(() => { $scene.scrollTop = 0; }); await page.mouse.move(700, 300); await page.waitForTimeout(200); await wheel(-40, 9); await page.waitForTimeout(250); await settle(); }
@@ -55,25 +55,38 @@ await step('a fling that runs into the top of the week does not pull', async () 
 await step('a short pull from the top springs back, nothing left behind', async () => {
   await page.waitForTimeout(200);
   await wheel(-40, 3);
-  assert.ok(await q(() => $views.classList.contains('pulling')), 'pulling');
-  assert.match(await q(() => $scene.style.transform), /translateY\(\d/);
+  assert.ok(await q(() => $views.classList.contains('pulling-up')), 'pulling');
+  assert.match(await q(() => $tlWrap.style.transform), /translateY\(\d/, 'the timeline band gives');
+  assert.equal(await q(() => $scene.style.transform), '', 'the week\'s scroller never moves');
   await page.waitForTimeout(250); await settle();
   assert.equal(await view(), 'week');
   assert.equal(await q(() => UI.canvas.shown), false);
-  assert.equal(await q(() => $scene.style.transform + $canvasView.style.transform), '');
+  assert.equal(await q(() => $tlWrap.style.transform + $canvasView.style.transform), '');
 });
 
-await step('a pull past the line is armed and commits on release; the day at the left edge is kept', async () => {
+await step('a pull commits the moment it crosses the line, mid-gesture; the day at the left edge is kept', async () => {
   const day = await q(() => weekLeftDay());
   await page.waitForTimeout(200);
-  await wheel(-40, 9);
-  assert.ok(await q(() => $pullHint.classList.contains('armed')), 'armed');
-  assert.equal(await view(), 'week', 'no commit while the gesture runs');
-  await page.waitForTimeout(250); await settle();
+  await wheel(-40, 5);                                      // 200 px: short of the line (240)
+  assert.equal(await q(() => UI.canvas.moving), false, 'not before the line');
+  await wheel(-40, 1);                                      // across it
+  assert.equal(await q(() => UI.canvas.moving), true, 'the motion starts at once, the gesture still running');
+  await settle();
   assert.equal(await view(), 'canvas');
   assert.ok(Math.abs(await q(() => canvasLeftDay()) - day) < 0.01, 'same day at the left edge');
   assert.equal(await q(() => $canvasScene.scrollTop >= $canvasScene.scrollHeight - $canvasScene.clientHeight - 1), true, 'at the floor');
-  assert.equal(await q(() => getComputedStyle($scene).visibility), 'hidden');
+  assert.ok(await q(() => +getComputedStyle($canvasView).zIndex > +getComputedStyle($scene).zIndex), 'the canvas covers the week, which stays drawn underneath');
+  assert.equal(await q(() => document.elementFromPoint(700, 400).closest('#canvasView') !== null), true, 'the canvas gets the pointer');
+});
+
+await step('the rest of the switching gesture goes nowhere: the canvas stays at its floor', async () => {
+  await enter();                                            // in again from the week
+  await page.keyboard.press('Escape'); await page.waitForTimeout(50); await settle();
+  await q(() => { $scene.scrollTop = 0; }); await page.mouse.move(700, 300); await page.waitForTimeout(200);
+  await wheel(-40, 30);                                     // one long gesture: crosses the line, then keeps going (momentum)
+  await settle(); await page.waitForTimeout(300);
+  assert.equal(await view(), 'canvas');
+  assert.equal(await q(() => $canvasScene.scrollTop >= $canvasScene.scrollHeight - $canvasScene.clientHeight - 1), true, 'still at the floor');
 });
 
 await step('the rail is the timeline at the canvas scale, closed until hovered', async () => {
@@ -124,10 +137,10 @@ await step('out: a pull down from the floor past the line, back to the week at t
   await q(() => { $canvasScene.scrollLeft += 7 * CANVAS_CELL + 13; });     // a little into a day: the week lands on whole days
   const day = await q(() => canvasLeftDay());
   await page.waitForTimeout(200);
-  await wheel(60, 10);
-  assert.ok(await q(() => $pullHint.classList.contains('armed')), 'armed');
+  await wheel(60, 3);
   assert.ok(await q(() => $rail.offsetHeight > UI.canvas.railOpenH), 'the rail grows with the pull');
-  await page.waitForTimeout(250); await settle();
+  await wheel(60, 2);
+  await settle();
   assert.equal(await view(), 'week');
   assert.equal(await q(() => weekLeftDay()), Math.round(day));
   assert.equal(await q(() => $scene.scrollTop), 0, 'at the timeline, where the canvas was above');
