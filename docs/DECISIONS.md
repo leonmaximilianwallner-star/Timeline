@@ -266,3 +266,11 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **Found in the dictionary:** "board" is banned for the canvas (A.8) but wasn't in the list the test reads (A.11); the first draft used it. Added, and renamed to *grid*. *Claude*
 - **Open:** cell size vs. the 32px block geometry; the canvas on a phone; which view opens at start (RULEBOOK B.8). *Claude*
 
+## 10 Nov 2026 — the switch, made fast (pull request #32)
+
+- **A switch never takes longer than a button would.** Max on #31: it lagged, slowed the browser, needed a cool-off; "the transition is a cover-up, like a magic trick". Measured before changing anything: 2.7 s from a trackpad flick to landed, frames up to 233 ms (CPU 4× slower). *Max (the bar); Claude (the measuring)*
+- **Commit at the line, not on release.** A trackpad's release is the end of its momentum, up to a second later: most of the 2.7 s. The rest of the switching gesture goes nowhere. The no-accident rule stays: only a gesture that starts at the edge pulls. Supersedes "armed, commit on release" for the wheel (the editor's finger pull keeps it). *Claude*
+- **The week's scroller never moves** (a 117 ms stall each time); only the timeline band travels, the day view fades, the canvas shows through. **The week stays drawn under the canvas** instead of hidden (a 204 ms repaint on the way back). **Moving layers keep their layer** while the canvas is in play. **The canvas is drawn ahead in idle time** and kept. **Labels step out** instead of fading. **280 ms** instead of 460. *Claude*
+- **Found on the way:** scroll anchoring moved the canvas off its floor when the rail opened or closed, so the next pull down didn't start (`overflow-anchor:none`); a short pull's spring-back swallowed the next pull's first events (a new pull now takes it over); a busy frame could end the switching gesture early and let its momentum scroll on (it now ends only after landing). *Claude*
+- **Result:** about 0.5 s from flick to landed, the motion ~0.3 s, no frame over 34 ms, no long task after landing. The week pixel-identical. *Claude; Max to judge on his desktop*
+

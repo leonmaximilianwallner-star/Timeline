@@ -64,7 +64,7 @@ const tests = {
   },
   async 'opening a phase dropdown changes device state, not the plan'(page) {
     const first = await stored(page, 'timeline.data.v3');
-    await page.locator('.ph-exp').first().click(); await page.waitForTimeout(200);
+    await page.locator('#tlWrap .ph-exp').first().click(); await page.waitForTimeout(200);
     assert.equal((await device(page)).openPhases.length, 1);
     assert.equal(await stored(page, 'timeline.data.v3'), first);
     assert.equal(await page.locator('.dropdown').count(), 1);
@@ -149,7 +149,7 @@ const tests = {
     await page.click('#editorSave'); await page.waitForTimeout(200);
     m = (await data(page)).milestones.find(x => x.id === m.id);
     assert.equal(m.categoryId, 'seminar'); assert.equal(m.final, true);
-    assert.equal(await page.locator(`.milestone-dot[data-edit-milestone="${m.id}"]`).count(), 1);   // now on the project's spine
+    assert.equal(await page.locator(`#tlWrap .milestone-dot[data-edit-milestone="${m.id}"]`).count(), 1);   // now on the project's spine
     await page.evaluate(id => openEditor({ type: 'milestone', edit: S.milestones.find(x => x.id === id) }), m.id);
     await page.click('#editorDelete'); await page.waitForTimeout(200);
     const d = await data(page);
@@ -318,8 +318,8 @@ const v2Tests = {
     assert.deepEqual({ title: exam.title, date: exam.date, categoryId: exam.categoryId, final: exam.final, note: exam.note },
                      { title: 'Statik', date: '2026-11-05', categoryId: null, final: false, note: '30 Punkte' });
     assert.deepEqual({ title: ms.title, categoryId: ms.categoryId, final: ms.final }, { title: 'Abgabe', categoryId: 'seminar', final: true });
-    assert.equal(await page.locator('.milestone-chip[data-edit-milestone="x1"]').count(), 1);
-    assert.equal(await page.locator('.milestone-dot[data-edit-milestone="m1"]').count(), 1);
+    assert.equal(await page.locator('#tlWrap .milestone-chip[data-edit-milestone="x1"]').count(), 1);
+    assert.equal(await page.locator('#tlWrap .milestone-dot[data-edit-milestone="m1"]').count(), 1);
   },
   async 'V2 end dates become the day after (the shown last day stays the same)'(page) {
     const d = await data(page);

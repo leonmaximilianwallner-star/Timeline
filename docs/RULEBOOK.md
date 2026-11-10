@@ -467,10 +467,11 @@ monospace → DM Sans with tabular figures
 
 ### B.6.1 Between the canvas and the timeline *(built 10 Nov; Max)*
 
-The canvas is above the timeline. **One mechanic for both directions, the editor's pull into Fokus** (B.2.3: no new logic):
-- **The pull.** From the timeline's top, scroll further up; from the canvas's floor, further down. Before the line it holds back, at the line it springs and is **armed** (the hint fills); it **commits on release**: for a wheel, the pause after its gesture. Pulled back short of the line, it springs back.
-- **No early commit.** Only a gesture that *starts* at the edge pulls. A fling that runs into the edge, or a scroll that keeps going past it, stops there; the next gesture pulls. A sideways gesture never pulls.
-- **The motion.** The timeline sinks to the bottom and closes up sideways to the canvas's scale, becoming the rail; the canvas comes down with it, its floor on the timeline's top edge; the day view leaves. Back: the same, reversed (C.5). **Shapes stretch, text doesn't:** the leaving view's labels fade at once, the arriving view's appear as the shapes land (the Fokus motions' rule).
+The canvas is above the timeline. **A switch never takes longer than a button would** (**Max**, 10 Nov: "the transition is a cover-up, like a magic trick; if it lags or feels longer than a button, it does the opposite"):
+- **The pull.** From the timeline's top, scroll further up; from the canvas's floor, further down. It gives a little with the scrolling (the hint says where it leads) and **commits the moment it crosses the line**, while the gesture still runs. The rest of that gesture goes nowhere: the view you land in doesn't scroll on. Short of the line, a pause springs it back; a new pull may take over a spring-back.
+- *Why not the editor's release:* a finger's release is instant; a trackpad's is the end of its momentum, up to a second later. Waiting for it made every switch take about 2 s (measured).
+- **No accidental switch.** Only a gesture that *starts* at the edge pulls. A fling that runs into the edge, or a scroll that keeps going past it, stops there; the next gesture pulls. A sideways gesture never pulls.
+- **The motion, 280 ms.** The timeline band sinks to the bottom and closes up sideways to the canvas's scale, becoming the rail; the canvas comes down with it, its floor on the band's top edge; the day view fades. Back: the same, reversed (C.5). **Shapes stretch, text doesn't:** labels step out for the motion and back in as it lands.
 - **The same day stays at the left edge** both ways. The week lands on whole days (it snaps to them).
 - **The rail** is the timeline view drawn by its own rule at the canvas's scale (B.4: the same rule, not a copy), pinned to the floor. **Closed:** the months, then every row as a line. **Open** while the pointer rests on it, and while a pull grows it. A click on it opens what it hits, as on the timeline. No dropdowns there.
 - **In the canvas:** scroll or drag the empty grid to pan; T goes to today; Escape goes back to the week; the add button and add mode belong to the week.
