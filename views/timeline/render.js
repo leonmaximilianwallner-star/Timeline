@@ -83,7 +83,6 @@ function renderTimeline(){
   fitLabels(frag);
 }
 
-const DROPDOWN_MIN_W = 340;   // px: a dropdown is at least this wide, even under a short phase
 
 function appendPhaseLanes(frag, phases, ppd, rail){
   if(!phases.length) return;
@@ -98,76 +97,77 @@ function appendPhaseLanes(frag, phases, ppd, rail){
 
     byLane[l].forEach(ph => {
       const x = dayIdx(ph.start)*ppd, w = Math.max(diffDays(ph.start, ph.end)*ppd, 26);
+      const color = cat(ph.categoryId).color, { done, total } = phaseProgress(S, ph), isOpen = device.openPhases.includes(ph.id);
+      const noDay = stepsOf(S, ph).filter(st => !stepHasEvents(S, st)).length;   // steps not yet on a day
       const el = document.createElement("div");
-      el.className="phase"; el.style.left=x+"px"; el.style.width=w+"px";
-      el.style.background = cat(ph.categoryId).color;
+      el.className = "phase" + (total && done === total ? " done" : "") + (isOpen ? " open" : "");
+      el.style.left=x+"px"; el.style.width=w+"px";
+      el.style.background = washOf(color); el.style.borderColor = color;   // the pill is its wash; the fill is its progress
       el.dataset.phase = ph.id;
       el.innerHTML =
-        `<span class="ph-stick"><button class="ph-exp" data-expand="${ph.id}" title="Details">${device.openPhases.includes(ph.id)?"▾":"▸"}</button>`+
-        `<span class="ph-label">${esc(ph.title)}</span></span>`+
+        `<span class="ph-fill" style="width:${total ? done / total * 100 : 0}%;background:${color}"></span>`+
+        `<span class="ph-stick"><span class="ph-label">${esc(ph.title)}</span>`+
+        `<button class="ph-exp" data-expand="${ph.id}" aria-expanded="${isOpen}" title="Fahrplan">${CHEVRON}</button></span>`+
+        (total && w >= 90 ? `<span class="ph-count">${done}/${total}${noDay ? ` · ${noDay} ohne Tag` : ""}</span>` : "")+
         `<span class="ph-handle l" data-rez="l"></span><span class="ph-handle r" data-rez="r"></span>`;
       r.appendChild(el);
     });
 
     if(rail) continue;                                 // the rail has no dropdowns
-    /* phase dropdowns of this lane, right under it. Dropdowns that don't overlap sideways
-       share a row; only overlapping ones need a row of their own (Max, 21 Oct) */
-    const rows = [];                                   // each row: the right edge of its last dropdown, and its element
+    /* the open phase's plan, right under its lane: one cell per day of the phase, on the day columns
+       (Max, 10 Nov, "Fahrplan"). Plans that don't overlap sideways share a row (21 Oct) */
+    const rows = [];
     byLane[l].filter(ph => device.openPhases.includes(ph.id))
       .sort((a,b) => a.start < b.start ? -1 : 1)
       .forEach(ph => {
-        const x = dayIdx(ph.start)*ppd, w = Math.max(diffDays(ph.start, ph.end)*ppd, 26);
-        const width = Math.max(w, DROPDOWN_MIN_W);
+        const x = dayIdx(ph.start)*ppd, n = diffDays(ph.start, ph.end);
         let row = rows.find(r => r.right <= x);
         if(!row){
           row = { right: 0, el: document.createElement("div") };
           row.el.className = "tlRow dropdown-row";
           rows.push(row); frag.appendChild(row.el);
         }
-        row.right = x + width;
+        row.right = x + n*ppd;
         const anchor = document.createElement("div"); anchor.className="dropdown-anchor";
-        anchor.style.marginLeft = x+"px"; anchor.style.width = width+"px";
+        anchor.style.marginLeft = x+"px";
         const bb = document.createElement("div");
-        bb.className = "dropdown" + (UI.dropdownOpening===ph.id ? " opening" : "");   // only the one just opened animates: redraws don't replay it
+        bb.className = "dropdown plan" + (UI.dropdownOpening===ph.id ? " opening" : "");   // only the one just opened animates
         bb.dataset.dropdown = ph.id;
-        bb.style.borderTopColor = cat(ph.categoryId).color;
-        bb.innerHTML = `<div class="dropdown-note">${sanitize(ph.details||"")}</div>` + phaseChildrenHTML(ph);
+        bb.innerHTML = planHTML(ph, n, ppd);
         anchor.appendChild(bb); row.el.appendChild(anchor);
       });
   }
 }
 
-/* a phase's children in its dropdown, top-down (RULEBOOK B.1.8, B.2.3): its steps, then the events straight
-   under it. The count is the phase's progress (core/hierarchy.js). Each + makes a new event inside its row's thing. */
-const DROPDOWN_EVENTS = 6;    // upcoming occurrences listed; the rest is a count
-function phaseChildrenHTML(ph){
-  const today = todayISO();
-  const steps = stepsOf(S, ph), { done, total } = phaseProgress(S, ph);
-  const next = phaseOccurrences(S, ph).filter(o => o.day >= today), shown = next.slice(0, DROPDOWN_EVENTS);
-  const dayWord = day => { const d = parseISO(day); return `${WD[d.getDay()]} ${d.getDate()}.${d.getMonth()+1}.`; };
-  const stepRow = st => {
-    const occ = stepOccurrences(S, st), coming = occ.find(o => o.day >= today);
-    return `<div class="dropdown-event step" data-state="${stepDone(S, st) ? "done" : "open"}">
-      <button type="button" class="tcheck" data-tick-step="${st.id}" title="${occ.length ? "Erledigt über seine Termine" : "Erledigt"}">${stepDone(S, st) ? "✓" : ""}</button>
-      <button type="button" class="de-title" data-open-step="${st.id}">${esc(st.title)}</button>
-      <span class="de-when">${coming ? dayWord(coming.day) : occ.length ? `${occ.filter(o=>eventDone(o.ev, o.day)).length}/${occ.length}` : ""}</span>
-      <button type="button" class="de-add" data-schedule-step="${st.id}" title="Termin für diesen Schritt">${icon("plus")}</button></div>`;
-  };
-  const eventRow = ({ ev, day }) => {
-    const todos = todosOf(ev, day).filter(t => t.state !== "cancelled");
-    const mark = eventDone(ev, day) ? "✓" : todos.length ? `${todos.filter(t=>t.state==="done").length}/${todos.length}` : "";
-    return `<button type="button" class="dropdown-event" data-open-event="${ev.id}" data-day="${day}">
-      <span class="de-when">${dayWord(day)} · ${fmtMin(ev.startMin)}</span>
-      <span class="de-title">${esc(ev.title)}</span><span class="de-mark">${mark}</span></button>`;
-  };
-  return `<div class="dropdown-events">
-    <div class="dropdown-head"><span class="overline">${steps.length ? "Schritte" : "Termine"}</span><span class="count">${total ? `${done}/${total}` : ""}</span></div>
-    ${steps.map(stepRow).join("")}
-    ${steps.length && shown.length ? `<div class="dropdown-head sub"><span class="overline">Termine</span></div>` : ""}
-    ${shown.map(eventRow).join("")}
-    ${next.length > shown.length ? `<div class="dropdown-more">+ ${next.length - shown.length} weitere</div>` : ""}
-    <button type="button" class="dropdown-event add" data-create-in-phase="${ph.id}">${icon("plus")}<span class="de-title">Termin in dieser Phase</span></button>
-  </div>`;
+const CHEVRON = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>`;
+const PLAN_TODOS = 3;          // open todos shown per event in a cell; the rest is "+n"
+
+/* what falls on which day of a phase: every event under it (straight, or through a step) on that day, by time.
+   A head: the step's name (or the event's), done/total of its todos. Past days: heads only, muted.
+   Today and later: then its open todos, at most PLAN_TODOS. Done todos never show (the count covers them). */
+function planHTML(ph, n, ppd){
+  const today = todayISO(), byDay = {};
+  [...phaseOccurrences(S, ph), ...stepsOf(S, ph).flatMap(st => stepOccurrences(S, st))]
+    .forEach(o => (byDay[o.day] = byDay[o.day] || []).push(o));
+  const cells = [];
+  for(let i = 0; i < n; i++){
+    const d = addDays(parseISO(ph.start), i), day = isoDate(d), past = day < today, rows = [];
+    (byDay[day] || []).sort((a, b) => a.ev.startMin - b.ev.startMin).forEach(({ ev }) => {
+      const step = ev.parentId !== ph.id && S.steps.find(s => s.id === ev.parentId);
+      const all = todosOf(ev, day), counted = all.filter(t => t.state !== "cancelled"), done = eventDone(ev, day);
+      rows.push(`<button type="button" class="prow head${past || done ? " muted" : ""}" data-open-event="${ev.id}" data-day="${day}">`+
+        `${done ? `<span class="tick">✓</span>` : ""}<span class="prow-text">${esc(step ? step.title : ev.title)}</span>`+
+        `<span class="prow-meta">${counted.length ? `${counted.filter(t => t.state === "done").length}/${counted.length}` : ""}</span></button>`);
+      if(past) return;
+      const open = all.filter(t => t.state === "open");
+      open.slice(0, PLAN_TODOS).forEach(t => rows.push(`<div class="prow"><button type="button" class="ring" title="Erledigt" `+
+        `data-tick-todo="${t.id}" data-ev="${ev.id}" data-day="${day}"></button><span class="prow-text">${esc(t.text)}</span></div>`));
+      if(open.length > PLAN_TODOS) rows.push(`<div class="prow more">+${open.length - PLAN_TODOS}</div>`);
+    });
+    cells.push({ weekend: d.getDay() === 0 || d.getDay() === 6, rows });
+  }
+  const h = Math.max(32, 12 + 20 * Math.max(0, ...cells.map(c => c.rows.length)));
+  return cells.map(c => `<div class="plan-day${c.weekend ? " weekend" : ""}" style="width:${ppd}px;height:${h}px">${c.rows.join("")}</div>`).join("");
 }
 
 /* shrink label font before ever compromising the pill — never the radius */

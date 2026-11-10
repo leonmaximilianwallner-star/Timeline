@@ -41,7 +41,7 @@
 .milestone-dot.final .milestone-label{color:var(--text); font-weight:600}
 .laneRow{height:34px}
 .phase{
-  position:absolute; top:4px; height:24px; border-radius:9999px;
+  position:absolute; top:4px; height:24px; border-radius:9999px; box-sizing:border-box; border:1px solid;
   color:#ededec; cursor:pointer; user-select:none;
   transition:filter .15s;
   touch-action:none;   /* taps/resize here are JS — never a compositor pan-steal */
@@ -52,60 +52,46 @@
   clip-path: inset(0 round 9999px);
 }
 .phase:hover{filter:brightness(1.12)}
+.phase.done{opacity:.45}                                      /* finished: the app-wide done rule */
+.phase .ph-fill{position:absolute; left:0; top:0; bottom:0; border-radius:9999px; pointer-events:none}
+.phase .ph-count{position:absolute; right:12px; top:0; bottom:0; display:flex; align-items:center;
+  font-size:var(--fs-small); font-weight:500; font-variant-numeric:tabular-nums; pointer-events:none}
 .phase .ph-stick{
   position:sticky; left:var(--sticky-left, calc(var(--rail-w) + 12px));
   display:inline-flex; align-items:center; gap:6px;
-  height:24px; padding:0 12px 0 4px;
-  white-space:nowrap; line-height:24px;
+  height:22px; padding:0 12px;
+  white-space:nowrap; line-height:22px;
 }
 .phase .ph-exp{
-  width:18px; height:18px; flex:0 0 18px; border-radius:50%;
-  display:inline-flex; align-items:center; justify-content:center;
-  background:rgba(0,0,0,.22); font-size:var(--fs-label); color:#ededec;
+  width:18px; height:18px; flex:0 0 18px; padding:0; border:0; background:none; color:inherit;
+  display:inline-flex; align-items:center; justify-content:center; cursor:pointer;
 }
+.phase .ph-exp svg{transition:transform .2s var(--soft)}
+.phase.open .ph-exp svg{transform:rotate(180deg)}
 .phase .ph-label{ font-size:12px; font-weight:600; }
 .phase .ph-handle{position:absolute; top:0; height:100%; width:10px; cursor:ew-resize}
 .phase .ph-handle.l{left:0}.phase .ph-handle.r{right:0}
-.dropdown-row{padding:2px 0 8px; display:grid}           /* dropdowns in one row share its height */
+.dropdown-row{padding:8px 0; display:grid; z-index:4}   /* over the today line (3): the line runs behind the plan */
+/* plans in one row share its height; 8px from the phase, 8px to the next lane */
 .dropdown-anchor{display:flex; grid-area:1/1; align-self:start}
-.dropdown{
-  position:sticky; left:var(--sticky-left);
-  border-top:2px solid var(--hairline);
-  background:var(--surface); border:1px solid var(--hairline); border-radius:var(--r-float);
-  border-top-left-radius:4px;
-  padding:10px 14px; max-width:380px; min-width:220px;
-  font-size:var(--fs-small); line-height:1.5; color:var(--fg-muted);
-  border:1px solid var(--hairline);                        /* separated by an edge, not a shadow */
-}
+/* an open phase's plan ("Fahrplan", Max 10 Nov): no box of its own. One cell per day on the day columns, the grid's own lines
+   and weekend shade; everything inside neutral; state by value (past and done muted), never by marks */
+.dropdown.plan{position:relative; display:flex; border-top:1px solid var(--hairline); border-bottom:1px solid var(--hairline); z-index:5}
+.plan-day{flex:none; box-sizing:border-box; padding:6px 12px 0; overflow:hidden; background:var(--base); border-right:1px solid var(--hairline)}
+.plan-day.weekend{background-image:linear-gradient(var(--weekend), var(--weekend))}
+.prow{height:20px; width:100%; display:flex; align-items:center; gap:8px; padding:0; border:0; background:none;
+  font-family:inherit; font-size:var(--fs-small); line-height:16px; font-weight:400; color:var(--text); text-align:left}
+.prow.head{gap:6px; font-weight:600; cursor:pointer}
+.prow.muted{color:var(--fg-muted)}
+.prow.more{padding-left:20px; color:var(--fg-muted)}
+.prow-text{flex:1 1 auto; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.prow-meta{flex:none; color:var(--fg-muted); font-weight:400; font-variant-numeric:tabular-nums}
+.ring{width:12px; height:12px; flex:none; box-sizing:border-box; padding:0; border-radius:9999px; border:1.5px solid var(--border-control); background:none; cursor:pointer}
+.tick{width:12px; height:12px; flex:none; border-radius:9999px; background:var(--fg-muted); color:var(--base);
+  display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:600}
 .dropdown.opening{animation:appear .22s var(--soft)}
 .dropdown.closing{animation:disappear .18s var(--soft) forwards}
 @keyframes disappear{to{opacity:0; transform:scale(.94) translateY(8px)}}   /* "appear" backwards, under its own name */
-.dropdown b,.dropdown strong{color:var(--text)}
-.dropdown ul,.dropdown ol{padding-left:18px; margin:4px 0}
-.dropdown-note:empty{display:none}
-/* the phase's events (RULEBOOK B.1.8): rows of one line, the note above them */
-.dropdown-events{display:flex; flex-direction:column}
-.dropdown-note:not(:empty) + .dropdown-events{margin-top:8px; padding-top:8px; border-top:1px solid var(--hairline)}
-.dropdown-head{display:flex; justify-content:space-between; align-items:baseline; padding-bottom:4px}
-.dropdown-event{
-  display:flex; align-items:center; gap:8px; min-height:var(--row-h); padding:0;   /* a touch target (RULEBOOK C.4) */
-  background:none; border:0; color:var(--text); font:inherit; text-align:left; cursor:pointer;
-}
-.dropdown-event .de-when{color:var(--fg-muted); font-variant-numeric:tabular-nums; white-space:nowrap}
-.dropdown-event .de-title{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-.dropdown-event .de-mark{color:var(--fg-muted); font-variant-numeric:tabular-nums}
-.dropdown-event.add{color:var(--fg-muted)}
-.dropdown-event.add svg{width:16px; height:16px}
-.dropdown-more{color:var(--fg-muted); min-height:24px}
-/* a step in the dropdown: its mark (a todo's mark, RULEBOOK A.7), its name, when it is next, + for its next event */
-.dropdown-event.step{cursor:default}
-.dropdown-event.step .de-title{background:none; border:0; padding:0; color:inherit; font:inherit; text-align:left; cursor:pointer}
-.dropdown-event.step[data-state="done"] .tcheck{background:var(--text); border-color:var(--text)}
-.dropdown-event.step[data-state="done"] .de-title{color:var(--fg-muted); text-decoration:line-through}
-.dropdown-event .de-add{width:var(--row-h); height:var(--row-h); margin-right:-12px; flex:0 0 auto; border:0; background:none;
-  color:var(--fg-muted); display:flex; align-items:center; justify-content:center; cursor:pointer}
-.dropdown-event .de-add svg{width:16px; height:16px}
-.dropdown-head.sub{padding-top:8px}
 .milestone-row{height:52px}
 .milestone-chip{
   position:absolute; top:6px; transform:translateX(-50%);

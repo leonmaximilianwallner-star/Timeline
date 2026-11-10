@@ -9,8 +9,5 @@
   },
   "ui/editor.js": {
     "details": 5
-  },
-  "views/timeline/render.js": {
-    "details": 2
   }
 }
