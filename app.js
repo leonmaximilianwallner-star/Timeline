@@ -12,6 +12,7 @@ document.addEventListener("keydown", e=>{
     else if(UI.dayTodos) dayTodosEscape();      // a day's todos: its category list first
     else if(UI.focus) closeFocus();             // the focus view, back to the week
     else if(UI.settingsOpen) toggleSettings(false);
+    else if(UI.canvas.active && !UI.canvas.moving) morphToWeek();   // the canvas, back to the week (ui/canvas-morph.js)
     else if(UI.addMode) setAddMode(false);
     return;
   }
@@ -19,7 +20,7 @@ document.addEventListener("keydown", e=>{
   if(UI.focus && !e.ctrlKey && !e.metaKey) return;  // the week's shortcuts (A, T) don't act under the focus view
   if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==="z"){ e.preventDefault(); e.shiftKey ? redo() : undo(); }
   else if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==="y"){ e.preventDefault(); redo(); }
-  else if(e.key.toLowerCase()==="a" && !e.ctrlKey && !e.metaKey){ e.preventDefault(); setAddMode(!UI.addMode); }
+  else if(e.key.toLowerCase()==="a" && !e.ctrlKey && !e.metaKey && !UI.canvas.active){ e.preventDefault(); setAddMode(!UI.addMode); }   // add mode belongs to the week
   else if(e.key.toLowerCase()==="t" && !e.ctrlKey && !e.metaKey){ scrollToToday(true); }
 });
 

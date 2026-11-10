@@ -15,6 +15,7 @@ function renderAll(){
   $tlInner.style.paddingLeft = railW()+"px";
   document.documentElement.style.setProperty("--tl-ppd", TL_PPD+"px");
   renderTimeline();
+  renderCanvas();                          // the canvas's grid and rail, while it is shown (views/canvas/render.js)
   renderDays();
   renderTopdate();
   positionNowLine();

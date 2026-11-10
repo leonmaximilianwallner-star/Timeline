@@ -1,20 +1,22 @@
 // views/timeline/render.js — draws the timeline view. Moved from index.html lines 954–1082 on 21 Oct 2026; names updated to the dictionary the same day.
 "use strict";
 /* ---------- timeline view ---------- */
-function renderTimeline(){
-  const W = UI.range.days * TL_PPD;
+/* the timeline view's drawing, at any scale: the week's (ppd) and the canvas's rail (CANVAS_CELL).
+   One rule for both, not a copy (RULEBOOK B.4). The rail draws no dropdowns and no hover line. */
+function buildTimeline(ppd, rail){
+  const W = UI.range.days * ppd;
   const frag = document.createElement("div");
   frag.style.width = W+"px"; frag.style.position = "relative";
 
   /* month labels */
-  const mrow = document.createElement("div"); mrow.id = "monthRow"; mrow.className="tlRow";
+  const mrow = document.createElement("div"); if(!rail) mrow.id = "monthRow"; mrow.className="tlRow month-row";
   let i = 0;
   while(i < UI.range.days){
     const d0 = parseISO(idxDate(i));
     const monthEnd = new Date(d0.getFullYear(), d0.getMonth()+1, 1);
     const span = Math.min(UI.range.days - i, Math.round((monthEnd - d0)/DAY_MS));
     const el = document.createElement("div");
-    el.className = "monthSpan"; el.style.width = span*TL_PPD+"px";
+    el.className = "monthSpan"; el.style.width = span*ppd+"px";
     el.innerHTML = `<span class="monthLabel">${MONTHS[d0.getMonth()]}${d0.getMonth()===0?" "+d0.getFullYear():""}</span>`;
     mrow.appendChild(el); i += span;
   }
@@ -24,8 +26,8 @@ function renderTimeline(){
   /* per-project (dated category): spine bounded by start..end, then its phase lanes */
   S.categories.filter(c=>c.start && c.end).forEach(p=>{
     const row = document.createElement("div"); row.className = "tlRow projRow";
-    const x = dayIdx(p.start)*TL_PPD;
-    const w = Math.max(diffDays(p.start, p.end)*TL_PPD, 26);
+    const x = dayIdx(p.start)*ppd;
+    const w = Math.max(diffDays(p.start, p.end)*ppd, 26);
     const spine = document.createElement("div"); spine.className = "projSpine colored";
     spine.style.left = x+"px"; spine.style.width = w+"px"; spine.style.background = p.color;
     row.appendChild(spine);
@@ -34,7 +36,7 @@ function renderTimeline(){
     lw.innerHTML = `<span class="projLabel" data-edit-project="${p.id}" style="color:${p.color}">${esc(p.name)}</span>`;
     row.appendChild(lw);
     S.milestones.filter(m=>m.categoryId===p.id).sort((a,b)=>a.date<b.date?-1:1).forEach(m=>{
-      const mx = (dayIdx(m.date)+.5)*TL_PPD;
+      const mx = (dayIdx(m.date)+.5)*ppd;
       const dot = document.createElement("div");
       dot.className = "milestone-dot"+(m.final?" final":"");
       dot.style.left = mx+"px";
@@ -44,19 +46,19 @@ function renderTimeline(){
       row.appendChild(dot);
     });
     frag.appendChild(row);
-    appendPhaseLanes(frag, S.phases.filter(ph=>ph.categoryId===p.id), W);
+    appendPhaseLanes(frag, S.phases.filter(ph=>ph.categoryId===p.id), ppd, rail);
   });
 
   /* ungrouped: phases tagged with a dateless category, or untagged (frei → grey) */
   const datedIds = new Set(S.categories.filter(c=>c.start && c.end).map(c=>c.id));
-  appendPhaseLanes(frag, S.phases.filter(ph=>!ph.categoryId || !datedIds.has(ph.categoryId)), W);
+  appendPhaseLanes(frag, S.phases.filter(ph=>!ph.categoryId || !datedIds.has(ph.categoryId)), ppd, rail);
 
   /* milestone chips: every milestone not on a project's spine.
      Colour: its category's; without one, red as before, until colour/category is decided (RULEBOOK B.8). */
-  const xr = document.createElement("div"); xr.className="tlRow"; xr.id="milestoneRow";
+  const xr = document.createElement("div"); xr.className="tlRow milestone-row"; if(!rail) xr.id="milestoneRow";
   S.milestones.filter(m=>!datedIds.has(m.categoryId)).forEach(m=>{
     const el = document.createElement("div");
-    el.className = "milestone-chip"; el.style.left = (dayIdx(m.date)+.5)*TL_PPD+"px";
+    el.className = "milestone-chip"; el.style.left = (dayIdx(m.date)+.5)*ppd+"px";
     el.style.background = m.categoryId ? cat(m.categoryId).color : "var(--c-red)";
     el.dataset.editMilestone = m.id;
     el.innerHTML = `<span class="chip-title">${esc(m.title)}</span><span class="chip-note">${esc(m.note||"")}</span>`;
@@ -66,20 +68,24 @@ function renderTimeline(){
 
   /* today line + overlays */
   const tl = document.createElement("div"); tl.className="todayLine";
-  tl.style.left = (dayIdx(todayISO())+.5)*TL_PPD+"px"; frag.appendChild(tl);
+  tl.style.left = (dayIdx(todayISO())+.5)*ppd+"px"; frag.appendChild(tl);
+  if(rail) return frag;
   const hov = document.createElement("div"); hov.className="tlHover"; hov.id="tlHover"; frag.appendChild(hov);
 
   const tlg = document.createElement("div"); tlg.id="tlGrid";
   frag.insertBefore(tlg, frag.firstChild);
-
+  return frag;
+}
+function renderTimeline(){
+  const frag = buildTimeline(TL_PPD, false);
   $tlInner.replaceChildren(frag);
-  $tlInner.style.width = (W + railW())+"px";
+  $tlInner.style.width = (UI.range.days * TL_PPD + railW())+"px";
   fitLabels(frag);
 }
 
 const DROPDOWN_MIN_W = 340;   // px: a dropdown is at least this wide, even under a short phase
 
-function appendPhaseLanes(frag, phases, W){
+function appendPhaseLanes(frag, phases, ppd, rail){
   if(!phases.length) return;
   const { count: nLanes, laneOf } = packLanes(phases);
   /* group phases by their packed lane so each lane row owns its own phase dropdown rows */
@@ -91,7 +97,7 @@ function appendPhaseLanes(frag, phases, W){
     frag.appendChild(r);
 
     byLane[l].forEach(ph => {
-      const x = dayIdx(ph.start)*TL_PPD, w = Math.max(diffDays(ph.start, ph.end)*TL_PPD, 26);
+      const x = dayIdx(ph.start)*ppd, w = Math.max(diffDays(ph.start, ph.end)*ppd, 26);
       const el = document.createElement("div");
       el.className="phase"; el.style.left=x+"px"; el.style.width=w+"px";
       el.style.background = cat(ph.categoryId).color;
@@ -103,13 +109,14 @@ function appendPhaseLanes(frag, phases, W){
       r.appendChild(el);
     });
 
+    if(rail) continue;                                 // the rail has no dropdowns
     /* phase dropdowns of this lane, right under it. Dropdowns that don't overlap sideways
        share a row; only overlapping ones need a row of their own (Max, 21 Oct) */
     const rows = [];                                   // each row: the right edge of its last dropdown, and its element
     byLane[l].filter(ph => device.openPhases.includes(ph.id))
       .sort((a,b) => a.start < b.start ? -1 : 1)
       .forEach(ph => {
-        const x = dayIdx(ph.start)*TL_PPD, w = Math.max(diffDays(ph.start, ph.end)*TL_PPD, 26);
+        const x = dayIdx(ph.start)*ppd, w = Math.max(diffDays(ph.start, ph.end)*ppd, 26);
         const width = Math.max(w, DROPDOWN_MIN_W);
         let row = rows.find(r => r.right <= x);
         if(!row){

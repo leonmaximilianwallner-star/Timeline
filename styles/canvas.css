@@ -1,0 +1,77 @@
+/* styles/canvas.css — the canvas view, its rail, and the pull between it and the week (Max, 10 Nov 2026).
+   views/canvas/render.js, input/canvas-pull.js, ui/canvas-morph.js. */
+
+/* the two views stack in #views: the week (#scene) and the canvas (#canvasView), one in use at a time */
+#views{flex:1 1 auto; min-height:0; position:relative}   /* #app clips: the motions run inside it */
+#canvasView{position:absolute; inset:0; z-index:0; visibility:hidden; background:var(--base)}
+/* nothing here touches the week while the canvas isn't in play: no layer, no stacking of its own (the fingerprint test) */
+#views.pulling #scene, #views.morphing #scene{z-index:1}
+/* while pulling or moving between them the week lies over the canvas; in the canvas the week is hidden */
+#views.pulling #canvasView, #views.morphing #canvasView{visibility:visible}
+#views.morphing #scene{background:transparent}              /* the rail shows through as the timeline fades */
+:root[data-view="canvas"] #canvasView{visibility:visible; z-index:2}
+:root[data-view="canvas"] #views:not(.morphing) #scene{visibility:hidden}
+#views.pulling-up #scene{overflow-y:hidden}                   /* a pull holds the scroller still: one movement at a time */
+#views.pulling-down #canvasScene{overflow-y:hidden}
+:root[data-view="canvas"] #fab, :root[data-view="canvas"] #addMenu{visibility:hidden}   /* add mode belongs to the week */
+
+#canvasScene{position:absolute; inset:0; overflow:auto; overscroll-behavior:contain; outline:none}
+/* the grid: a dot where its lines would cross, one cell a day; its floor is its bottom edge */
+#canvasGrid{
+  position:relative; display:flex; flex-direction:column; justify-content:flex-end; cursor:grab;
+  background-image:radial-gradient(circle, var(--canvas-dot) 1.25px, transparent 1.75px);
+  background-size:var(--cell) var(--cell);
+  background-position:calc(var(--cell) / -2) calc(var(--cell) / -2);
+}
+#canvasGrid.panning{cursor:grabbing}
+#canvasFloor{position:sticky; bottom:0; height:0; flex:0 0 auto}   /* pinned to the floor, moves sideways with the canvas */
+
+/* the rail: the timeline at the canvas's scale. overflow:clip, not hidden: hidden would make it a scroller
+   and its sticky labels would stop following #canvasScene */
+#rail{
+  position:absolute; left:0; right:0; bottom:0; overflow:clip; cursor:default;
+  background:var(--base); border-top:1px solid var(--hairline);
+  transition:height .22s var(--soft);
+  --sticky-left:12px;
+}
+#railInner{position:relative}
+#rail .ph-exp{visibility:hidden}                              /* no dropdowns here; kept in place so the pills match the timeline's */
+#rail .ph-handle{display:none}
+/* closed: the months, then every row as a line */
+#rail .tlRow, #rail .phase, #rail .milestone-chip{transition:height .22s var(--soft), top .22s var(--soft), padding .22s var(--soft)}
+#rail .ph-stick, #rail .projLabel, #rail .milestone-label, #rail .chip-title, #rail .chip-note, #rail .monthLabel{transition:opacity .16s}
+#rail:not(.open) .month-row{height:24px}
+#rail:not(.open) .projRow, #rail:not(.open) .laneRow{height:6px}
+#rail:not(.open) .phase{top:1px; height:4px}
+#rail:not(.open) .milestone-row{height:8px}
+#rail:not(.open) .milestone-chip{top:1px; height:6px; max-width:6px; padding:0; overflow:clip}   /* a point, as on a spine */
+#rail .milestone-chip{max-width:240px; transition:height .22s var(--soft), top .22s var(--soft), padding .22s var(--soft), max-width .22s var(--soft)}
+#rail:not(.open) .milestone-dot{width:6px; height:6px; border-width:1px}
+#rail:not(.open) .milestone-dot::after{display:none}
+#rail:not(.open) :is(.ph-stick, .projLabel, .milestone-label, .chip-title, .chip-note){opacity:0}
+#rail.measuring, #rail.measuring *{transition:none !important}
+#views.pulling-down #rail{transition:none}                    /* a pull grows it with the wheel, not after it */
+
+/* text keeps its shape in the motions (ui/canvas-morph.js): labels never ride the sideways stretch.
+   The leaving view's fade at once, the arriving view's once the shapes have nearly landed */
+#views.to-canvas #tlWrap :is(.monthLabel, .ph-stick, .projLabel, .milestone-label, .chip-title, .chip-note),
+#views.to-week #railInner :is(.monthLabel, .ph-stick, .projLabel, .milestone-label, .chip-title, .chip-note){
+  animation:morph-text-leave calc(var(--morph-ms) * .15) linear both;
+}
+#views.to-canvas #railInner :is(.monthLabel, .ph-stick, .projLabel, .milestone-label, .chip-title, .chip-note),
+#views.to-week #tlWrap :is(.monthLabel, .ph-stick, .projLabel, .milestone-label, .chip-title, .chip-note){
+  animation:morph-text-arrive var(--morph-ms) linear both;
+}
+@keyframes morph-text-leave{ to{opacity:0} }
+@keyframes morph-text-arrive{ 0%, 65%{opacity:0} 100%{opacity:1} }
+
+/* the pull's hint: where it leads, outlined until the line, filled once armed (as the editor's Fokus button) */
+#pullHint{
+  position:absolute; left:50%; top:0; z-index:3; transform:translateX(-50%);
+  height:32px; padding:0 16px; border-radius:9999px; display:none; align-items:center;
+  font-size:var(--fs-small); font-weight:600; letter-spacing:.02em; color:var(--text);
+  border:1px solid var(--border-control); background:var(--base);
+  opacity:0; pointer-events:none; transition:background .12s, color .12s, border-color .12s;
+}
+#views.pulling #pullHint{display:flex}                        /* only while pulling: even unseen, it changed how the header next to it is drawn */
+#pullHint.armed{background:var(--text); color:var(--on-primary); border-color:var(--text)}

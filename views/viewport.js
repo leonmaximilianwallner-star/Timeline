@@ -53,12 +53,47 @@ function maybeExtendRange(){
   return false;
 }
 
+/* ── two scales, one day at the left edge (ARCHITECTURE §6) ──────────────────────────
+   The week (#scene) and the canvas (#canvasScene) each scroll natively at their own scale. They meet only at
+   a switch between them: the day at the left edge of the dates (right of the hour rail) passes from one to the
+   other. Fractional: a day and how far into it. */
+const weekLeftDay   = () => $scene.scrollLeft / TL_PPD;
+const canvasLeftDay = () => ($canvasScene.scrollLeft + railW()) / CANVAS_CELL;
+function canvasScrollToDay(f){ $canvasScene.scrollLeft = f * CANVAS_CELL - railW(); }
+
+/* the canvas's days grow sideways like the week's, and its grid upward (views/canvas/render.js).
+   Days added in front move both views' positions, so both are re-anchored. */
+let _extendCanvasT = null;
+$canvasScene.addEventListener("scroll", () => {
+  clearTimeout(_extendCanvasT);
+  _extendCanvasT = setTimeout(() => { if(UI.canvas.active && !UI.canvas.moving){ maybeExtendCanvas(); maybeGrowCanvas(); } }, 80);
+}, { passive:true });
+function maybeExtendCanvas(){
+  const x = $canvasScene.scrollLeft, max = $canvasScene.scrollWidth - $canvasScene.clientWidth;
+  if(x < EDGE_BUFFER_PX){
+    const oldStart = UI.range.start, sx = $scene.scrollLeft;
+    UI.range.start = isoDate(addDays(parseISO(UI.range.start), -EXTEND_DAYS));
+    UI.range.days += EXTEND_DAYS;
+    renderAll();
+    const added = diffDays(UI.range.start, oldStart);
+    $canvasScene.scrollLeft = x + added * CANVAS_CELL;
+    $scene.scrollLeft = sx + added * TL_PPD;
+  } else if(max - x < EDGE_BUFFER_PX){
+    UI.range.days += EXTEND_DAYS;
+    renderAll();
+  }
+}
+
 /* auto-landing: today, around the current hour.
    With one scroller the timeline and the day-grid can't both pin at once, so we
    land in the execution layer (the original behaviour) with the planning band
    one short scroll up. $dayWrap.offsetTop is the timeline band's height, i.e.
    the scrollTop at which #dayHead becomes pinned. */
 function scrollToToday(animated){
+  if(UI.canvas.active){                       // in the canvas: today at the left edge, as in the week; the floor stays where it is
+    $canvasScene.scrollTo({ left: dayIdx(todayISO()) * CANVAS_CELL - railW(), behavior: animated ? "smooth" : "auto" });
+    return;
+  }
   const i = dayIdx(todayISO());
   const x = Math.max(0, i*UI.dayPPD);
   const nowMin = new Date().getHours()*60 + new Date().getMinutes();
