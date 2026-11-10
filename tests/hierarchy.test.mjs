@@ -6,8 +6,8 @@ import assert from 'node:assert/strict';
 
 const box = { SNAP: 15, HOUR_START: 0, HOUR_END: 24 };
 vm.runInNewContext(['core/dates.js', 'core/repeat.js', 'core/todos.js', 'core/hierarchy.js', 'data/changes.js'].map(f => readFileSync(f, 'utf8')).join('\n') +
-  '\nthis.f = { phaseOf, phaseOccurrences, occurrenceDone, phaseProgress, phaseChoices, freeChildren, carryCategory, stampChanges };', box);
-const { phaseOf, phaseOccurrences, occurrenceDone, phaseProgress, phaseChoices, freeChildren, carryCategory, stampChanges } = box.f;
+  '\nthis.f = { shiftSeries, phaseOf, phaseOccurrences, eventDone, todosDone, tickEvent, phaseProgress, phaseChoices, freeChildren, carryCategory, stampChanges };', box);
+const { shiftSeries, phaseOf, phaseOccurrences, eventDone, todosDone, tickEvent, phaseProgress, phaseChoices, freeChildren, carryCategory, stampChanges } = box.f;
 
 const T = '2026-11-10';   // a Tuesday
 const todo = (state) => ({ id: Math.random().toString(36).slice(2), text: 'x', state });
@@ -39,20 +39,40 @@ const tests = {
     const occ = [...phaseOccurrences(plan(), plan().phases[0])].map(o => o.ev.id + '@' + o.day);
     assert.deepEqual(occ, ['w@2026-11-09', 'a@2026-11-09', 'b@2026-11-12', 'w@2026-11-16']);   // weekly Mondays 9 and 16, not 2 or 23
   },
-  'an occurrence is done when its counted todos are; cancelled ones do not count'() {
+  'an occurrence with todos is done when every counted one is; cancelled ones do not count'() {
     const p = plan();
-    assert.equal(occurrenceDone(p.events[0], '2026-11-09', T), true);    // done + cancelled
-    assert.equal(occurrenceDone(p.events[1], '2026-11-12', T), false);   // one open
+    assert.equal(eventDone(p.events[0], '2026-11-09'), true);    // done + cancelled
+    assert.equal(eventDone(p.events[1], '2026-11-12'), false);   // one open
   },
-  'without todos it is done once its day is over'() {
+  'without todos to count it is ticked by hand, per occurrence; a past day alone is not done'() {
     const w = plan().events[2];
-    assert.equal(occurrenceDone(w, '2026-11-09', T), true);
-    assert.equal(occurrenceDone(w, '2026-11-10', T), false);   // today: not yet
-    assert.equal(occurrenceDone(w, '2026-11-16', T), false);
+    assert.equal(eventDone(w, '2026-11-09'), false);             // over, but nobody said so
+    tickEvent(w, '2026-11-09', true);
+    assert.equal(eventDone(w, '2026-11-09'), true);
+    assert.equal(eventDone(w, '2026-11-16'), false);             // next week's stays open
+    tickEvent(w, '2026-11-09', false);
+    assert.equal(w.doneByDate, undefined, 'unticked: nothing left stored');
+  },
+  'all todos cancelled counts as none: the hand tick decides'() {
+    assert.equal(todosDone([todo('cancelled')]), null);
+    assert.equal(todosDone([]), null);
+    assert.equal(todosDone([todo('done'), todo('postponed')]), false);
+  },
+  'with todos to count, a hand tick is ignored: the children decide'() {
+    const b = plan().events[1]; tickEvent(b, '2026-11-12', true);
+    assert.equal(eventDone(b, '2026-11-12'), false);
   },
   'the phase progress: equal weight per occurrence'() {
-    assert.deepEqual({ ...phaseProgress(plan(), plan().phases[0], T) }, { done: 2, total: 4 });
-    assert.deepEqual({ ...phaseProgress(plan(), plan().phases[1], T) }, { done: 0, total: 0 });
+    const p = plan();
+    assert.deepEqual({ ...phaseProgress(p, p.phases[0]) }, { done: 1, total: 4 });
+    tickEvent(p.events[2], '2026-11-09', true);
+    assert.deepEqual({ ...phaseProgress(p, p.phases[0]) }, { done: 2, total: 4 });
+    assert.deepEqual({ ...phaseProgress(p, p.phases[1]) }, { done: 0, total: 0 });
+  },
+  'a moved series takes its hand ticks along'() {
+    const w = plan().events[2]; tickEvent(w, '2026-11-09', true);
+    shiftSeries(w, 1);
+    assert.deepEqual({ ...w.doneByDate }, { '2026-11-10': true });
   },
   'the editor offers the phases on the day first, then those not over; the current one always'() {
     const c = phaseChoices(plan(), '2026-11-10', T, null);

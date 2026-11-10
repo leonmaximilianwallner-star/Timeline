@@ -98,7 +98,7 @@ One concrete thing to get done inside a block, and the unit you schedule: dragge
 
 **Event** · *Termin* · `event` · `events` row
 ![Event](dictionary/event.svg)
-A slot of time on one day, with a start and end time, a category and its own todos. Drawn as a squircle in the day view. It may point at a step; without one it's an ordinary calendar entry (dentist, lunch). **Not:** a milestone (no hours) or a block. **Never say:** session, daily item, appointment, card, termin (in code).
+A slot of time on one day, with a start and end time, a category and its own todos. Drawn as a squircle in the day view. It may point at a step; without one it's an ordinary calendar entry (dentist, lunch). Without todos it is ticked by hand, per occurrence (`doneByDate`; the editor's row *Erledigt*). **Not:** a milestone (no hours) or a block. **Never say:** session, daily item, appointment, card, termin (in code).
 In the app: `events` records, drawn by `renderEvent` with class `.event`.
 
 **Todo** · *Todo* · `todo` · an entry in one day's list of an event: `todosByDate[day]`
@@ -380,9 +380,11 @@ monospace → DM Sans with tabular figures
 - An event may belong to a phase (`parentId`), chosen in its editor (row *Phase*: the phases on its day first, then the ones not yet over), or created in the phase's dropdown (*Termin in dieser Phase*). A series belongs as a whole.
 - **It wears the phase's colour.** Choosing a phase sets the event's category; choosing another category leaves the phase. A recoloured phase takes its events along (B.3).
 - **The phase's dropdown lists its events**: the next ones by day and time, then a count of the rest; its count is the phase's progress.
-- **Progress:** each occurrence weighs the same (B.1.4). A plain event counts wherever it is (it was put there on purpose); a series only on its days inside the phase's span. An occurrence is done when its todos are (cancelled ones don't count); **without todos it is done once its day is over.** *(Claude, 10 Nov: there is no hand tick for events yet; revisit with steps.)*
+- **Progress:** each occurrence weighs the same (B.1.4). A plain event counts wherever it is (it was put there on purpose); a series only on its days inside the phase's span. An occurrence is done by the one rule below (*Done*).
 - **Deleting a phase frees its events**; none is deleted with it. Undo brings the links back.
 - When steps arrive, an event belongs to a step or still straight to a phase; both count toward the phase, the same rule one level deeper.
+
+**Done: one rule for every level** *(Max, 10 Nov: "forcing a todo just to tick something off is the wrong approach")*. Like a section in a text: one with subheadings is complete when they are; one without is complete on its own. **A thing with children to count takes its state from them; a thing without is ticked by hand.** For an event: its todos decide (cancelled ones don't count); with none to count (none at all, or all cancelled) its **hand tick** decides. The tick belongs to one occurrence (`doneByDate`, like `todosByDate`) and moves with the event. With todos to count, a stored tick is ignored, not deleted. Every view asks the same functions (`eventDone`, `todosDone`; `core/hierarchy.js`). A day alone never makes anything done.
 
 **Derived rules.**
 - A step with events can't be ticked by hand; its tick shows its events. A step with none is ticked directly.

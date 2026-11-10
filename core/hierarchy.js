@@ -30,18 +30,34 @@ function phaseOccurrences(plan, phase){
   return out.sort((a, b) => a.day !== b.day ? (a.day < b.day ? -1 : 1) : a.ev.startMin - b.ev.startMin);
 }
 
-/* one occurrence is done when every todo that counts is done (cancelled ones don't count, B.2);
-   with none to count it is done once its day is over: it happened. (Claude, 10 Nov: there is no hand tick for events yet) */
-function occurrenceDone(ev, day, todayIso){
-  const counted = todosOf(ev, day).filter(t => t.state !== "cancelled");
-  if(counted.length) return counted.every(t => t.state === "done");
-  return day < todayIso;
+/* ── done: the one rule (RULEBOOK B.2; Max, 10 Nov) ──────────────────────────────
+   A thing with children takes its state from them; a thing without is ticked by hand,
+   like a section without subheadings that is complete on its own. Every view asks here. */
+
+/* a list of todos: true when every one that counts is done, false when one is still to do,
+   null when none counts (none at all, or all cancelled): then the hand tick decides */
+function todosDone(list){
+  const counted = (list || []).filter(t => t.state !== "cancelled");
+  return counted.length ? counted.every(t => t.state === "done") : null;
+}
+
+/* one occurrence of an event: by its todos, or, without any to count, by its hand tick (doneByDate) */
+function eventDone(ev, day){
+  const byTodos = todosDone(todosOf(ev, day));
+  return byTodos === null ? !!(ev.doneByDate && ev.doneByDate[day]) : byTodos;
+}
+
+/* inside mutate(): tick an occurrence by hand, or untick it */
+function tickEvent(ev, day, done){
+  const m = { ...(ev.doneByDate || {}) };
+  if(done) m[day] = true; else delete m[day];
+  if(Object.keys(m).length) ev.doneByDate = m; else delete ev.doneByDate;
 }
 
 /* a phase's progress from its events: equal weight per occurrence (B.1.4) */
-function phaseProgress(plan, phase, todayIso){
+function phaseProgress(plan, phase){
   const occ = phaseOccurrences(plan, phase);
-  return { done: occ.filter(o => occurrenceDone(o.ev, o.day, todayIso)).length, total: occ.length };
+  return { done: occ.filter(o => eventDone(o.ev, o.day)).length, total: occ.length };
 }
 
 /* the phases an event can belong to, for its editor: those on its day first, then the ones not yet over.
