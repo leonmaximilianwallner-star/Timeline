@@ -66,7 +66,7 @@ function canvasScrollToDay(f){ $canvasScene.scrollLeft = f * CANVAS_CELL - railW
 let _extendCanvasT = null;
 $canvasScene.addEventListener("scroll", () => {
   clearTimeout(_extendCanvasT);
-  _extendCanvasT = setTimeout(() => { if(UI.canvas.active && !UI.canvas.moving){ maybeExtendCanvas(); maybeGrowCanvas(); } }, 80);
+  _extendCanvasT = setTimeout(() => { if(UI.canvas.active && !morph.on){ maybeExtendCanvas(); maybeGrowCanvas(); } }, 80);
 }, { passive:true });
 function maybeExtendCanvas(){
   const x = $canvasScene.scrollLeft, max = $canvasScene.scrollWidth - $canvasScene.clientWidth;

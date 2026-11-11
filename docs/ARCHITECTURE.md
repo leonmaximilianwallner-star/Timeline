@@ -223,7 +223,7 @@ In v2_7 the timeline and day grid already share one scroller and one scale relat
 
 **One renderer at two scales.** `buildTimeline(ppd, rail)` draws the timeline view at any scale; the week calls it with `TL_PPD`, the rail with `CANVAS_CELL`. Pixel-identical for the week (fingerprint).
 
-**The motions** (`ui/canvas-morph.js`) move only `transform` and `opacity`, with Web Animations, like the Fokus motions.
+**One number, set by the hand** (`ui/canvas-morph.js`, 11 Nov): `morph.p`, 0 the week, 1 the canvas. The wheel sets it (`input/canvas-pull.js`); `morphTo(p)` draws every in-between from it, as inline `transform` and `opacity` only. Let go (`WHEEL_IDLE`, 140 ms without a wheel event), one requestAnimationFrame loop settles it. No Web Animations: a motion the hand can catch mid-way must be a value, not a timeline. While held, neither scroller scrolls (`overflow-y:hidden`) and the week doesn't snap, so both hold the same day to the fraction.
 
 **What may move, measured (10 Nov, CPU slowed 4×, each piece alone):** the week's scroller: a 117 ms stall when it starts moving, since all of it is repainted. The timeline band, the canvas layer, the rail: 17 ms frames. So **the week's scroller never moves.** Only the timeline band travels (its own layer), the day view fades, and the canvas, beneath the week, shows through the week's ground, which is transparent only while the canvas is in play (the day grid draws on it otherwise: one colour level, found by the fingerprint).
 - **The week stays drawn under the canvas** (covered, not hidden): hidden, it had to be repainted at once on the way back (a 204 ms stall).
@@ -232,7 +232,7 @@ In v2_7 the timeline and day grid already share one scroller and one scale relat
 - **Scroll anchoring is off for the canvas** (`overflow-anchor:none`): the rail opening or closing made the browser move the canvas off its floor.
 - **Labels step out for the motion** (`visibility`), not fade: a fade gave each of ~100 labels its own layer.
 
-Result, from the start of a trackpad flick to landed: **about 0.5 s** (of which ~0.2 s is the flick reaching the line), the motion itself ~0.3 s, no frame over 34 ms; it was 2.7 s with frames up to 233 ms. CPU slowed 4×: 0.6 s. The harness: a flick with momentum, frame and long-task log, trace by kind of work.
+Measured again 11 Nov (held pull, CPU slowed 4×): frames 17 ms on average, 33 ms at worst; landing 14 ms. Before (10 Nov), from the start of a trackpad flick to landed: **about 0.5 s** (of which ~0.2 s is the flick reaching the line), the motion itself ~0.3 s, no frame over 34 ms; it was 2.7 s with frames up to 233 ms. CPU slowed 4×: 0.6 s. The harness: a flick with momentum, frame and long-task log, trace by kind of work.
 
 **Nothing of the canvas touches the week while it isn't in play:** no layer (`will-change`), no transparent ground, no focusable scroller; each of these changed the week's pixels (found by the fingerprint test). The week's scroller has a fixed stacking level (`z-index:1`), the same pixels.
 

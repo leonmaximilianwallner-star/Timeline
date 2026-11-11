@@ -29,7 +29,6 @@ UI.canvas = {
   shown:false,      // in play: during a pull, a motion, or while it is the view
   stale:true,       // the rail needs drawing (the plan changed while the canvas was out of play)
   active:false,     // the canvas is the view in use
-  moving:false,     // a motion between the views runs
   rows:CANVAS_ROWS,
   railOpen:false, hover:false,
   railOpenH:0, railThinH:0,
@@ -80,7 +79,7 @@ function measureRail(){
   UI.canvas.railThinH = Math.min(thin, RAIL_THIN);
   setRailHeight();
 }
-/* the rail's height: closed or open, plus a pull's growth (input/canvas-pull.js) */
+/* the rail's height: closed or open */
 function setRailHeight(extra = 0){
   $rail.style.height = (UI.canvas.railOpen ? UI.canvas.railOpenH : UI.canvas.railThinH) + extra + "px";
 }

@@ -12,7 +12,7 @@ document.addEventListener("keydown", e=>{
     else if(UI.dayTodos) dayTodosEscape();      // a day's todos: its category list first
     else if(UI.focus) closeFocus();             // the focus view, back to the week
     else if(UI.settingsOpen) toggleSettings(false);
-    else if(UI.canvas.active && !UI.canvas.moving) morphToWeek();   // the canvas, back to the week (ui/canvas-morph.js)
+    else if(UI.canvas.active && !morph.on){ morphStart(1); morphRelease(0); }   // the canvas, back to the week (ui/canvas-morph.js)
     else if(UI.addMode) setAddMode(false);
     return;
   }

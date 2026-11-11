@@ -281,3 +281,9 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **Kept, against the spec:** a click on the pill opens the phase editor; only the chevron toggles. Otherwise the editor has no way in. **Left out:** overdue todos moving to today, drag between days (the spec's own open decisions); the note and "Termin in dieser Phase" (both in editors). *Claude; Max to decide*
 - **The wash is computed** (`washOf`, core/model.js): the colour at 0x38 on the base, the spec's table. A `--weekend` token now serves the day view and the plan. *Claude*
 
+## 2026-11-11 · The canvas switch, held by the hand
+- **The pull is direct manipulation** (a phone's pull-down panel): one value, moved 1:1 by the wheel, settled on release past a barrier (35 %) or back. Replaces commit-at-a-line plus a played motion. RULEBOOK B.6.1. *Max*
+- **The week moves as one sheet**: the day view slides down with the band and fades, rather than staying put. *Max*
+- **Scale by ratio, crossfade in the middle** (0.3–0.7): with a linear scale the band and rail were bent unequally halfway and their ends doubled up (seen in frames). *Claude*
+- **Known:** a mouse wheel moves it in notch-sized steps (100 px), as it scrolls; a trackpad is smooth. The today line thickens briefly mid-way (a 2 px line stretched). *Claude; to judge by feel*
+
