@@ -2,12 +2,12 @@
 "use strict";
 /* ---------- daily view ---------- */
 function renderDays(){
-  const ppd = dayPPD(), days = UI.range.days, W = railW() + days*ppd;
+  const ppd = dayPPD(), days = UI.range.days;
   UI.dayPPD = ppd;
   const today = todayISO();
 
   const inner = document.createElement("div");
-  inner.style.width = W+"px";
+  inner.style.width = dayX(days, railW());
 
   /* sticky day header */
   const head = document.createElement("div"); head.id="dayHead";
@@ -16,14 +16,18 @@ function renderDays(){
   corner.className = "dh";
   corner.innerHTML = `<span class="dw">KW</span><span class="dn" id="kwNum"></span><span class="dh-dots"></span>`;
   head.appendChild(corner);
+  /* the header's days and the events come in groups of a week (WEEK_GROUP): the browser skips what is off the screen
+     (content-visibility), in every redraw and while the scale changes (ui/canvas-morph.js) */
+  let cells = null;
   for(let i=0;i<days;i++){
+    if(i % WEEK_GROUP === 0){ cells = document.createElement("div"); cells.className = "dayGroup"; cells.style.width = dayX(Math.min(WEEK_GROUP, days - i)); head.appendChild(cells); }
     const dIso = idxDate(i), d = parseISO(dIso);
     const el = document.createElement("div");
     el.className = "dh"+(dIso===today?" today":"")+((d.getDay()===0||d.getDay()===6)?" weekend":"");
-    el.style.width = ppd+"px";
+    el.style.width = "var(--ppd)";
     el.dataset.day = dIso; el.setAttribute("role", "button"); el.title = "Todos dieses Tages";
     el.innerHTML = `<span class="dw">${WD[d.getDay()]}</span><span class="dn">${d.getDate()}</span><span class="dh-dots">${dayDotsHTML(dIso)}</span>`;
-    head.appendChild(el);
+    cells.appendChild(el);
   }
   inner.appendChild(head);
 
@@ -41,16 +45,9 @@ function renderDays(){
   body.appendChild(rail);
 
   const grid = document.createElement("div"); grid.id="dayGrid";
-  grid.style.width = days*ppd+"px"; grid.style.height = gridHeight()+"px";
+  grid.style.width = dayX(days); grid.style.height = gridHeight()+"px";
   if(startH > 0){ const night = document.createElement("div"); night.className = "night"; night.style.height = minToY(startH*60)+"px"; grid.appendChild(night); }
   grid.classList.toggle("addmode", UI.addMode);
-  for(let i=0;i<days;i++){
-    const d = parseISO(idxDate(i));
-    const colEl = document.createElement("div");
-    colEl.className = "dayCol"+((d.getDay()===0||d.getDay()===6)?" weekend":"");
-    colEl.style.left = i*ppd+"px"; colEl.style.width = ppd+"px";
-    grid.appendChild(colEl);
-  }
   for(let h=Math.max(HOUR_START+1, startH); h<HOUR_END; h++){
     const l = document.createElement("div"); l.className="hline";
     l.style.top = minToY(h*60)+"px"; grid.appendChild(l);
@@ -59,13 +56,23 @@ function renderDays(){
   /* two layers (RULEBOOK C.3): the plan behind, resting top-left; the actuals in front, bottom-right.
      Each layer packs its own overlaps, so a plan and its own actual never sit side by side. */
   const nowMin = new Date().getHours()*60 + new Date().getMinutes();
+  /* where scrolling snaps, one per day, at the week's scale always (styles/day.css): never moved while the scale changes */
+  const snaps = document.createElement("div"); snaps.id = "daySnaps"; snaps.style.width = dayX(days); grid.appendChild(snaps);
+  let group = null;
   for(let i=0;i<days;i++){
-    const dIso = idxDate(i);
-    const place = o => { const cw = (ppd - 8 - (o.cols-1)*4)/o.cols; return { x: i*ppd + 4 + o.col*(cw+4), w: cw }; };
+    const dIso = idxDate(i), g0 = i - i % WEEK_GROUP;
+    if(i === g0){ group = document.createElement("div"); group.className = "dayGroup"; group.style.left = dayX(g0); group.style.width = dayX(Math.min(WEEK_GROUP, days - i)); grid.appendChild(group); }
+    if(parseISO(dIso).getDay() % 6 === 0){                       // a weekend day's ground
+      const we = document.createElement("div"); we.className = "weekend"; we.style.left = dayX(i - g0); group.appendChild(we);
+    }
+    const snap = document.createElement("div"); snap.style.left = dayX(i); snaps.appendChild(snap);
+    /* a column of the day, 4px apart and from its edges: left = a days + b px, width = wa days + wb px */
+    const place = o => { const g = (8 + (o.cols-1)*4)/o.cols, a = i - g0 + o.col/o.cols, b = 4 + o.col*4 - o.col*g, wa = 1/o.cols;
+      return { x: (a + g0)*ppd + b, w: wa*ppd - g, at: (el, dx, dw) => { el.style.left = dayX(a, b + dx); el.style.width = dayX(wa, dw - g); return el; } }; };
     packOverlaps(S.events.filter(ev=>occursOn(ev,dIso)).map(ev=>({ev, s:ev.startMin, e:ev.endMin})))
-      .forEach(o=>{ const p = place(o); grid.appendChild(renderEvent(o.ev, dIso, p.x, p.w - ACTUAL_OFFSET, hasActual(S.actuals, o.ev.id, dIso))); });
+      .forEach(o=>{ const p = place(o); group.appendChild(p.at(renderEvent(o.ev, dIso, p.x, p.w - ACTUAL_OFFSET, hasActual(S.actuals, o.ev.id, dIso)), 0, -ACTUAL_OFFSET)); });
     packOverlaps(actualsOn(S.actuals, dIso).map(a=>({a, s:a.startMin, e:actualEnd(a, today, nowMin)})))
-      .forEach(o=>{ const p = place(o); grid.appendChild(renderActual(o.a, o.e, p.x + ACTUAL_OFFSET, p.w - ACTUAL_OFFSET)); });
+      .forEach(o=>{ const p = place(o); group.appendChild(p.at(renderActual(o.a, o.e, p.x + ACTUAL_OFFSET, p.w - ACTUAL_OFFSET), ACTUAL_OFFSET, -ACTUAL_OFFSET)); });
   }
 
   /* overlays */
@@ -96,7 +103,7 @@ function isoWeek(d) {
 function updateKW(){
   const el = document.getElementById("kwNum");
   if(!el) return;
-  const idx = Math.round($scene.scrollLeft / UI.dayPPD);        // the first day right of the hour rail
+  const idx = Math.round(morph.on ? morph.f : $scene.scrollLeft / UI.dayPPD);   // the first day right of the hour rail (held still while the scale changes)
   const clamped = Math.max(0, Math.min(idx, UI.range.days - 1));
   el.textContent = isoWeek(parseISO(idxDate(clamped)));
 }
@@ -169,7 +176,7 @@ function positionNowLine(){
   if(min < HOUR_START*60 || min > HOUR_END*60 || i<0 || i>=UI.range.days){ nl.style.display="none"; return; }
   nl.style.display = "";
   nl.style.top  = minToY(min)+"px";
-  nl.style.left = i*UI.dayPPD+"px"; nl.style.width = UI.dayPPD+"px";
+  nl.style.left = dayX(i); nl.style.width = "var(--ppd)";
 }
 setInterval(()=>{
   if(runningActual(S.actuals) && !UI.dragLive) renderDays();    // a running actual grows with the time (redrawn first: it makes a new now line)

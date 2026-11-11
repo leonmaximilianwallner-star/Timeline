@@ -5,12 +5,12 @@
   /* not a scroller — the planning band inside #scene. sticky-left labels
      (month / project / phase / dropdown) resolve against #scene. */
 }
-#tlInner{position:relative; min-width:100%}
+#tlInner{position:relative; min-width:100%; background:var(--base)}   /* all the days wide: it, not #tlWrap (one screen wide, at the start), hides what is behind the band */
 #tlGrid{
   position:absolute; left:0; right:0; top:30px; bottom:0;
   pointer-events:none; z-index:0;
   background-image: var(--gridline);
-  background-size: var(--gridline-size);
+  background-size: var(--ppd) 100%;     /* read here, at the days scale of this place (a token on :root would resolve there) */
 }
 .tlRow{ z-index:1 }
 .tlRow{position:relative}

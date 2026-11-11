@@ -2,12 +2,9 @@
 "use strict";
 /* Like a phone's pull-down panel: one number p, 0 = the week, 1 = the canvas. The wheel sets it 1:1
    (input/canvas-pull.js); let go, it settles to the side whose barrier it crossed, or falls back. Nothing plays
-   on its own. Every in-between is morphTo(p):
-   - the week moves as one sheet: the timeline band and the day view slide down; the day view fades;
-   - the band narrows from the week's scale to the canvas's, and the rail, drawn at exactly the same place and
-     width, crossfades in: the change of scale has nowhere to be seen;
-   - the canvas comes down above, its floor on the band's top edge.
-   Only transform and opacity, on layers kept while the canvas is in play: no layout, no paint while it moves. */
+   on its own. Every in-between is morphTo(p), and it is a zoom, not a picture of one (Max, 11 Nov: "scaled, not
+   stretched"): the timeline and the day view stay one sheet, drawn at a scale between the week's and the canvas's,
+   and drop together; the canvas comes down above, its floor on the band's top edge. */
 const SETTLE_MS = 240;         // a whole settle; a shorter way takes its share of it
 const BARRIER   = 0.35;        // the share of the way to cross before letting go goes on rather than back
 
@@ -24,25 +21,22 @@ function morphStart(from){
   $scene.scrollTop = 0;
   $scene.scrollLeft = morph.f * TL_PPD;
   canvasScrollToDay(morph.f);
-  morph.floor = $views.clientHeight - UI.canvas.railOpenH;         // where the rail's top is in the canvas
-  $tlWrap.style.transformOrigin = `${$scene.scrollLeft + railW()}px 0`;   // the day at the left edge stays put
-  $railInner.style.transformOrigin = `${morph.f * CANVAS_CELL}px 0`;
+  morph.floor = $railInner.getBoundingClientRect().top - $views.getBoundingClientRect().top;   // where the band lands: on the rail's rows
+  $tlWrap.querySelectorAll(".dropdown-row").forEach(r => r.style.setProperty("--h", r.offsetHeight + "px"));   // it closes from here (styles/canvas.css)         // where the rail's top is in the canvas
   morphTo(from);
 }
 
-/* the scale goes by ratio (k^p), as the eye reads a zoom: halfway, band and rail are stretched alike (measured 11 Nov) */
+/* every in-between, from p alone. The days' scale goes by ratio, as the eye reads a zoom (k^p); the day at the left
+   edge stays put; the week drops by the same share of the way. Re-laid out, not stretched: a pill keeps its round
+   ends, a line its width, text its size; at p = 1 the band is drawn exactly as the rail beneath it */
 function morphTo(p){
   morph.p = p;
-  const k = CANVAS_CELL / TL_PPD, s = Math.pow(k, p), y = p * morph.floor;
-  const x = Math.min(1, Math.max(0, (p - 0.3) / 0.4));           // the crossfade, band → rail, where both are bent alike
-  $tlWrap.style.transform = `translateY(${y}px) scaleX(${s})`;
-  $tlWrap.style.opacity = 1 - x;
-  $railInner.style.transform = `scaleX(${s / k})`;
-  $railInner.style.opacity = x;
-  $dayWrap.style.transform = `translateY(${y}px)`;
-  $dayWrap.style.opacity = 1 - Math.min(1, p * 2);
+  const ppd = TL_PPD * Math.pow(CANVAS_CELL / TL_PPD, p), y = p * morph.floor;
+  $scene.style.setProperty("--ppd", ppd + "px");
+  $scene.style.setProperty("--p", p);
+  $scene.scrollLeft = morph.f * ppd;
+  $tlWrap.style.transform = $dayWrap.style.transform = `translateY(${y}px)`;
   $canvasView.style.transform = `translateY(${y - morph.floor}px)`;
-  $views.classList.toggle("squeezed", p > 0.06 && p < 0.94);      // labels step out while stretched (text keeps its shape)
 }
 
 /* let go: on to the side whose barrier was crossed, or back; from where it is, at the speed of the rest */
@@ -61,8 +55,9 @@ function morphRelease(to){
 /* at rest on one side: everything back to its own style */
 function morphEnd(to){
   morph.on = false;
-  [$tlWrap, $railInner, $dayWrap, $canvasView].forEach(el => { el.style.transform = el.style.opacity = el.style.transformOrigin = ""; });
-  $views.classList.remove("dragging", "squeezed");
+  [$tlWrap, $dayWrap, $canvasView].forEach(el => { el.style.transform = ""; });
+  $scene.style.removeProperty("--ppd"); $scene.style.removeProperty("--p");
+  $views.classList.remove("dragging");
   UI.canvas.active = to === 1;
   if(to === 1){ document.documentElement.dataset.view = "canvas"; if(!UI.canvas.hover) openRail(false); }
   else { delete document.documentElement.dataset.view; openRail(false, true); hideCanvas(); }

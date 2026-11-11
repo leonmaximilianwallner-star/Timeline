@@ -69,6 +69,24 @@ await step('the pull follows the wheel 1:1; short of the barrier, let go, it fal
   assert.equal(await q(() => [$tlWrap, $dayWrap, $railInner, $canvasView].map(el => el.style.transform + el.style.opacity).join('')), '');
 });
 
+await step('a zoom, not a stretch: in between nothing is scaled; at the end the band lies exactly on the rail', async () => {
+  const r = await q(() => {
+    morphStart(0); morphTo(0.5);
+    const between = [$tlWrap, $dayWrap].every(el => !/scale/.test(el.style.transform));
+    const pill = $tlWrap.querySelector('.phase'), line = $tlWrap.querySelector('.todayLine');
+    const shapes = [pill.getBoundingClientRect().height, line.getBoundingClientRect().width];
+    morphTo(1);
+    const at = el => { const b = el.getBoundingClientRect(); return [b.left, b.top, b.width].map(Math.round).join(); };
+    const same = [...$tlWrap.querySelectorAll('.phase')].every(el => at(el) === at($railInner.querySelector(`.phase[data-phase="${el.dataset.phase}"]`)));
+    morphRelease(0);
+    return { between, shapes, same };
+  });
+  await settle();
+  assert.equal(r.between, true, 'no scale transform');
+  assert.deepEqual(r.shapes, [24, 2], 'a pill keeps its height, the today line its width');
+  assert.equal(r.same, true, 'every pill on its twin in the rail');
+});
+
 await step('past the barrier, let go, it goes on to the canvas; the day at the left edge is kept', async () => {
   const day = await q(() => weekLeftDay());
   await page.waitForTimeout(200);

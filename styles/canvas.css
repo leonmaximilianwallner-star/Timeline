@@ -13,11 +13,13 @@
 /* while the canvas is in play: the week's ground lets it show through, and what moves keeps its own layer
    (dropped and rebuilt at each landing, it cost a long frame after every switch, measured 10 Nov) */
 #views.dragging #scene, :root[data-view="canvas"] #scene{background:transparent}
-#views.dragging :is(#tlWrap, #dayWrap, #canvasView), :root[data-view="canvas"] :is(#tlWrap, #dayWrap, #canvasView){will-change:transform, opacity}
+#views.dragging :is(#tlWrap, #dayWrap, #canvasView), :root[data-view="canvas"] :is(#tlWrap, #dayWrap, #canvasView){will-change:transform}
 #views.dragging #tlWrap, :root[data-view="canvas"] #tlWrap{z-index:1}   /* over the day view */
 /* the hand holds the position: neither view scrolls under it; no snapping, both views hold the same day to the fraction */
 #views.dragging :is(#scene, #canvasScene){overflow-y:hidden}
 #views.dragging #scene{scroll-snap-type:none}
+/* an open phase's plan is the day's detail: it closes as the days narrow; the rail has none */
+#views.dragging #tlWrap .dropdown-row{height:calc(var(--h) * (1 - var(--p))); padding-block:calc(8px * (1 - var(--p))); opacity:calc(1 - 2 * var(--p)); overflow:clip; box-sizing:border-box}
 :root[data-view="canvas"] #fab, :root[data-view="canvas"] #addMenu{visibility:hidden}   /* add mode belongs to the week */
 
 #canvasScene{position:absolute; inset:0; overflow:auto; overscroll-behavior:contain; outline:none;
@@ -34,7 +36,7 @@
 
 /* the rail: the timeline at the canvas's scale. overflow:clip, not hidden: hidden would make it a scroller
    and its sticky labels would stop following #canvasScene */
-#rail{
+#rail{--ppd:var(--cell); 
   position:absolute; left:0; right:0; bottom:0; overflow:clip; cursor:default;
   background:var(--base); border-top:1px solid var(--hairline);
   transition:height .22s var(--soft);
@@ -58,4 +60,3 @@
 #rail.measuring, #rail.measuring *{transition:none !important}
 
 /* text keeps its shape: labels step out while the timeline is stretched between the two scales (ui/canvas-morph.js) */
-#views.squeezed :is(#tlWrap, #railInner) :is(.monthLabel, .ph-stick, .ph-count, .projLabel, .milestone-label, .chip-title, .chip-note){visibility:hidden}

@@ -13,6 +13,8 @@
   position:sticky; left:0; z-index:21; flex:0 0 var(--rail-w); width:var(--rail-w);
   background:var(--base); border-right:1px solid var(--line-soft);
 }
+.dayGroup{content-visibility:auto; display:flex; flex:none}   /* a week of the header, or of the events: skipped off the screen */
+#dayGrid > .dayGroup{position:absolute; top:0; bottom:0}
 .dh{
   flex:0 0 auto; display:flex; flex-direction:column; align-items:center; justify-content:center;
 }
@@ -33,11 +35,13 @@
 #dayGrid{
   position:relative; flex:0 0 auto; touch-action:pan-x pan-y;
   background-image: var(--gridline);
-  background-size: var(--gridline-size);
+  background-size: var(--ppd) 100%;     /* read here, at the days scale of this place (a token on :root would resolve there) */
 }
 #dayGrid.addmode{cursor:crosshair}
-.dayCol{scroll-snap-align:start; position:absolute; top:0; bottom:0}
-.dayCol.weekend{background:var(--weekend)}
+/* the snap points hold the week's own scale: a change of --ppd stops here and restyles none of its 700 days */
+#daySnaps{--ppd:var(--tl-ppd); position:absolute; left:0; top:0; bottom:0; pointer-events:none}
+#daySnaps > div{scroll-snap-align:start; position:absolute; top:0; bottom:0; width:var(--ppd)}
+#dayGrid > .dayGroup > .weekend{position:absolute; top:0; bottom:0; width:var(--ppd); background:var(--weekend)}
 .hline{position:absolute; left:0; right:0; height:1px; background:var(--line-soft); pointer-events:none}
 #nowLine{position:absolute; height:0; border-top:2px solid var(--now); z-index:9; pointer-events:none}
 #nowLine::before{content:""; position:absolute; left:-4px; top:-5px; width:8px; height:8px; border-radius:50%; background:var(--now)}

@@ -287,3 +287,10 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **Scale by ratio, crossfade in the middle** (0.3–0.7): with a linear scale the band and rail were bent unequally halfway and their ends doubled up (seen in frames). *Claude*
 - **Known:** a mouse wheel moves it in notch-sized steps (100 px), as it scrolls; a trackpad is smooth. The today line thickens briefly mid-way (a 2 px line stretched). *Claude; to judge by feel*
 
+## 2026-11-12 · The canvas switch is a zoom, not a stretch
+- **Re-laid out at every in-between scale**, not scaled as a picture: the illusion that the timeline and the day view are one thing must hold while it changes. RULEBOOK B.6.1. *Max*
+- **The day view zooms with the timeline**; its header stays readable down to the canvas's 40 px a day, so nothing needs to fade there. An open plan closes as the days narrow. *Max; Claude*
+- **One CSS value for the scale (`--ppd`) and positions written in days**: one zoom for both views, and the base for the canvas's zoom levels later (B.5). *Claude*
+- **The day view in week groups (content-visibility)**: 10× fewer elements restyled per frame. Trade: text in a group lands on whole pixels (≤ 0.5 px, phone). *Claude*
+- **Known:** frames are heavier than the stretch (19 ms vs 17 ms average at full speed in the test browser); to be judged on the real machine. *Claude*
+
