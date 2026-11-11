@@ -45,3 +45,4 @@
 | 2026-11-10 | — | hierarchy | Max: one rule for done (Word headings), one mechanic per action. PR #28 (hand tick, S9), PR #29 (steps as records). Opened S10 (visual pass), S11. | — |
 | 2026-11-10 | — | canvas | Canvas first step (PR #31): grid, rail (timeline at canvas scale), pull in/out reusing the editor's pull, morph in the Fokus grammar. Week pixel-identical. Opened S12–S14. | — |
 | 2026-11-10 | Sweep | canvas switch | Max: the switch lags and costs more time than a button. Measured, found five causes, fixed (PR #32): 2.7 s → 0.5 s, worst frame 233 → under 34 ms. | — |
+| 2026-11-11 | — | canvas switch | Max: still lags, "separate motions". Rebuilt as a held pull (phone pull-down panel): 1:1, barrier, settle or fall back, catchable; week moves as one sheet; scale by ratio. Net −100 lines. | — |
