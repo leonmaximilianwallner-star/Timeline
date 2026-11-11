@@ -4,9 +4,8 @@
 /* the timeline view's drawing, at any scale: the week's (ppd) and the canvas's rail (CANVAS_CELL).
    One rule for both, not a copy (RULEBOOK B.4). The rail draws no dropdowns and no hover line. */
 function buildTimeline(ppd, rail){
-  const W = UI.range.days * ppd;
   const frag = document.createElement("div");
-  frag.style.width = W+"px"; frag.style.position = "relative";
+  frag.style.width = dayX(UI.range.days); frag.style.position = "relative";
 
   /* month labels */
   const mrow = document.createElement("div"); if(!rail) mrow.id = "monthRow"; mrow.className="tlRow month-row";
@@ -16,7 +15,7 @@ function buildTimeline(ppd, rail){
     const monthEnd = new Date(d0.getFullYear(), d0.getMonth()+1, 1);
     const span = Math.min(UI.range.days - i, Math.round((monthEnd - d0)/DAY_MS));
     const el = document.createElement("div");
-    el.className = "monthSpan"; el.style.width = span*ppd+"px";
+    el.className = "monthSpan"; el.style.width = dayX(span);
     el.innerHTML = `<span class="monthLabel">${MONTHS[d0.getMonth()]}${d0.getMonth()===0?" "+d0.getFullYear():""}</span>`;
     mrow.appendChild(el); i += span;
   }
@@ -26,20 +25,20 @@ function buildTimeline(ppd, rail){
   /* per-project (dated category): spine bounded by start..end, then its phase lanes */
   S.categories.filter(c=>c.start && c.end).forEach(p=>{
     const row = document.createElement("div"); row.className = "tlRow projRow";
-    const x = dayIdx(p.start)*ppd;
-    const w = Math.max(diffDays(p.start, p.end)*ppd, 26);
+    const x = dayX(dayIdx(p.start));
+    const w = `max(26px, ${dayX(diffDays(p.start, p.end))})`;
     const spine = document.createElement("div"); spine.className = "projSpine colored";
-    spine.style.left = x+"px"; spine.style.width = w+"px"; spine.style.background = p.color;
+    spine.style.left = x; spine.style.width = w; spine.style.background = p.color;
     row.appendChild(spine);
     const lw = document.createElement("div"); lw.className="projLabelWrap";
-    lw.style.left = x+"px"; lw.style.width = w+"px";
+    lw.style.left = x; lw.style.width = w;
     lw.innerHTML = `<span class="projLabel" data-edit-project="${p.id}" style="color:${p.color}">${esc(p.name)}</span>`;
     row.appendChild(lw);
     S.milestones.filter(m=>m.categoryId===p.id).sort((a,b)=>a.date<b.date?-1:1).forEach(m=>{
-      const mx = (dayIdx(m.date)+.5)*ppd;
+      const mx = dayX(dayIdx(m.date)+.5);
       const dot = document.createElement("div");
       dot.className = "milestone-dot"+(m.final?" final":"");
-      dot.style.left = mx+"px";
+      dot.style.left = mx;
       dot.dataset.editMilestone = m.id;
       dot.title = m.title;
       dot.innerHTML = `<span class="milestone-label">${m.final?"★ ":""}${esc(m.title)}</span>`;
@@ -58,7 +57,7 @@ function buildTimeline(ppd, rail){
   const xr = document.createElement("div"); xr.className="tlRow milestone-row"; if(!rail) xr.id="milestoneRow";
   S.milestones.filter(m=>!datedIds.has(m.categoryId)).forEach(m=>{
     const el = document.createElement("div");
-    el.className = "milestone-chip"; el.style.left = (dayIdx(m.date)+.5)*ppd+"px";
+    el.className = "milestone-chip"; el.style.left = dayX(dayIdx(m.date)+.5);
     el.style.background = m.categoryId ? cat(m.categoryId).color : "var(--c-red)";
     el.dataset.editMilestone = m.id;
     el.innerHTML = `<span class="chip-title">${esc(m.title)}</span><span class="chip-note">${esc(m.note||"")}</span>`;
@@ -68,7 +67,7 @@ function buildTimeline(ppd, rail){
 
   /* today line + overlays */
   const tl = document.createElement("div"); tl.className="todayLine";
-  tl.style.left = (dayIdx(todayISO())+.5)*ppd+"px"; frag.appendChild(tl);
+  tl.style.left = dayX(dayIdx(todayISO())+.5); frag.appendChild(tl);
   if(rail) return frag;
   const hov = document.createElement("div"); hov.className="tlHover"; hov.id="tlHover"; frag.appendChild(hov);
 
@@ -79,7 +78,7 @@ function buildTimeline(ppd, rail){
 function renderTimeline(){
   const frag = buildTimeline(TL_PPD, false);
   $tlInner.replaceChildren(frag);
-  $tlInner.style.width = (UI.range.days * TL_PPD + railW())+"px";
+  $tlInner.style.width = dayX(UI.range.days, railW());
   fitLabels(frag);
 }
 
@@ -96,12 +95,12 @@ function appendPhaseLanes(frag, phases, ppd, rail){
     frag.appendChild(r);
 
     byLane[l].forEach(ph => {
-      const x = dayIdx(ph.start)*ppd, w = Math.max(diffDays(ph.start, ph.end)*ppd, 26);
+      const w = Math.max(diffDays(ph.start, ph.end)*ppd, 26);       // at this scale: what fits on the pill
       const color = cat(ph.categoryId).color, { done, total } = phaseProgress(S, ph), isOpen = device.openPhases.includes(ph.id);
       const noDay = stepsOf(S, ph).filter(st => !stepHasEvents(S, st)).length;   // steps not yet on a day
       const el = document.createElement("div");
       el.className = "phase" + (total && done === total ? " done" : "") + (isOpen ? " open" : "");
-      el.style.left=x+"px"; el.style.width=w+"px";
+      el.style.left = dayX(dayIdx(ph.start)); el.style.width = `max(26px, ${dayX(diffDays(ph.start, ph.end))})`;
       el.style.background = washOf(color); el.style.borderColor = color;   // the pill is its wash; the fill is its progress
       el.dataset.phase = ph.id;
       el.innerHTML =
@@ -129,7 +128,7 @@ function appendPhaseLanes(frag, phases, ppd, rail){
         }
         row.right = x + n*ppd;
         const anchor = document.createElement("div"); anchor.className="dropdown-anchor";
-        anchor.style.marginLeft = x+"px";
+        anchor.style.marginLeft = dayX(dayIdx(ph.start));
         const bb = document.createElement("div");
         bb.className = "dropdown plan" + (UI.dropdownOpening===ph.id ? " opening" : "");   // only the one just opened animates
         bb.dataset.dropdown = ph.id;
@@ -167,7 +166,7 @@ function planHTML(ph, n, ppd){
     cells.push({ weekend: d.getDay() === 0 || d.getDay() === 6, rows });
   }
   const h = Math.max(32, 12 + 20 * Math.max(0, ...cells.map(c => c.rows.length)));
-  return cells.map(c => `<div class="plan-day${c.weekend ? " weekend" : ""}" style="width:${ppd}px;height:${h}px">${c.rows.join("")}</div>`).join("");
+  return cells.map(c => `<div class="plan-day${c.weekend ? " weekend" : ""}" style="width:var(--ppd);height:${h}px">${c.rows.join("")}</div>`).join("");
 }
 
 /* shrink label font before ever compromising the pill — never the radius */

@@ -53,5 +53,9 @@ function dayPPD(){
   const vw = document.getElementById("scene").clientWidth || window.innerWidth;
   return Math.max(50, (vw - railW()) / device.density);
 }
+/* a place on the days' axis: so many days at the current scale, plus so many px. The scale is one CSS value, --ppd
+   (styles/base.css): the week's, the rail's, or any between while one becomes the other (ui/canvas-morph.js) */
+const WEEK_GROUP = 7;         // days per group of the day view (views/day/render.js)
+const dayX = (days, px = 0) => `calc(${days} * var(--ppd) + ${px}px)`;
 function railW(){ return parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--rail-w")) || 68; }
 
