@@ -7,16 +7,17 @@
 #views{flex:1 1 auto; min-height:0; position:relative}       /* #app clips: the motions run inside it */
 #scene{z-index:1}
 /* the week's ground lets the canvas show through only while the canvas is in play (the day grid draws on it otherwise) */
-#views:is(.pulling-up, .to-canvas, .to-week) #scene, :root[data-view="canvas"] #scene{background:transparent}
 #canvasView{position:absolute; inset:0; z-index:0; visibility:hidden; background:var(--base)}
-#views:is(.pulling-up, .to-canvas, .to-week) #canvasView{visibility:visible}
-/* the layers that move keep their own layer for as long as the canvas is in play: dropped and rebuilt at each landing,
-   they cost a long frame after every switch (measured) */
-#views:is(.pulling-up, .to-canvas, .to-week) :is(#canvasView, #tlWrap), :root[data-view="canvas"] :is(#canvasView, #tlWrap){will-change:transform}
-#views:is(.pulling-up, .to-canvas, .to-week) #tlWrap, :root[data-view="canvas"] #tlWrap{z-index:1}   /* over the day view while it travels */
-:root[data-view="canvas"] #canvasView{visibility:visible; z-index:2}   /* over the week, which stays drawn underneath: nothing to repaint on the way back */
-/* one movement at a time: a pull holds its scroller still, and after a switch the rest of that gesture goes nowhere */
-#views.pulling-up #scene, #views.pulling-down #canvasScene, #views.settling #scene, #views.settling #canvasScene{overflow-y:hidden}
+:root[data-view="canvas"] #canvasView{z-index:2}              /* over the week, which stays drawn underneath */
+#views.dragging #canvasView, :root[data-view="canvas"] #canvasView{visibility:visible}
+/* while the canvas is in play: the week's ground lets it show through, and what moves keeps its own layer
+   (dropped and rebuilt at each landing, it cost a long frame after every switch, measured 10 Nov) */
+#views.dragging #scene, :root[data-view="canvas"] #scene{background:transparent}
+#views.dragging :is(#tlWrap, #dayWrap, #canvasView), :root[data-view="canvas"] :is(#tlWrap, #dayWrap, #canvasView){will-change:transform, opacity}
+#views.dragging #tlWrap, :root[data-view="canvas"] #tlWrap{z-index:1}   /* over the day view */
+/* the hand holds the position: neither view scrolls under it; no snapping, both views hold the same day to the fraction */
+#views.dragging :is(#scene, #canvasScene){overflow-y:hidden}
+#views.dragging #scene{scroll-snap-type:none}
 :root[data-view="canvas"] #fab, :root[data-view="canvas"] #addMenu{visibility:hidden}   /* add mode belongs to the week */
 
 #canvasScene{position:absolute; inset:0; overflow:auto; overscroll-behavior:contain; outline:none;
@@ -55,19 +56,6 @@
 #rail:not(.open) .milestone-dot::after{display:none}
 #rail:not(.open) :is(.ph-stick, .projLabel, .milestone-label, .chip-title, .chip-note){opacity:0}
 #rail.measuring, #rail.measuring *{transition:none !important}
-#views.pulling-down #rail{transition:none}                    /* a pull grows it with the wheel, not after it */
 
-/* text keeps its shape in the motions (ui/canvas-morph.js): labels never ride the sideways stretch. They step out for
-   the motion and back in as it lands (a fade each would give every label a layer of its own: measured, too costly) */
-#views:is(.to-canvas, .to-week) :is(#tlWrap, #railInner) :is(.monthLabel, .ph-stick, .projLabel, .milestone-label, .chip-title, .chip-note){
-  visibility:hidden;
-}
-
-/* the pull's hint: where the pull leads; only while pulling (even unseen, it changed how the header beside it was drawn) */
-#pullHint{
-  position:absolute; left:50%; top:0; z-index:3; transform:translateX(-50%);
-  height:32px; padding:0 16px; border-radius:9999px; display:none; align-items:center;
-  font-size:var(--fs-small); font-weight:600; letter-spacing:.02em; color:var(--text);
-  border:1px solid var(--border-control); background:var(--base); opacity:0; pointer-events:none;
-}
-#views:is(.pulling-up, .pulling-down) #pullHint{display:flex}
+/* text keeps its shape: labels step out while the timeline is stretched between the two scales (ui/canvas-morph.js) */
+#views.squeezed :is(#tlWrap, #railInner) :is(.monthLabel, .ph-stick, .ph-count, .projLabel, .milestone-label, .chip-title, .chip-note){visibility:hidden}

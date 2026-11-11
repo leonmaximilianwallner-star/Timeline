@@ -465,15 +465,16 @@ monospace → DM Sans with tabular figures
 6. A step with events shows a second ring. On the canvas a tap on it says why it can't be ticked; in the timeline a tap goes to its next event.
 7. Names follow both ways: renaming the step renames its events, and the reverse (same step id). **Claude**
 
-### B.6.1 Between the canvas and the timeline *(built 10 Nov; Max)*
+### B.6.1 Between the canvas and the timeline *(built 10 Nov, held pull 11 Nov; Max)*
 
 The canvas is above the timeline. **A switch never takes longer than a button would** (**Max**, 10 Nov: "the transition is a cover-up, like a magic trick; if it lags or feels longer than a button, it does the opposite"):
-- **The pull.** From the timeline's top, scroll further up; from the canvas's floor, further down. It gives a little with the scrolling (the hint says where it leads) and **commits the moment it crosses the line**, while the gesture still runs. The rest of that gesture goes nowhere: the view you land in doesn't scroll on. Short of the line, a pause springs it back; a new pull may take over a spring-back.
-- *Why not the editor's release:* a finger's release is instant; a trackpad's is the end of its momentum, up to a second later. Waiting for it made every switch take about 2 s (measured).
+- **The pull is held, like a phone's pull-down panel** (**Max**, 11 Nov: "touch signals linked to the movement; it only continues the motion after you let go"). From the timeline's top, scroll further up; from the canvas's floor, further down. **A pixel of scrolling is a pixel of movement**, both ways; a trackpad's momentum moves it on as a finger would. Nothing plays while it is held.
+- **Let go, it settles: on past the barrier, back short of it.** The barrier is 35 % of the way from where it started (`BARRIER`). The settle runs from where it is, at most 240 ms for the whole way (`SETTLE_MS`). Scrolling again while it settles catches it.
+- *Why not commit at a line mid-gesture (10 Nov):* the motion then played on its own, apart from the hand: "separate motions", "cheap" (Max, 11 Nov).
 - **No accidental switch.** Only a gesture that *starts* at the edge pulls. A fling that runs into the edge, or a scroll that keeps going past it, stops there; the next gesture pulls. A sideways gesture never pulls.
-- **The motion, 280 ms.** The timeline band sinks to the bottom and closes up sideways to the canvas's scale, becoming the rail; the canvas comes down with it, its floor on the band's top edge; the day view fades. Back: the same, reversed (C.5). **Shapes stretch, text doesn't:** labels step out for the motion and back in as it lands.
+- **What moves, one sheet** (**Max**, 11 Nov: "it should move downwards and be rescaled"). The week moves as one: the timeline band and the day view slide down together; the day view fades out by halfway. The band closes up sideways to the canvas's scale, by ratio (as the eye reads a zoom), and the rail, at exactly its place and width, crossfades in where both are stretched alike. The canvas comes down above, its floor on the band's top edge. **Shapes stretch, text doesn't:** labels step out while it is between and back in as it lands. Escape runs the same motion.
 - **The same day stays at the left edge** both ways. The week lands on whole days (it snaps to them).
-- **The rail** is the timeline view drawn by its own rule at the canvas's scale (B.4: the same rule, not a copy), pinned to the floor. **Closed:** the months, then every row as a line. **Open** while the pointer rests on it, and while a pull grows it. A click on it opens what it hits, as on the timeline. No dropdowns there.
+- **The rail** is the timeline view drawn by its own rule at the canvas's scale (B.4: the same rule, not a copy), pinned to the floor. **Closed:** the months, then every row as a line. **Open** while the pointer rests on it, and during a pull (the same rows as the timeline). A click on it opens what it hits, as on the timeline. No dropdowns there.
 - **In the canvas:** scroll or drag the empty grid to pan; T goes to today; Escape goes back to the week; the add button and add mode belong to the week.
 - **Not yet:** a touch way in (the phone can't reach the canvas), zoom levels (B.5), anything on the grid.
 

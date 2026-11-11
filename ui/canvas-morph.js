@@ -1,71 +1,69 @@
-// ui/canvas-morph.js — the motions between the week and the canvas: the timeline becomes the rail and back (Max, 10 Nov 2026).
+// ui/canvas-morph.js — between the week and the canvas: one position, set by the hand (Max, 11 Nov 2026).
 "use strict";
-/* A cover, not a show (Max, 10 Nov: "never longer than a button", "like a magic trick"):
-   In:  the timeline band sinks to the bottom of the screen and closes up sideways into the rail (the band fades over
-        the first half, the rail in over the second); the canvas comes down with it, its floor on the band's top edge;
-        the day view fades. Out: the same, reversed (RULEBOOK C.5).
-   Cheap by construction (measured, 10 Nov): only the timeline band, the canvas and the rail move, and the day view
-   fades. The week's scroller never moves: moving it repaints all of it (a 117 ms stall at 4× slower CPU).
-   Only transform and opacity: the compositor runs it. Text keeps its shape: labels fade out, the shapes travel,
-   the rail's labels fade back in as it lands (styles/canvas.css). */
-const SWITCH_MS = 280;         // the whole switch: about the length of any view change
+/* Like a phone's pull-down panel: one number p, 0 = the week, 1 = the canvas. The wheel sets it 1:1
+   (input/canvas-pull.js); let go, it settles to the side whose barrier it crossed, or falls back. Nothing plays
+   on its own. Every in-between is morphTo(p):
+   - the week moves as one sheet: the timeline band and the day view slide down; the day view fades;
+   - the band narrows from the week's scale to the canvas's, and the rail, drawn at exactly the same place and
+     width, crossfades in: the change of scale has nowhere to be seen;
+   - the canvas comes down above, its floor on the band's top edge.
+   Only transform and opacity, on layers kept while the canvas is in play: no layout, no paint while it moves. */
+const SETTLE_MS = 240;         // a whole settle; a shorter way takes its share of it
+const BARRIER   = 0.35;        // the share of the way to cross before letting go goes on rather than back
 
-const switchTiming = () => ({ duration: SWITCH_MS, easing: morphEase(), fill: "both" });
-function switchDone(anims, cls, then){
-  $views.classList.add(cls);
-  UI.canvas.moving = true;
-  morphDone(anims, () => {
-    [$tlWrap, $canvasView, $railInner].forEach(el => { el.style.transform = ""; el.style.transformOrigin = ""; });
-    $views.classList.remove(cls);
-    UI.canvas.moving = false;
-    then();
-  });
-}
+const morph = { on:false, from:0, p:0, f:0, floor:0, raf:0 };
 
-/* the week → the canvas, from a pull of `give` px (input/canvas-pull.js) */
-function morphToCanvas(give = 0){
-  const floor = $views.clientHeight - UI.canvas.railOpenH;       // where the rail's top lands
-  const f = weekLeftDay(), k = CANVAS_CELL / TL_PPD;
-  if(!UI.canvas.shown) showCanvas();
-  canvasScrollToDay(f);
-  const land = () => {
-    UI.canvas.active = true;
-    document.documentElement.dataset.view = "canvas";
-    if(!UI.canvas.hover) openRail(false);
-  };
-  if(reducedMotion()){ $tlWrap.style.transform = $canvasView.style.transform = ""; land(); return; }
-  const t = switchTiming();
-  $tlWrap.style.transformOrigin = `${$scene.scrollLeft + railW()}px 0`;   // the day at the left edge stays where it is
-  $railInner.style.transformOrigin = `${f * CANVAS_CELL}px 0`;
-  switchDone([
-    $tlWrap.animate([{ transform:`translateY(${give}px)`, opacity:1 }, { opacity:0, offset:0.5 },
-                     { transform:`translateY(${floor}px) scaleX(${k})`, opacity:0 }], t),
-    $canvasView.animate([{ transform:`translateY(${give - floor}px)` }, { transform:"none" }], t),
-    $railInner.animate([{ transform:`scaleX(${1 / k})`, opacity:0 }, { opacity:0, offset:0.35 }, { transform:"none", opacity:1 }], t),
-    $dayWrap.animate([{ opacity:1 }, { opacity:0 }], { ...t, duration: SWITCH_MS * 0.5 }),
-  ], "to-canvas", land);
-}
-
-/* the canvas → the week, from the rail as it is (open, maybe grown by a pull) */
-function morphToWeek(){
-  const top = $views.clientHeight - $rail.offsetHeight;           // where the rail's top is now
-  const fc = canvasLeftDay(), fs = Math.round(fc), k = CANVAS_CELL / TL_PPD;
-  /* the week, put in place under the motion: the canvas's day at the left edge (whole days: it snaps to them), at its top */
+/* takes hold: the canvas in place under the week, at the week's day; from 0 (the week) or 1 (the canvas) */
+function morphStart(from){
+  cancelAnimationFrame(morph.raf);
+  if(morph.on) return;
+  morph.on = true; morph.from = morph.p = from;
+  if(from === 0){ showCanvas(); morph.f = weekLeftDay(); }
+  else { openRail(true, true); morph.f = canvasLeftDay(); }
+  $views.classList.add("dragging");                               // snapping off: both views hold the same day, to the fraction
   $scene.scrollTop = 0;
-  $scene.scrollLeft = fs * TL_PPD;
-  const land = () => { openRail(false, true); setRailHeight(); hideCanvas(); };
-  if(reducedMotion()){ delete document.documentElement.dataset.view; land(); return; }
-  const t = switchTiming();
-  $tlWrap.style.transformOrigin = `${$scene.scrollLeft + railW()}px 0`;
-  $railInner.style.transformOrigin = `${fc * CANVAS_CELL}px 0`;
-  const anims = [
-    $tlWrap.animate([{ transform:`translateY(${top}px) translateX(${(fs - fc) * CANVAS_CELL}px) scaleX(${k})`, opacity:0 },
-                     { opacity:0, offset:0.35 }, { transform:"none", opacity:1 }], t),
-    $canvasView.animate([{ transform:"none" }, { transform:`translateY(${-top}px)` }], t),
-    $railInner.animate([{ transform:"none", opacity:1 }, { opacity:0, offset:0.5 },
-                        { transform:`translateX(${(fc - fs) * TL_PPD}px) scaleX(${1 / k})`, opacity:0 }], t),
-    $dayWrap.animate([{ opacity:0 }, { opacity:0, offset:0.3 }, { opacity:1 }], t),
-  ];
-  delete document.documentElement.dataset.view;                    // the week over the canvas again; its parts start unseen (fill)
-  switchDone(anims, "to-week", land);
+  $scene.scrollLeft = morph.f * TL_PPD;
+  canvasScrollToDay(morph.f);
+  morph.floor = $views.clientHeight - UI.canvas.railOpenH;         // where the rail's top is in the canvas
+  $tlWrap.style.transformOrigin = `${$scene.scrollLeft + railW()}px 0`;   // the day at the left edge stays put
+  $railInner.style.transformOrigin = `${morph.f * CANVAS_CELL}px 0`;
+  morphTo(from);
+}
+
+/* the scale goes by ratio (k^p), as the eye reads a zoom: halfway, band and rail are stretched alike (measured 11 Nov) */
+function morphTo(p){
+  morph.p = p;
+  const k = CANVAS_CELL / TL_PPD, s = Math.pow(k, p), y = p * morph.floor;
+  const x = Math.min(1, Math.max(0, (p - 0.3) / 0.4));           // the crossfade, band → rail, where both are bent alike
+  $tlWrap.style.transform = `translateY(${y}px) scaleX(${s})`;
+  $tlWrap.style.opacity = 1 - x;
+  $railInner.style.transform = `scaleX(${s / k})`;
+  $railInner.style.opacity = x;
+  $dayWrap.style.transform = `translateY(${y}px)`;
+  $dayWrap.style.opacity = 1 - Math.min(1, p * 2);
+  $canvasView.style.transform = `translateY(${y - morph.floor}px)`;
+  $views.classList.toggle("squeezed", p > 0.06 && p < 0.94);      // labels step out while stretched (text keeps its shape)
+}
+
+/* let go: on to the side whose barrier was crossed, or back; from where it is, at the speed of the rest */
+function morphRelease(to){
+  if(!morph.on) return;
+  if(to === undefined) to = morph.from === 0 ? +(morph.p > BARRIER) : +(morph.p > 1 - BARRIER);
+  const p0 = morph.p, ms = reducedMotion() ? 0 : SETTLE_MS * Math.abs(to - p0), t0 = performance.now();
+  const step = now => {
+    const t = ms ? Math.min(1, (now - t0) / ms) : 1;
+    morphTo(p0 + (to - p0) * (1 - Math.pow(1 - t, 3)));           // ease-out: fast from the hand, soft at rest
+    if(t < 1) morph.raf = requestAnimationFrame(step); else morphEnd(to);
+  };
+  morph.raf = requestAnimationFrame(step);
+}
+
+/* at rest on one side: everything back to its own style */
+function morphEnd(to){
+  morph.on = false;
+  [$tlWrap, $railInner, $dayWrap, $canvasView].forEach(el => { el.style.transform = el.style.opacity = el.style.transformOrigin = ""; });
+  $views.classList.remove("dragging", "squeezed");
+  UI.canvas.active = to === 1;
+  if(to === 1){ document.documentElement.dataset.view = "canvas"; if(!UI.canvas.hover) openRail(false); }
+  else { delete document.documentElement.dataset.view; openRail(false, true); hideCanvas(); }
 }
