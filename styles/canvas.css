@@ -19,6 +19,12 @@
 #views:is(.dragging, .held) :is(#scene, #canvasScene){overflow-y:hidden}   /* held: the rest of a gesture that landed goes nowhere */
 #views.dragging #canvasView{z-index:0}          /* both ways: under the week, which is the one moving timeline */
 #views.dragging #rail{visibility:hidden}        /* its twin is the band; at p = 1 they are the same pixels */
+/* the rail's row of days has no corner. Its text goes first (one KW at a time), its box covers the days sliding under
+   it until only the weeks' labels are left, then clears: never two texts over each other */
+#views.dragging #dayHeadCorner{opacity:calc((1 - var(--p)) * 10)}
+#views.dragging #dayHeadCorner > *{opacity:calc(1 - 5 * var(--p))}
+#rail .day-row{pointer-events:none; overflow:clip; transition:height .22s var(--soft), opacity .16s}   /* opens and closes with the rail, as its other rows */
+#rail:not(.open) .day-row{height:0; border-bottom-width:0; opacity:0}   /* the days show on the open rail only */
 #views.dragging #scene{scroll-snap-type:none}
 /* an open phase's plan is the day's detail: it closes as the days narrow; the rail has none */
 #views.dragging #tlWrap .dropdown-row{height:calc(var(--h) * (1 - var(--p))); padding-block:calc(8px * (1 - var(--p))); opacity:calc(1 - 2 * var(--p)); overflow:clip; box-sizing:border-box}

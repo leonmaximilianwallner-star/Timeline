@@ -16,19 +16,7 @@ function renderDays(){
   corner.className = "dh";
   corner.innerHTML = `<span class="dw">KW</span><span class="dn" id="kwNum"></span><span class="dh-dots"></span>`;
   head.appendChild(corner);
-  /* the header's days and the events come in groups of a week (WEEK_GROUP): the browser skips what is off the screen
-     (content-visibility), in every redraw and while the scale changes (ui/canvas-morph.js) */
-  let cells = null;
-  for(let i=0;i<days;i++){
-    if(i % WEEK_GROUP === 0){ cells = document.createElement("div"); cells.className = "dayGroup"; cells.style.width = dayX(Math.min(WEEK_GROUP, days - i)); head.appendChild(cells); }
-    const dIso = idxDate(i), d = parseISO(dIso);
-    const el = document.createElement("div");
-    el.className = "dh"+(dIso===today?" today":"")+((d.getDay()===0||d.getDay()===6)?" weekend":"");
-    el.style.width = "var(--ppd)";
-    el.dataset.day = dIso; el.setAttribute("role", "button"); el.title = "Todos dieses Tages";
-    el.innerHTML = `<span class="dw">${WD[d.getDay()]}</span><span class="dn">${d.getDate()}</span><span class="dh-dots">${dayDotsHTML(dIso)}</span>`;
-    cells.appendChild(el);
-  }
+  appendDayCells(head);
   inner.appendChild(head);
 
   /* body: hour rail + grid */
@@ -82,6 +70,25 @@ function renderDays(){
   inner.appendChild(body);
   $dayInner.replaceChildren(inner);
   updateKW();
+}
+
+/* the row of days: one cell a day, the same in the day view's header and the canvas's rail. The header's days and
+   the events come in groups of a week (WEEK_GROUP): the browser skips what is off the screen (content-visibility).
+   Each cell knows its tier (views/range.js tiersFor): day, alt (Wed, Fri) or mon, which also carries its KW */
+function appendDayCells(row){
+  const today = todayISO(), days = UI.range.days;
+  let cells = null;
+  for(let i=0;i<days;i++){
+    if(i % WEEK_GROUP === 0){ cells = document.createElement("div"); cells.className = "dayGroup"; cells.style.width = dayX(Math.min(WEEK_GROUP, days - i)); row.appendChild(cells); }
+    const dIso = idxDate(i), d = parseISO(dIso), wd = d.getDay();
+    const el = document.createElement("div");
+    el.className = "dh " + (wd === 1 ? "mon" : wd === 3 || wd === 5 ? "alt" : "day") + (dIso===today?" today":"") + (wd % 6 === 0 ? " weekend" : "");
+    el.style.width = "var(--ppd)";
+    el.dataset.day = dIso; el.setAttribute("role", "button"); el.title = "Todos dieses Tages";
+    el.innerHTML = `<span class="dw">${WD[wd]}</span><span class="dn">${d.getDate()}</span><span class="dh-dots">${dayDotsHTML(dIso)}</span>`
+      + (wd === 1 ? `<span class="dh-kw"><span class="dw">KW</span><span class="dn">${isoWeek(d)}</span></span>` : "");
+    cells.appendChild(el);
+  }
 }
 
 function isoWeek(d) {

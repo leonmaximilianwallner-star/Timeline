@@ -62,6 +62,7 @@ function drawCanvas(){
   const frag = buildTimeline(CANVAS_CELL, true);
   $railInner.replaceChildren(frag);
   $railInner.style.width = w + "px";
+  applyTiers($rail, CANVAS_CELL);                                  // the rail's labels and lines at its scale: KW, weeks
   fitLabels(frag);
   measureRail();
 }

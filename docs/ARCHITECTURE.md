@@ -244,6 +244,8 @@ Measured again 11 Nov (held pull, CPU slowed 4×): frames 17 ms on average, 33 m
 
 **The rail exists in the page even before the canvas is opened** (drawn ahead). Code that looks for timeline things page-wide would find them twice; it must look inside its view (`#tlWrap`, `#railInner`). Today only the dropdown is found page-wide, and the rail has none.
 
+
+**What is drawn along the days, by scale** (17 Nov, RULEBOOK B.6.3): `tiersFor(ppd)` returns six opacities; `applyTiers(el, ppd)` writes them as CSS variables (`--t-day`, `--t-alt`, `--t-mon`, `--t-kw`, `--t-dayLine`, `--t-weekLine`) on one element: `#scene` each frame of the switch (one line in `morphTo`), `#rail` once at its scale. Every label and line reads them, with the week's values as fallbacks, so the week view at rest needs none. No nodes are made per frame: the day cells know their tier by class, and the lines are two gradient layers (days, weeks from `--mon`, the first Monday) whose alpha comes from the variables.
 ## 7. Agents — **Max, 20 Oct: later**
 
 **Decided.** First the app has to work for Max. Agent access comes after sync works.

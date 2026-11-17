@@ -6,11 +6,21 @@
      (month / project / phase / dropdown) resolve against #scene. */
 }
 #tlInner{position:relative; min-width:100%; background:var(--base)}   /* all the days wide: it, not #tlWrap (one screen wide, at the start), hides what is behind the band */
-#tlGrid{
-  position:absolute; left:0; right:0; top:30px; bottom:0;
-  pointer-events:none; z-index:0;
-  background-image: var(--gridline);
-  background-size: var(--ppd) 100%;     /* read here, at the days scale of this place (a token on :root would resolve there) */
+.tlGrid{position:absolute; left:0; right:0; top:30px; bottom:0; pointer-events:none; z-index:0}
+/* the days' lines, by tier (views/range.js tiersFor): one tile a week, from the first Monday (--mon). Its Monday line
+   stays; the other six fade with the days' tier. One layer: a second (the weeks') cost 14 ms a frame of the switch.
+   Read here, at this place's scale and tiers (a token on :root would resolve there); without tiers: every day's */
+:is(.tlGrid, #dayGrid){
+  --dl: color-mix(in srgb, var(--line-soft) calc(var(--t-dayLine, 1) * 100%), transparent);
+  background-image: linear-gradient(to right, var(--line-soft) 0 1px, transparent 1px calc(100% / 7),
+    var(--dl) calc(100% / 7) calc(100% / 7 + 1px), transparent calc(100% / 7 + 1px) calc(200% / 7),
+    var(--dl) calc(200% / 7) calc(200% / 7 + 1px), transparent calc(200% / 7 + 1px) calc(300% / 7),
+    var(--dl) calc(300% / 7) calc(300% / 7 + 1px), transparent calc(300% / 7 + 1px) calc(400% / 7),
+    var(--dl) calc(400% / 7) calc(400% / 7 + 1px), transparent calc(400% / 7 + 1px) calc(500% / 7),
+    var(--dl) calc(500% / 7) calc(500% / 7 + 1px), transparent calc(500% / 7 + 1px) calc(600% / 7),
+    var(--dl) calc(600% / 7) calc(600% / 7 + 1px), transparent calc(600% / 7 + 1px) calc(700% / 7));
+  background-size: calc(7 * var(--ppd)) 8px;          /* a short tile, repeated down: it is redrawn each frame of the switch, and a tall one cost the most */
+  background-position: calc(var(--mon, 0) * var(--ppd)) 0;
 }
 .tlRow{ z-index:1 }
 .tlRow{position:relative}

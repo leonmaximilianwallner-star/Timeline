@@ -32,11 +32,12 @@ function morphStart(from){
   morphTo(from);
 }
 
-/* HOLD: the hand moves it by dy px; a settle in flight stops under it */
-function morphHold(dy){
+/* HOLD: the hand moves it by dy px; a settle in flight stops under it. t: when the hand did it (the event's time:
+   events that waited behind a busy frame still count at their own moment, or a flick reads as still) */
+function morphHold(dy, t = performance.now()){
   morph.gen++; cancelAnimationFrame(morph.raf);
   morph.y = Math.min(morph.floor, Math.max(0, morph.y + dy));
-  const now = performance.now();
+  const now = t;
   morph.hist.push([now, morph.y]);
   while(morph.hist.length > 2 && now - morph.hist[0][0] > VELOCITY_MS) morph.hist.shift();
   morphTo(morph.y / morph.floor);
@@ -50,6 +51,7 @@ function morphTo(p){
   const ppd = TL_PPD * Math.pow(CANVAS_CELL / TL_PPD, p), y = p * morph.floor;
   $scene.style.setProperty("--ppd", ppd + "px");
   $scene.style.setProperty("--p", p);
+  applyTiers($scene, ppd);                                         // what is drawn along the days, at this scale (views/range.js)
   $scene.scrollLeft = morph.f * ppd;
   $tlWrap.style.transform = $dayWrap.style.transform = `translateY(${y}px)`;
   $canvasView.style.transform = `translateY(${y - morph.floor}px)`;
@@ -88,7 +90,7 @@ function morphSettle(to, v){
 function morphEnd(to){
   morph.on = false; morph.gen++;
   [$tlWrap, $dayWrap, $canvasView].forEach(el => { el.style.transform = ""; });
-  $scene.style.removeProperty("--ppd"); $scene.style.removeProperty("--p");
+  for(const k of ["--ppd", "--p", ...Object.keys(tiersFor(1)).map(k => "--t-" + k)]) $scene.style.removeProperty(k);
   $views.classList.remove("dragging");
   UI.canvas.active = to === 1;
   if(to === 1){

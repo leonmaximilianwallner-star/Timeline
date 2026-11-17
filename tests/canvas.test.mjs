@@ -22,7 +22,7 @@ const browser = await chromium.launch();
 let failed = 0;
 const step = async (name, fn) => {
   try { await fn(); console.log('✓', name); }
-  catch (e) { failed++; console.error('✗', name, '\n   ', e.message.split('\n')[0]); }
+  catch (e) { failed++; console.error('✗', name, '\n   ', e.message.split('\n').slice(0,6).join(' | ')); }
 };
 
 /* a desktop screen, with the motions running (they are what is tested) */
@@ -90,7 +90,7 @@ await step('slowly past halfway, let go: on to the canvas; landing ends it, noth
 
 await step('a short quick pinch out of the canvas carries it home (flick)', async () => {
   await page.mouse.move(700, 400); await page.waitForTimeout(300);
-  await pinch(-5, 3);
+  await pinch(-8, 3);                                     // quick: well past the halfway mark once carried, even when a slow test browser spaces the events
   assert.ok(await q(() => morph.y > morph.floor * 0.7), 'it moved only a little: ' + await q(() => morph.y / morph.floor));
   await settle();
   assert.equal(await view(), 'week');
@@ -152,6 +152,32 @@ await step('a zoom, not a stretch: in between nothing is scaled; at the end the 
   assert.equal(r.between, true, 'no scale transform');
   assert.deepEqual(r.shapes, [24, 2], 'a pill keeps its height, the today line its width');
   assert.equal(r.same, true, 'every pill on its twin in the rail');
+});
+
+await step('along the days, by scale: labels thin out by tier, never two texts over each other; the rail ends on KW', async () => {
+  const r = await q(() => {
+    morphStart(0);
+    const out = [];
+    for (let i = 0; i <= 40; i++) {
+      morphTo(i / 40);
+      const shown = [...document.querySelectorAll('#dayHead .dh[data-day] :is(.dw, .dn), #dayHeadCorner :is(.dw, .dn)')]
+        .filter(el => { let o = 1; for (let e = el; e && e !== document.body; e = e.parentElement) o *= +getComputedStyle(e).opacity; return o > 0.02; })
+        .map(el => el.getBoundingClientRect()).filter(b => b.width && b.right > 0 && b.left < innerWidth);
+      for (let a = 0; a < shown.length; a++) for (let b = a + 1; b < shown.length; b++) {
+        const A = shown[a], B = shown[b];
+        if (A.left < B.right - 1 && B.left < A.right - 1 && A.top < B.bottom - 1 && B.top < A.bottom - 1) out.push(i / 40);
+      }
+    }
+    const held = [0.81, 0.81].map(p => { morphTo(p); return getComputedStyle($scene).getPropertyValue('--t-alt'); });
+    morphRelease(0);
+    const t = tiersFor(CANVAS_CELL);
+    return { overlaps: [...new Set(out)], held, rail: [t.day, t.alt, t.mon, t.kw, t.dayLine, t.weekLine] };
+  });
+  await settle();
+  assert.deepEqual(r.overlaps, [], 'texts overlap at p = ' + r.overlaps.join(', '));
+  assert.equal(r.held[0], r.held[1], 'held at a scale, it stays');
+  assert.deepEqual(r.rail, [0, 0, 0, 1, 0, 1], 'the rail: only KW and the weeks\' lines');
+  assert.deepEqual(await q(() => tiersFor(TL_PPD)), { day: 1, alt: 1, mon: 1, kw: 0, dayLine: 1, weekLine: 0 }, 'the week view: every day, as before');
 });
 
 await step('scrolling again while it settles catches it', async () => {

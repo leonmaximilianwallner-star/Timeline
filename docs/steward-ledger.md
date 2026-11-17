@@ -48,3 +48,4 @@
 | 2026-11-11 | — | canvas switch | Max: still lags, "separate motions". Rebuilt as a held pull (phone pull-down panel): 1:1, barrier, settle or fall back, catchable; week moves as one sheet; scale by ratio. Net −100 lines. | — |
 | 2026-11-12 | — | canvas switch | Max: still a failed trick (stretched pills, day view apart). Now a zoom: re-laid out per frame via one scale value, day view in week groups to afford it, band lands exactly on the rail. Phone text shifts ≤ 0.5 px (groups). | — |
 | 2026-11-17 | — | canvas switch | Gesture-motion pass: pinch + scroll, projection + closed-form spring, lands exactly; one stacking both ways (the reverse showed the canvas rail over the band); momentum tail removed. Hold in Chrome = quiet 220 ms (browser limit). | — |
+| 2026-11-17 | — | days by scale | tiersFor(ppd): days → Mon/Wed/Fri → KW, day lines → week lines; rail gets the day row and weekly lines; frame time at parity with main (gradient tile 8 px tall). | — |
