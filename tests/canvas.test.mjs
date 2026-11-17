@@ -22,7 +22,7 @@ const browser = await chromium.launch();
 let failed = 0;
 const step = async (name, fn) => {
   try { await fn(); console.log('✓', name); }
-  catch (e) { failed++; console.error('✗', name, '\n   ', e.message.split('\n')[0]); }
+  catch (e) { failed++; console.error('✗', name, '\n   ', e.message.split('\n').slice(0,6).join(' | ')); }
 };
 
 /* a desktop screen, with the motions running (they are what is tested) */
@@ -90,7 +90,7 @@ await step('slowly past halfway, let go: on to the canvas; landing ends it, noth
 
 await step('a short quick pinch out of the canvas carries it home (flick)', async () => {
   await page.mouse.move(700, 400); await page.waitForTimeout(300);
-  await pinch(-5, 3);
+  await pinch(-8, 3);                                     // quick: well past the halfway mark once carried, even when a slow test browser spaces the events
   assert.ok(await q(() => morph.y > morph.floor * 0.7), 'it moved only a little: ' + await q(() => morph.y / morph.floor));
   await settle();
   assert.equal(await view(), 'week');

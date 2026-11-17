@@ -488,6 +488,14 @@ The canvas is above the timeline. **A switch never takes longer than a button wo
 - **A cell:** every event under the phase on that day (straight, or through a step), by time: a head (its step's name, or its own; `done/total` of its todos; ✓ when done). Past days: heads only, muted. Today and later: up to 3 open todos under each head, then `+n`. Done todos never show. A ring ticks a todo; a head opens its event.
 - **Not built (Max to decide):** open todos of past days moving to today; dragging a todo to another day.
 
+### B.6.3 How much is drawn along the days *(built 17 Nov; Max)*
+Time is one continuous space seen at different scales (**Max**, 17 Nov). What is drawn along the days, labels and vertical lines alike, depends on one thing only: how far apart it would land on the screen (`tiersFor(ppd)`, `views/range.js`). Like the labels of a map, with no rule per view.
+- **The tiers:** every day → Mon/Wed/Fri → every week ("KW nn", on Mondays). Each coarser tier is a subset of the finer one (Mondays are among Mon/Wed/Fri, which are days), so nothing moves sideways. Plain "every second day" can't hold the weeks, since 7 is odd.
+- **Labels:** at least `MIN_LABEL_PX` (88) apart. Lines: at least `MIN_LINE_PX` (44): every day's line, then only every week's. A tier is shown in full when its ticks are 20 % (`TIER_FADE`) further apart than that, gone at the minimum, and faded between. It's a function of the scale alone, so holding still holds steady (no hysteresis needed).
+- **On a Monday** its day label goes first, then its KW comes: two texts never share a place. The day header's KW corner does the same while the scale changes.
+- **Where it shows:** the week view (every day, unchanged), the in-between of the switch (days thin out to Mon/Wed/Fri, then to the weeks), and the open rail. The rail's lowest row is the day view's header, built by the same rule (`appendDayCells`), shown only when the rail is open; its lines are the weeks'.
+- Later: the canvas's dot grid will use the same rule (`tierOpacity`).
+
 ## B.7 Data
 
 The gate, the store and sync are defined in `ARCHITECTURE.md` §4–5. The rules that belong to the product:

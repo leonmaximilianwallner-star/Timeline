@@ -33,7 +33,6 @@
   /* type: five sizes, plus one for the celebration */
   --fs-label:11px; --fs-small:12px; --fs-body:14px; --fs-lead:16px; --fs-title:20px; --fs-glance:28px;
   --sticky-left:calc(var(--rail-w) + 12px);
-  --gridline: linear-gradient(to right, var(--line-soft) 1px, transparent 1px);
 }
 html[data-theme="light"]{
   --base:#f2f1ee; --surface:#ffffff;

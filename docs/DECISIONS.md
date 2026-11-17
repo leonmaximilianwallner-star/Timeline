@@ -301,3 +301,10 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **One stacking both ways** (the canvas under the week, the rail hidden): the canvas → week direction showed the canvas's rail over the zooming band. *Claude*
 - **Known:** in Chrome a still trackpad is a released one (220 ms); Safari's pinch holds truly. Day lines may flicker while the scale changes (drawn as a background at fractional sizes); a fix means day lines as elements, not done. *Claude*
 
+## 2026-11-17 · What is drawn along the days, by scale
+- **One rule for labels and lines** (`tiersFor(ppd)`), no rule per view; the rail is the same rule at 40 px a day. *Max*
+- **Mon/Wed/Fri as the in-between tier**: "every second day" can't contain the weeks (7 is odd); MIN_LABEL_PX 88 so the rail shows KW. *Claude; Max agreed*
+- **The rail's lines are the weeks' only**; days' lines are a state in between. *Max*
+- **No hysteresis**: the opacities are a function of the scale alone, so a held scale is steady. *Claude; Max agreed*
+- **Velocity from the events' own time** (`e.timeStamp`): events queued behind a slow frame read as a standstill otherwise. *Claude*
+

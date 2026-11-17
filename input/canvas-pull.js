@@ -22,16 +22,16 @@ const atFloor = () => $canvasScene.scrollTop >= $canvasScene.scrollHeight - $can
 
 /* not passive: a pinch must not zoom the page (preventDefault). Every other wheel returns at once */
 $views.addEventListener("wheel", e => {
-  if(e.ctrlKey){ e.preventDefault(); return onPinch(e.deltaY); }
+  if(e.ctrlKey){ e.preventDefault(); return onPinch(e.deltaY, e.timeStamp); }
   onScroll(e);
 }, { passive:false });
 /* Safari's pinch: scale since the start; gestureend is the fingers lifting */
 $views.addEventListener("gesturestart", e => { e.preventDefault(); pinchScale = 1; }, { passive:false });
-$views.addEventListener("gesturechange", e => { e.preventDefault(); onPinch(100 * Math.log(pinchScale / e.scale)); pinchScale = e.scale; }, { passive:false });
+$views.addEventListener("gesturechange", e => { e.preventDefault(); onPinch(100 * Math.log(pinchScale / e.scale), e.timeStamp); pinchScale = e.scale; }, { passive:false });
 $views.addEventListener("gestureend", e => { e.preventDefault(); clearTimeout(wheelIdle); morphRelease(); }, { passive:false });
 
 /* d > 0: together, toward the canvas */
-function onPinch(d){
+function onPinch(d, t){
   const now = performance.now(), fresh = now - wheelLast > PINCH_IDLE;
   wheelLast = now;
   if(!morph.on){
@@ -40,7 +40,7 @@ function onPinch(d){
     else if(UI.canvas.active && d < 0) morphStart(1);
     else return;
   }
-  morphHold(d * morph.floor / PINCH_FULL);
+  morphHold(d * morph.floor / PINCH_FULL, t);
   clearTimeout(wheelIdle);
   wheelIdle = setTimeout(() => morphRelease(), PINCH_IDLE);
 }
@@ -58,7 +58,7 @@ function onScroll(e){
     else if(UI.canvas.active && dy > 0 && atFloor()) morphStart(1);
     else return;
   }
-  morphHold(-dy);
+  morphHold(-dy, e.timeStamp);
   clearTimeout(wheelIdle);
   if(morph.y === 0 || morph.y === morph.floor){                  // carried to an edge: lands now
     morphEnd(+(morph.y > 0)); $views.classList.add("held");

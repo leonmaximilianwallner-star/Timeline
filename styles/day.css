@@ -4,17 +4,20 @@
 /* not a scroller — the execution band inside #scene. #dayHead pins via
    sticky-top and #hourRail via sticky-left, both against #scene. */
 #dayInner{position:relative}
-#dayHead{
-  position:sticky; top:0; z-index:20; display:flex;
-  background:var(--base); border-bottom:1px solid var(--hairline);
-  height:52px;
-}
+#dayHead{position:sticky; top:0; z-index:20}
+#dayHead, #rail .day-row{display:flex; background:var(--base); border-bottom:1px solid var(--hairline); height:52px}   /* one row of days, two places */
 #dayHeadCorner{
   position:sticky; left:0; z-index:21; flex:0 0 var(--rail-w); width:var(--rail-w);
   background:var(--base); border-right:1px solid var(--line-soft);
 }
 .dayGroup{content-visibility:auto; display:flex; flex:none}   /* a week of the header, or of the events: skipped off the screen */
 #dayGrid > .dayGroup{position:absolute; top:0; bottom:0}
+/* a day's label by tier (views/range.js tiersFor); without tiers, all of them, as at the week's scale */
+.dh.day{opacity:var(--t-day, 1)}
+.dh.alt{opacity:var(--t-alt, 1)}
+.dh.mon{position:relative}
+.dh.mon > :not(.dh-kw){opacity:var(--t-mon, 1)}
+.dh-kw{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; opacity:var(--t-kw, 0); pointer-events:none}
 .dh{
   flex:0 0 auto; display:flex; flex-direction:column; align-items:center; justify-content:center;
 }
@@ -34,8 +37,6 @@
 .hr-lab{position:absolute; right:4px; transform:translateY(-50%)}
 #dayGrid{
   position:relative; flex:0 0 auto; touch-action:pan-x pan-y;
-  background-image: var(--gridline);
-  background-size: var(--ppd) 100%;     /* read here, at the days scale of this place (a token on :root would resolve there) */
 }
 #dayGrid.addmode{cursor:crosshair}
 /* the snap points hold the week's own scale: a change of --ppd stops here and restyles none of its 700 days */
