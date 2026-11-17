@@ -294,3 +294,10 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **The day view in week groups (content-visibility)**: 10× fewer elements restyled per frame. Trade: text in a group lands on whole pixels (≤ 0.5 px, phone). *Claude*
 - **Known:** frames are heavier than the stretch (19 ms vs 17 ms average at full speed in the test browser); to be judged on the real machine. *Claude*
 
+## 2026-11-17 · The canvas switch, by the gesture-motion rules
+- **Pinch drives it on the trackpad**; scrolling past the edge stays as a second way into the same motion, and lands the moment it reaches the end (a scroll's momentum is indistinguishable from the hand). *Max*
+- **Release by projection + a critically damped spring** seeded with the release speed, in six lines of math rather than the Motion library. *Max*
+- **The rail lands open and closes at once unless the pointer rests on it**: the hover's own motion ends the transition. *Max*
+- **One stacking both ways** (the canvas under the week, the rail hidden): the canvas → week direction showed the canvas's rail over the zooming band. *Claude*
+- **Known:** in Chrome a still trackpad is a released one (220 ms); Safari's pinch holds truly. Day lines may flicker while the scale changes (drawn as a background at fractional sizes); a fix means day lines as elements, not done. *Claude*
+
