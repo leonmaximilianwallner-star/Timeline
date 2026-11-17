@@ -53,20 +53,87 @@ await step('a fling that runs into the top of the week does not pull', async () 
   assert.equal(await q(() => UI.canvas.shown), false);
 });
 
-await step('the pull follows the wheel 1:1; short of the barrier, let go, it falls back, nothing left behind', async () => {
+/* a slow, even pull: n events of d px, gap ms apart (a pause at the end is how a trackpad lets go) */
+const slow = async (d, n, gap = 30) => { for (let i = 0; i < n; i++) { await page.mouse.wheel(0, d); await page.waitForTimeout(gap); } };
+const pinch = async (d, n, gap = 16) => { await page.keyboard.down('Control'); for (let i = 0; i < n; i++) { await page.mouse.wheel(0, d); await page.waitForTimeout(gap); } await page.keyboard.up('Control'); };
+
+await step('the pull follows the wheel 1:1, then nothing moves while the hand is still', async () => {
   await page.waitForTimeout(200);
-  await wheel(-40, 3);
+  await slow(-10, 6);
   assert.equal(await q(() => morph.on), true);
-  assert.ok(await q(() => Math.abs(morph.p * morph.floor - 120) < 1), '120 px of wheel, 120 px of movement');
-  assert.match(await q(() => $tlWrap.style.transform), /translateY\(120px\)/, 'the band moves with it');
-  assert.match(await q(() => $dayWrap.style.transform), /translateY\(120px\)/, 'the day view moves with it, as one sheet');
-  assert.equal(await q(() => $scene.style.transform), '', 'the week\'s scroller never moves');
-  await page.waitForTimeout(80);
-  assert.ok(await q(() => Math.abs(morph.p * morph.floor - 120) < 1), 'nothing plays while the hand holds it');
+  assert.ok(await q(() => Math.abs(morph.y - 60) < 1), '60 px of wheel, 60 px of movement: ' + await q(() => morph.y));
+  assert.match(await q(() => $tlWrap.style.transform), /translateY\(60px\)/, 'the band moves with it');
+  assert.match(await q(() => $dayWrap.style.transform), /translateY\(60px\)/, 'the day view moves with it, as one sheet');
+  assert.equal(await q(() => getComputedStyle($rail).visibility), 'hidden', 'one timeline: the rail waits hidden');
+  assert.ok(await q(() => +getComputedStyle($canvasView).zIndex < +getComputedStyle($scene).zIndex), 'the canvas under the week');
+  await settle();
+  assert.equal(await view(), 'week', 'a slow short pull falls back');
+  assert.equal(await q(() => [$tlWrap, $dayWrap, $railInner, $canvasView].map(el => el.style.transform + el.style.opacity).join('')), '');
+});
+
+await step('slowly past halfway, let go: on to the canvas; landing ends it, nothing moves after', async () => {
+  const day = await q(() => weekLeftDay());
+  await page.waitForTimeout(200);
+  const n = await q(() => Math.ceil(($views.clientHeight * 0.6) / 10));
+  await slow(-10, n);
+  assert.ok(await q(() => morph.y > morph.floor / 2 && morph.y < morph.floor), 'past halfway, not at the end');
+  const t0 = Date.now(); await settle(); const ms = Date.now() - t0;
+  assert.equal(await view(), 'canvas');
+  assert.ok(ms < 900, 'let go to landed: ' + ms + ' ms');
+  const tl = await q(() => [$tlWrap.style.transform, $canvasView.style.transform, $scene.style.getPropertyValue('--ppd')].join(''));
+  assert.equal(tl, '', 'nothing left moved: landing is the end');
+  assert.ok(Math.abs(await q(() => canvasLeftDay()) - day) < 0.01, 'same day at the left edge');
+  assert.equal(await atFloor(), true, 'at the floor');
+  assert.equal(await q(() => document.elementFromPoint(700, 400).closest('#canvasView') !== null), true, 'the canvas gets the pointer');
+  assert.equal(await q(() => UI.canvas.railOpen), false, 'pointer not on the rail: it closed at once');
+});
+
+await step('a short quick pinch out of the canvas carries it home (flick)', async () => {
+  await page.mouse.move(700, 400); await page.waitForTimeout(300);
+  await pinch(-5, 3);
+  assert.ok(await q(() => morph.y > morph.floor * 0.7), 'it moved only a little: ' + await q(() => morph.y / morph.floor));
   await settle();
   assert.equal(await view(), 'week');
-  assert.equal(await q(() => UI.canvas.shown), false);
-  assert.equal(await q(() => [$tlWrap, $dayWrap, $railInner, $canvasView].map(el => el.style.transform + el.style.opacity).join('')), '');
+});
+
+await step('a slow pinch holds where it is, and caught mid-settle it stops under the hand', async () => {
+  await page.mouse.move(700, 300); await page.waitForTimeout(300);
+  await pinch(2, 6, 40);
+  const y0 = await q(() => morph.y);
+  await page.waitForTimeout(120);                         // still: nothing plays on its own
+  assert.equal(await q(() => morph.y), y0);
+  await page.waitForTimeout(250);                         // let go (quiet): settling back
+  const r = await q(() => new Promise(res => requestAnimationFrame(() => requestAnimationFrame(() => {
+    const before = morph.y; morphHold(0); const at = morph.y;
+    setTimeout(() => res({ moving: before > 0, at, before, after: morph.y }), 120);
+  }))));
+  assert.ok(r.moving, 'it was settling');
+  assert.ok(Math.abs(r.at - r.before) < 0.01 && Math.abs(r.after - r.at) < 0.01, 'stopped where it was: ' + JSON.stringify(r));
+  await q(() => morphRelease()); await settle();
+  assert.equal(await view(), 'week');
+});
+
+await step('a scroll carried to the end lands at once; the rest of the gesture goes nowhere', async () => {
+  await q(() => { $scene.scrollTop = 0; }); await page.waitForTimeout(250);
+  await wheel(-60, 14);
+  assert.equal(await view(), 'canvas', 'landed while the gesture still runs');
+  await wheel(-60, 10);                                   // its momentum, still going
+  assert.equal(await atFloor(), true, 'still at the floor');
+  await page.waitForTimeout(250);
+  await page.mouse.move(700, 400); await page.waitForTimeout(200);
+  await wheel(80, 14); await settle();
+  assert.equal(await view(), 'week');
+});
+
+await step('landing with the pointer on the rail: it stays open', async () => {
+  await page.mouse.move(700, 885); await page.waitForTimeout(100);
+  await q(() => { morphStart(0); morphRelease(1); });
+  await settle(); await page.waitForTimeout(300);
+  assert.equal(await view(), 'canvas');
+  assert.equal(await q(() => UI.canvas.railOpen), true);
+  await page.mouse.move(700, 300); await page.waitForTimeout(600);
+  assert.equal(await q(() => UI.canvas.railOpen), false, 'leaving it closes it, as a hover does');
+  await page.keyboard.press('Escape'); await settle();
 });
 
 await step('a zoom, not a stretch: in between nothing is scaled; at the end the band lies exactly on the rail', async () => {
@@ -87,21 +154,8 @@ await step('a zoom, not a stretch: in between nothing is scaled; at the end the 
   assert.equal(r.same, true, 'every pill on its twin in the rail');
 });
 
-await step('past the barrier, let go, it goes on to the canvas; the day at the left edge is kept', async () => {
-  const day = await q(() => weekLeftDay());
-  await page.waitForTimeout(200);
-  const n = await q(() => Math.ceil((window.innerHeight * 0.6) / 40));   // well past the barrier, short of the end
-  await wheel(-40, Math.min(n, 8));
-  assert.ok(await q(() => morph.p > BARRIER && morph.p < 1), 'between: ' + await q(() => morph.p));
-  await settle();
-  assert.equal(await view(), 'canvas');
-  assert.ok(Math.abs(await q(() => canvasLeftDay()) - day) < 0.01, 'same day at the left edge');
-  assert.equal(await atFloor(), true, 'at the floor');
-  assert.ok(await q(() => +getComputedStyle($canvasView).zIndex > +getComputedStyle($scene).zIndex), 'the canvas covers the week');
-  assert.equal(await q(() => document.elementFromPoint(700, 400).closest('#canvasView') !== null), true, 'the canvas gets the pointer');
-});
-
 await step('scrolling again while it settles catches it', async () => {
+  await enter();
   await page.mouse.move(700, 400); await page.waitForTimeout(200);
   await wheel(40, 2);                                       // out a little: short of the barrier, it will settle back
   await page.waitForTimeout(150);                           // let go: settling
