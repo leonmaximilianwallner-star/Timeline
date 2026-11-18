@@ -61,20 +61,18 @@ const dayX = (days, px = 0) => `calc(${days} * var(--ppd) + ${px}px)`;
    A tier (every day, Mon/Wed/Fri, every week) is shown in full when its ticks are TIER_FADE more than the minimum
    apart, gone at the minimum, faded between: a function of the scale alone, so holding still holds steady.
    Coarser tiers are subsets of finer ones (Mondays are in Mon/Wed/Fri, which are days): nothing moves sideways. ── */
-const MIN_LABEL_PX = 88;       // labels: closest two may sit (px). At the canvas's 40 px a day only KW is left
-const MIN_LINE_PX  = 44;       // day lines: closest two may sit; below, only the weeks' lines (the rail's)
+const MIN_LABEL_PX = 88;       // closest two of a tier may sit (px), labels and lines alike. At the canvas's 40 px a day only the weeks are left
 const TIER_FADE    = 0.2;      // share above the minimum over which a tier fades
 const tierOpacity = (spacing, min) => Math.min(1, Math.max(0, (spacing - min) / (min * TIER_FADE)));
 /* the tiers at a scale (px a day): every opacity the days' labels and lines need */
 function tiersFor(ppd){
-  const alt = tierOpacity(2 * ppd, MIN_LABEL_PX), dayLine = tierOpacity(ppd, MIN_LINE_PX);
+  const alt = tierOpacity(2 * ppd, MIN_LABEL_PX);
   return {
-    day: tierOpacity(ppd, MIN_LABEL_PX),                              // Tue, Thu, Sat, Sun
+    day: tierOpacity(ppd, MIN_LABEL_PX),                              // Tue, Thu, Sat, Sun: their labels and lines
     alt,                                                               // Wed, Fri: days two apart at least
     mon: tierOpacity(2 * ppd, MIN_LABEL_PX * (1 + TIER_FADE)),         // a Monday's day label: gone first …
     kw: Math.min(1 - alt, tierOpacity(7 * ppd, MIN_LABEL_PX)),         // … then its KW comes, never both at once
-    dayLine, weekLine: 1 - dayLine,                                    // a week's line is a day's line that stays
-  };
+  };                                                                   // a Monday's line is the week's: it stays
 }
 /* hands the tiers to the styles of a place (#scene while the scale changes, #rail at its own scale) */
 function applyTiers(el, ppd){

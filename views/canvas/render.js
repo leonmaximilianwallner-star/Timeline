@@ -24,6 +24,7 @@ const $canvasScene = document.getElementById("canvasScene");
 const $canvasGrid = document.getElementById("canvasGrid");
 const $rail        = document.getElementById("rail");
 const $railInner   = document.getElementById("railInner");
+const $railDays    = document.getElementById("railDays");     // the rail's lowest row, below its capped rows: always whole
 
 UI.canvas = {
   shown:false,      // in play: during a pull, a motion, or while it is the view
@@ -31,7 +32,7 @@ UI.canvas = {
   active:false,     // the canvas is the view in use
   rows:CANVAS_ROWS,
   railOpen:false, hover:false,
-  railOpenH:0, railThinH:0,
+  railOpenH:0, railThinH:0, railClip:0,
 };
 document.documentElement.style.setProperty("--cell", CANVAS_CELL + "px");
 
@@ -62,6 +63,8 @@ function drawCanvas(){
   const frag = buildTimeline(CANVAS_CELL, true);
   $railInner.replaceChildren(frag);
   $railInner.style.width = w + "px";
+  const days = document.createElement("div"); days.className = "day-row"; days.style.width = w + "px";
+  appendDayCells(days); $railDays.replaceChildren(days);            // the days, as the day view's header (shown open)
   applyTiers($rail, CANVAS_CELL);                                  // the rail's labels and lines at its scale: KW, weeks
   fitLabels(frag);
   measureRail();
@@ -71,14 +74,17 @@ function drawCanvas(){
 function measureRail(){
   const wasOpen = $rail.classList.contains("open");
   $rail.classList.add("measuring");                              // no transitions while it is measured
-  $rail.classList.add("open");    const open = $railInner.offsetHeight;
-  $rail.classList.remove("open"); const thin = $railInner.offsetHeight;
+  $rail.classList.add("open");    const open = $railInner.offsetHeight, openDays = $railDays.offsetHeight;
+  $rail.classList.remove("open"); const thin = $railInner.offsetHeight, thinDays = $railDays.offsetHeight;
   $rail.classList.toggle("open", wasOpen);
+  const cap = Math.round($views.clientHeight * RAIL_OPEN);       // the cap is the plan rows': the days below are never cut
+  const edge = $rail.offsetHeight - $rail.clientHeight;          // its top border
+  UI.canvas.railClip  = Math.max(0, open - cap);                   // what of the rows the cap hides (ui/canvas-morph.js)
+  UI.canvas.railOpenH = Math.min(open, cap) + openDays + edge;
+  UI.canvas.railThinH = Math.min(thin, RAIL_THIN) + thinDays + edge;
+  setRailHeight();                                                 // while still measuring: at once, no motion (a morph reads it next)
   void $rail.offsetHeight;
   $rail.classList.remove("measuring");
-  UI.canvas.railOpenH = Math.min(open, Math.round($views.clientHeight * RAIL_OPEN));
-  UI.canvas.railThinH = Math.min(thin, RAIL_THIN);
-  setRailHeight();
 }
 /* the rail's height: closed or open */
 function setRailHeight(extra = 0){

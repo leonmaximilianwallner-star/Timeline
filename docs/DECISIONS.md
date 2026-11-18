@@ -308,3 +308,7 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **No hysteresis**: the opacities are a function of the scale alone, so a held scale is steady. *Claude; Max agreed*
 - **Velocity from the events' own time** (`e.timeStamp`): events queued behind a slow frame read as a standstill otherwise. *Claude*
 
+## 2026-11-18 · The rail's days, never cut; one opacity per tier
+- **The rail's cap applies to the plan rows only**; the day row is always whole, above the safe area. It was cut whenever the rows exceeded 45 % of the window. *Max*
+- **Lines share their tier's opacity with the labels** (Google Maps): daily lines now leave with their labels at 88 px a day; MIN_LINE_PX is gone. *Max*
+

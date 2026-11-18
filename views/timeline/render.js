@@ -71,11 +71,7 @@ function buildTimeline(ppd, rail){
   const tlg = document.createElement("div"); tlg.className = "tlGrid"; if(!rail) tlg.id = "tlGrid";   // its lines: by tier (views/range.js)
   frag.insertBefore(tlg, frag.firstChild);
   document.documentElement.style.setProperty("--mon", (8 - parseISO(idxDate(0)).getDay()) % 7);   // the first Monday: where the weeks' lines start
-  if(rail){                                          // the rail's lowest row: the days, as the day view's header (shown open)
-    const row = document.createElement("div"); row.className = "tlRow day-row";
-    appendDayCells(row); frag.appendChild(row);
-    return frag;
-  }
+  if(rail) return frag;
   const hov = document.createElement("div"); hov.className="tlHover"; hov.id="tlHover"; frag.appendChild(hov);
   return frag;
 }

@@ -53,7 +53,8 @@ function morphTo(p){
   $scene.style.setProperty("--p", p);
   applyTiers($scene, ppd);                                         // what is drawn along the days, at this scale (views/range.js)
   $scene.scrollLeft = morph.f * ppd;
-  $tlWrap.style.transform = $dayWrap.style.transform = `translateY(${y}px)`;
+  $tlWrap.style.transform = `translateY(${y}px)`;
+  $dayWrap.style.transform = `translateY(${y - p * UI.canvas.railClip}px)`;   // its header lands on the rail's row of days, under the rows the cap shows
   $canvasView.style.transform = `translateY(${y - morph.floor}px)`;
 }
 
