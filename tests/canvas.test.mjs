@@ -171,13 +171,26 @@ await step('along the days, by scale: labels thin out by tier, never two texts o
     const held = [0.81, 0.81].map(p => { morphTo(p); return getComputedStyle($scene).getPropertyValue('--t-alt'); });
     morphRelease(0);
     const t = tiersFor(CANVAS_CELL);
-    return { overlaps: [...new Set(out)], held, rail: [t.day, t.alt, t.mon, t.kw, t.dayLine, t.weekLine] };
+    return { overlaps: [...new Set(out)], held, rail: [t.day, t.alt, t.mon, t.kw] };
   });
   await settle();
   assert.deepEqual(r.overlaps, [], 'texts overlap at p = ' + r.overlaps.join(', '));
   assert.equal(r.held[0], r.held[1], 'held at a scale, it stays');
-  assert.deepEqual(r.rail, [0, 0, 0, 1, 0, 1], 'the rail: only KW and the weeks\' lines');
-  assert.deepEqual(await q(() => tiersFor(TL_PPD)), { day: 1, alt: 1, mon: 1, kw: 0, dayLine: 1, weekLine: 0 }, 'the week view: every day, as before');
+  assert.deepEqual(r.rail, [0, 0, 0, 1], 'the rail: only the weeks, their KW and lines');
+  assert.deepEqual(await q(() => tiersFor(TL_PPD)), { day: 1, alt: 1, mon: 1, kw: 0 }, 'the week view: every day, as before');
+});
+
+await step('the rail\'s day row is whole even when its rows don\'t fit; the switch lands on it exactly', async () => {
+  await page.mouse.move(700, 885); await page.waitForTimeout(100);       // resting on the rail: it stays open
+  await q(() => mutate(st => { for (let k = 0; k < 8; k++) st.phases.push({ id: 'cap' + k, title: 'Cap ' + k, categoryId: null, start: todayISO(), end: isoDate(addDays(parseISO(todayISO()), 3 + k)) }); }));
+  const r = await q(() => { morphStart(0); morphTo(1); const head = document.getElementById('dayHead').getBoundingClientRect().top; morphSettle(1, 0); return head; });
+  await settle(); await page.waitForTimeout(300);
+  const row = await q(() => { const b = $railDays.querySelector('.day-row').getBoundingClientRect(); return { top: b.top, bottom: b.bottom, clip: UI.canvas.railClip }; });
+  assert.ok(row.clip > 0, 'the rows are cut by the cap');
+  assert.ok(row.bottom <= await q(() => innerHeight) + 0.5, 'the row ends inside the window');
+  assert.equal(Math.round(row.top), Math.round(r), 'the day header lands on it');
+  await page.keyboard.press('Escape'); await settle();
+  for (let k = 0; k < 8; k++) await q(() => undo());
 });
 
 await step('scrolling again while it settles catches it', async () => {

@@ -18,6 +18,7 @@
 /* the hand holds the position: neither view scrolls under it; no snapping, both views hold the same day to the fraction */
 #views:is(.dragging, .held) :is(#scene, #canvasScene){overflow-y:hidden}   /* held: the rest of a gesture that landed goes nowhere */
 #views.dragging #canvasView{z-index:0}          /* both ways: under the week, which is the one moving timeline */
+#views.dragging #dayWrap{z-index:2}             /* its header slides over the band's rows the rail's cap hides (ui/canvas-morph.js) */
 #views.dragging #rail{visibility:hidden}        /* its twin is the band; at p = 1 they are the same pixels */
 /* the rail's row of days has no corner. Its text goes first (one KW at a time), its box covers the days sliding under
    it until only the weeks' labels are left, then clears: never two texts over each other */
@@ -49,8 +50,11 @@
   background:var(--base); border-top:1px solid var(--hairline);
   transition:height .22s var(--soft);
   --sticky-left:12px;
+  display:flex; flex-direction:column;
 }
-#railInner{position:relative}
+#railInner{position:relative; flex:1 1 auto; min-height:0; overflow:clip}   /* the plan rows: what the cap cuts */
+#railDays{flex:none; padding-bottom:env(safe-area-inset-bottom); background:var(--base)}   /* the days: whole, above the phone's home indicator */
+#rail.measuring{height:auto !important}                        /* measured at their own heights */
 #rail .ph-exp{visibility:hidden}                              /* no dropdowns here; kept in place so the pills match the timeline's */
 #rail .ph-handle{display:none}
 /* closed: the months, then every row as a line */
