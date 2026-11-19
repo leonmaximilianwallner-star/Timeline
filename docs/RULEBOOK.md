@@ -221,6 +221,9 @@ One of the levels stacked on the one page, reached by scrolling down. **Never sa
 **Canvas view** · *Leinwand* · `canvas` — the free, endless dot grid at the top. Ideas, phases, groups, links. **Never say:** board, whiteboard, notes.
 *In the app (10 Nov):* the **grid** (`#canvasGrid`): a dot where grid lines would cross, no lines; one cell a day (B.4). Its **floor** (`floor`) is its bottom edge, where the rail sits; it grows upward without end. Desktop first. B.6.1.
 
+**Canvas tab** · *Tab* · `canvasTab` · `canvasTabs` records `{ id, name, order }`
+One sheet of the canvas, like a spreadsheet's (**Max**, 19 Nov): its own ideas, phases, groups and links, its own height. Putting a thing on one tab rather than another is a deliberate fresh start, never a limit. **Left–right is the date, shared by every tab and the week**: a tab switch never jumps in time (**Max**). A tab without a name is "Canvas" (**Max**: the working title). Which tab is shown is device state (`device.canvasTab`). Shown as text at the top of the canvas, the shown one underlined; a tap on it renames it in place; + creates one. Deleting, reordering and colours: not yet. **Never say:** sheet, page, board, workspace.
+
 **Timeline view** · *Zeitleiste* · `timeline` — months and weeks across, endless sideways. Projects, phases, milestones. Its collapsed strip under the canvas is the **rail** (`rail`), still the Zeitleiste, just docked.
 
 **Day view** · *Tagesansicht* · `day` — the hour grid with 3, 5 or 7 day columns (the **density**, `density`). Events and their todos. **Never say:** daily view, calendar view, week view.
