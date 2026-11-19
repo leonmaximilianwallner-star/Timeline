@@ -312,3 +312,8 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **The rail's cap applies to the plan rows only**; the day row is always whole, above the safe area. It was cut whenever the rows exceeded 45 % of the window. *Max*
 - **Lines share their tier's opacity with the labels** (Google Maps): daily lines now leave with their labels at 88 px a day; MIN_LINE_PX is gone. *Max*
 
+## 2026-11-19 · One lane packing for every kind
+- **Projects, milestone chips and open plans pack like phases**, through one function; the per-project row, the single chip row and the second (inline) packer are gone. *Max*
+- **Lanes over all items, not the visible range**: stable while scrolling and through the switch, computed once per redraw. *Claude; Max agreed*
+- **Projects are ordered by start** (the packing's order), no longer by category order. *Claude*
+

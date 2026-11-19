@@ -21,49 +21,54 @@ function buildTimeline(ppd, rail){
   }
   frag.appendChild(mrow);
 
-  /* per-project: spine + milestones, then its phase lanes */
-  /* per-project (dated category): spine bounded by start..end, then its phase lanes */
-  S.categories.filter(c=>c.start && c.end).forEach(p=>{
+  /* projects (dated categories) as blocks, a project's line and its phases, packed into lanes: projects apart in
+     time share one. A project lane is a row of lines, then its phases' lanes: a project's phases stay under it */
+  const projects = S.categories.filter(c => c.start && c.end);
+  const phasesOf = new Map(projects.map(p => [p, S.phases.filter(ph => ph.categoryId === p.id)]));
+  const projLanes = packLanes(projects, p => { const sp = [p, ...phasesOf.get(p)].map(spanOf); return [Math.min(...sp.map(s => s[0])), Math.max(...sp.map(s => s[1]))]; });
+  for(let t = 0; t < projLanes.count; t++){
+    const inLane = projects.filter(p => projLanes.laneOf.get(p) === t);
     const row = document.createElement("div"); row.className = "tlRow projRow";
-    const x = dayX(dayIdx(p.start));
-    const w = `max(26px, ${dayX(diffDays(p.start, p.end))})`;
-    const spine = document.createElement("div"); spine.className = "projSpine colored";
-    spine.style.left = x; spine.style.width = w; spine.style.background = p.color;
-    row.appendChild(spine);
-    const lw = document.createElement("div"); lw.className="projLabelWrap";
-    lw.style.left = x; lw.style.width = w;
-    lw.innerHTML = `<span class="projLabel" data-edit-project="${p.id}" style="color:${p.color}">${esc(p.name)}</span>`;
-    row.appendChild(lw);
-    S.milestones.filter(m=>m.categoryId===p.id).sort((a,b)=>a.date<b.date?-1:1).forEach(m=>{
-      const mx = dayX(dayIdx(m.date)+.5);
-      const dot = document.createElement("div");
-      dot.className = "milestone-dot"+(m.final?" final":"");
-      dot.style.left = mx;
-      dot.dataset.editMilestone = m.id;
-      dot.title = m.title;
-      dot.innerHTML = `<span class="milestone-label">${m.final?"★ ":""}${esc(m.title)}</span>`;
-      row.appendChild(dot);
+    inLane.forEach(p => {
+      const x = dayX(dayIdx(p.start)), w = `max(26px, ${dayX(diffDays(p.start, p.end))})`;
+      const spine = document.createElement("div"); spine.className = "projSpine colored";
+      spine.style.left = x; spine.style.width = w; spine.style.background = p.color;
+      const lw = document.createElement("div"); lw.className = "projLabelWrap";
+      lw.style.left = x; lw.style.width = w;
+      lw.innerHTML = `<span class="projLabel" data-edit-project="${p.id}" style="color:${p.color}">${esc(p.name)}</span>`;
+      row.append(spine, lw);
+      S.milestones.filter(m => m.categoryId === p.id).sort((a,b) => a.date < b.date ? -1 : 1).forEach(m => {
+        const dot = document.createElement("div");
+        dot.className = "milestone-dot" + (m.final ? " final" : "");
+        dot.style.left = dayX(dayIdx(m.date) + .5);
+        dot.dataset.editMilestone = m.id; dot.title = m.title;
+        dot.innerHTML = `<span class="milestone-label">${m.final ? "★ " : ""}${esc(m.title)}</span>`;
+        row.appendChild(dot);
+      });
     });
     frag.appendChild(row);
-    appendPhaseLanes(frag, S.phases.filter(ph=>ph.categoryId===p.id), ppd, rail);
-  });
+    appendPhaseLanes(frag, inLane.flatMap(p => phasesOf.get(p)), ppd, rail);   // apart in time: packed together = packed each
+  }
 
   /* ungrouped: phases tagged with a dateless category, or untagged (frei → grey) */
-  const datedIds = new Set(S.categories.filter(c=>c.start && c.end).map(c=>c.id));
-  appendPhaseLanes(frag, S.phases.filter(ph=>!ph.categoryId || !datedIds.has(ph.categoryId)), ppd, rail);
+  const datedIds = new Set(projects.map(c => c.id));
+  appendPhaseLanes(frag, S.phases.filter(ph => !datedIds.has(ph.categoryId)), ppd, rail);
 
-  /* milestone chips: every milestone not on a project's spine.
+  /* milestone chips: every milestone not on a project's line, in lanes so labels never overlap.
      Colour: its category's; without one, red as before, until colour/category is decided (RULEBOOK B.8). */
-  const xr = document.createElement("div"); xr.className="tlRow milestone-row"; if(!rail) xr.id="milestoneRow";
-  S.milestones.filter(m=>!datedIds.has(m.categoryId)).forEach(m=>{
-    const el = document.createElement("div");
-    el.className = "milestone-chip"; el.style.left = dayX(dayIdx(m.date)+.5);
-    el.style.background = m.categoryId ? cat(m.categoryId).color : "var(--c-red)";
-    el.dataset.editMilestone = m.id;
-    el.innerHTML = `<span class="chip-title">${esc(m.title)}</span><span class="chip-note">${esc(m.note||"")}</span>`;
-    xr.appendChild(el);
-  });
-  frag.appendChild(xr);
+  const chips = S.milestones.filter(m => !datedIds.has(m.categoryId)), chipLanes = packLanes(chips, chipSpan);
+  for(let l = 0; l < chipLanes.count; l++){
+    const xr = document.createElement("div"); xr.className = "tlRow milestone-row";
+    chips.filter(m => chipLanes.laneOf.get(m) === l).forEach(m => {
+      const el = document.createElement("div");
+      el.className = "milestone-chip"; el.style.left = dayX(dayIdx(m.date) + .5);
+      el.style.background = m.categoryId ? cat(m.categoryId).color : "var(--c-red)";
+      el.dataset.editMilestone = m.id;
+      el.innerHTML = `<span class="chip-title">${esc(m.title)}</span><span class="chip-note">${esc(m.note || "")}</span>`;
+      xr.appendChild(el);
+    });
+    frag.appendChild(xr);
+  }
 
   /* today line + overlays */
   const tl = document.createElement("div"); tl.className="todayLine";
@@ -85,7 +90,7 @@ function renderTimeline(){
 
 function appendPhaseLanes(frag, phases, ppd, rail){
   if(!phases.length) return;
-  const { count: nLanes, laneOf } = packLanes(phases);
+  const { count: nLanes, laneOf } = packLanes(phases, spanOf);
   /* group phases by their packed lane so each lane row owns its own phase dropdown rows */
   const byLane = Array.from({length:nLanes}, ()=>[]);
   phases.forEach(ph => byLane[laneOf.get(ph)].push(ph));
@@ -115,26 +120,19 @@ function appendPhaseLanes(frag, phases, ppd, rail){
     if(rail) continue;                                 // the rail has no dropdowns
     /* the open phase's plan, right under its lane: one cell per day of the phase, on the day columns
        (Max, 10 Nov, "Fahrplan"). Plans that don't overlap sideways share a row (21 Oct) */
-    const rows = [];
-    byLane[l].filter(ph => device.openPhases.includes(ph.id))
-      .sort((a,b) => a.start < b.start ? -1 : 1)
-      .forEach(ph => {
-        const x = dayIdx(ph.start)*ppd, n = diffDays(ph.start, ph.end);
-        let row = rows.find(r => r.right <= x);
-        if(!row){
-          row = { right: 0, el: document.createElement("div") };
-          row.el.className = "tlRow dropdown-row";
-          rows.push(row); frag.appendChild(row.el);
-        }
-        row.right = x + n*ppd;
-        const anchor = document.createElement("div"); anchor.className="dropdown-anchor";
-        anchor.style.marginLeft = dayX(dayIdx(ph.start));
-        const bb = document.createElement("div");
-        bb.className = "dropdown plan" + (UI.dropdownOpening===ph.id ? " opening" : "");   // only the one just opened animates
-        bb.dataset.dropdown = ph.id;
-        bb.innerHTML = planHTML(ph, n, ppd);
-        anchor.appendChild(bb); row.el.appendChild(anchor);
-      });
+    const open = byLane[l].filter(ph => device.openPhases.includes(ph.id)), plans = packLanes(open, spanOf);
+    const rows = Array.from({ length: plans.count }, () => {
+      const el = document.createElement("div"); el.className = "tlRow dropdown-row"; frag.appendChild(el); return el;
+    });
+    open.forEach(ph => {
+      const anchor = document.createElement("div"); anchor.className = "dropdown-anchor";
+      anchor.style.marginLeft = dayX(dayIdx(ph.start));
+      const bb = document.createElement("div");
+      bb.className = "dropdown plan" + (UI.dropdownOpening === ph.id ? " opening" : "");   // only the one just opened animates
+      bb.dataset.dropdown = ph.id;
+      bb.innerHTML = planHTML(ph, diffDays(ph.start, ph.end), ppd);
+      anchor.appendChild(bb); rows[plans.laneOf.get(ph)].appendChild(anchor);
+    });
   }
 }
 
