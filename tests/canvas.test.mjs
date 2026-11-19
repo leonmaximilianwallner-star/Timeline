@@ -291,6 +291,35 @@ await step('the pull waits while an editor is open', async () => {
   await page.keyboard.press('Escape'); await page.waitForTimeout(400);
 });
 
+await step('one packing for every kind: projects apart share a row, overlapping ones stack; chips too; the same lanes in band and rail', async () => {
+  const r = await q(() => {
+    const d = n => isoDate(addDays(parseISO(todayISO()), n));
+    mutate(st => {
+      st.categories.push({ id: 'pA', name: 'Alt', color: '#6498c0', start: d(-60), end: d(-40) },
+                         { id: 'pB', name: 'Neu', color: '#c08a64', start: d(-30), end: d(-10) },
+                         { id: 'pC', name: 'Quer', color: '#8ac064', start: d(-35), end: d(-20) });
+      st.phases.push({ id: 'phA', title: 'A1', categoryId: 'pA', start: d(-58), end: d(-50) },
+                     { id: 'phB', title: 'B1', categoryId: 'pB', start: d(-28), end: d(-20) });
+      st.milestones.push({ id: 'm1', title: 'Eins', date: d(-80) }, { id: 'm2', title: 'Zwei', date: d(-79) }, { id: 'm3', title: 'Drei', date: d(-70) });
+    });
+    drawCanvas();
+    const rowOf = (root, sel) => [...root.children].indexOf(root.querySelector(sel).closest('.tlRow'));
+    const rows = root => ({ A: rowOf(root, '[data-edit-project="pA"]'), B: rowOf(root, '[data-edit-project="pB"]'), C: rowOf(root, '[data-edit-project="pC"]'),
+      m1: rowOf(root, '[data-edit-milestone="m1"]'), m2: rowOf(root, '[data-edit-milestone="m2"]'), m3: rowOf(root, '[data-edit-milestone="m3"]'),
+      phB: rowOf(root, '[data-phase="phB"]') });
+    const out = { band: rows($tlInner.firstElementChild), rail: rows($railInner.firstElementChild) };
+    for (let k = 0; k < 3; k++) undo();
+    return out;
+  });
+  const b = r.band;
+  assert.equal(b.A, b.C, 'apart in time (A ends before C starts): one row');
+  assert.notEqual(b.C, b.B, 'overlapping (B, C): stacked');
+  assert.ok(b.phB > b.B, 'a project\'s phases stay under its line');
+  assert.notEqual(b.m1, b.m2, 'chips a day apart: stacked');
+  assert.equal(b.m1, b.m3, 'chips far apart: one row');
+  assert.deepEqual(r.rail, b, 'the same lanes at the rail\'s scale');
+});
+
 await step('no page errors', async () => { assert.deepEqual(errors, []); });
 
 await browser.close(); server.close();

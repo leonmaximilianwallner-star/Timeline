@@ -441,6 +441,12 @@ monospace → DM Sans with tabular figures
 - Defaults when placed in time: a phase gets 14 days; a milestone, a block or a step 1 day; an event from a step 1 hour.
 - Relative wording in editors and settings: Heute · Morgen · Gestern · In n Tagen · Noch n Tage · Vor n Tagen (`dayWords`, `spanWords` in `core/dates.js`).
 
+### B.4.1 Lanes *(19 Nov; Max)*
+- **One packing for everything on the timeline** (`packLanes(items, span)`, `views/timeline/lanes.js`): by start, each item takes the lowest lane whose last item has ended. Phases, projects, milestone chips and open plans all go through it.
+- **Projects pack as blocks** (the project's line and its phases): projects apart in time share a row of lines, and each one's phases stay under it.
+- **A milestone chip takes 3 days** (`CHIP_DAYS`, its label's width at the rail's scale), so the lanes are the same at every scale.
+- **Over all items, never the visible range:** an item keeps its lane while scrolling and through the switch. A row exists only when something is in it.
+
 ## B.5 Zoom (canvas)
 
 10–100 %, continuous; what is shown changes at four levels (thresholds are proposals, to tune by eye):
