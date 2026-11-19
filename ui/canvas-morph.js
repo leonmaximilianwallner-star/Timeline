@@ -26,6 +26,7 @@ function morphStart(from){
   $scene.scrollTop = 0;
   $scene.scrollLeft = morph.f * TL_PPD;
   canvasScrollToDay(morph.f);
+  $canvasDots.style.setProperty("--sl", $canvasScene.scrollLeft + "px");   // the dots' window (styles/canvas.css)
   morph.floor = $railInner.getBoundingClientRect().top - $views.getBoundingClientRect().top;   // the band lands on the rail's rows
   $tlWrap.querySelectorAll(".dropdown-row").forEach(r => r.style.setProperty("--h", r.offsetHeight + "px"));   // it closes from here (styles/canvas.css)
   morph.y = from * morph.floor;
@@ -53,6 +54,11 @@ function morphTo(p){
   $scene.style.setProperty("--p", p);
   applyTiers($scene, ppd);                                         // what is drawn along the days, at this scale (views/range.js)
   $scene.scrollLeft = morph.f * ppd;
+  const dots = tiersFor(ppd, MIN_DOT_PX);                          // the dots: same scale, their own spacing …
+  $canvasDots.style.setProperty("--ppd", ppd + "px"); applyTiers($canvasDots, ppd, MIN_DOT_PX);
+  $canvasDots.classList.toggle("half", dots.half > 0); $canvasDots.classList.toggle("quarter", dots.quarter > 0);
+  const gx = railW() - $scene.scrollLeft;                           // … from the band's day 0, in the dots' window: one system
+  $canvasDots.style.setProperty("--gx", (gx % ppd + ppd) % ppd + "px");
   $tlWrap.style.transform = `translateY(${y}px)`;
   $dayWrap.style.transform = `translateY(${y - p * UI.canvas.railClip}px)`;   // its header lands on the rail's row of days, under the rows the cap shows
   $canvasView.style.transform = `translateY(${y - morph.floor}px)`;
@@ -91,7 +97,8 @@ function morphSettle(to, v){
 function morphEnd(to){
   morph.on = false; morph.gen++;
   [$tlWrap, $dayWrap, $canvasView].forEach(el => { el.style.transform = ""; });
-  for(const k of ["--ppd", "--p", ...Object.keys(tiersFor(1)).map(k => "--t-" + k)]) $scene.style.removeProperty(k);
+  for(const k of ["--ppd", "--p", "--gx", "--sl", ...Object.keys(tiersFor(1)).map(k => "--t-" + k)]) [$scene, $canvasDots].forEach(el => el.style.removeProperty(k));
+  $canvasDots.classList.remove("half", "quarter");
   $views.classList.remove("dragging");
   UI.canvas.active = to === 1;
   if(to === 1){

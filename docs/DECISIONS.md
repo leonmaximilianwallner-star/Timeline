@@ -317,3 +317,8 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **Lanes over all items, not the visible range**: stable while scrolling and through the switch, computed once per redraw. *Claude; Max agreed*
 - **Projects are ordered by start** (the packing's order), no longer by category order. *Claude*
 
+## 2026-11-19 · The canvas's dots follow the switch's scale
+- **Scope (a): the switch only**; canvas zoom comes with canvas content. *Max*
+- **Stateless fades, one rule** (`tiersFor(ppd, min)`, two finer tiers); no hysteresis. *Claude; Max agreed*
+- **The dots are one CSS layer of their own** (`#canvasDots`): per-frame variables restyle nothing else; finer layers only while shown; during the switch only the visible window. Cost: ~6–8 ms a frame more in the software-drawn test browser (repainting the dots); expected far less with a GPU. *Claude*
+

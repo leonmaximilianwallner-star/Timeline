@@ -22,6 +22,7 @@ const $views       = document.getElementById("views");
 const $canvasView  = document.getElementById("canvasView");
 const $canvasScene = document.getElementById("canvasScene");
 const $canvasGrid = document.getElementById("canvasGrid");
+const $canvasDots  = document.getElementById("canvasDots");    // the dots' own layer (styles/canvas.css)
 const $rail        = document.getElementById("rail");
 const $railInner   = document.getElementById("railInner");
 const $railDays    = document.getElementById("railDays");     // the rail's lowest row, below its capped rows: always whole
