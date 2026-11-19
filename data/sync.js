@@ -105,7 +105,7 @@ async function syncNow(){
     if(firstTime && rows.length){
       /* another device came first: take the server's plan, keep ours as a backup */
       try{ localStorage.setItem(BACKUP_KEY, JSON.stringify(S)); }catch(_){}
-      S = planFromRows(rows);
+      S = toCurrentShape(planFromRows(rows));          // today's guarantees (a canvas tab) hold for the server's plan too
       device.syncSentUpTo = new Date().toISOString();  // nothing of the old local plan goes up
       afterRemoteChange();
     } else if(applyRows(S, rows)){

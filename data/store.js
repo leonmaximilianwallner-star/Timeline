@@ -82,6 +82,9 @@ function toCurrentShape(d, takeDeviceState){
     d.steps = d.steps || [];
     d.version = 8;
   }
+  /* the canvas has at least one tab (views/canvas/tabs.js). The same id and stamp on every device, so devices that
+     each create it agree on one record, and any rename (stamped now) wins over it */
+  if(!(d.canvasTabs||[]).length) d.canvasTabs = [{ id:"canvas", name:"Canvas", order:0, updatedAt:"1970-01-01T00:00:00.000Z" }];
   RECORD_LISTS.forEach(list => (d[list]||[]).forEach(r => { if(!r.updatedAt) r.updatedAt = now; }));
   d.deleted = d.deleted || {};
   return d;

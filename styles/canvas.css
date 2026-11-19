@@ -31,6 +31,18 @@
 #views.dragging #tlWrap .dropdown-row{height:calc(var(--h) * (1 - var(--p))); padding-block:calc(8px * (1 - var(--p))); opacity:calc(1 - 2 * var(--p)); overflow:clip; box-sizing:border-box}
 :root[data-view="canvas"] #fab, :root[data-view="canvas"] #addMenu{visibility:hidden}   /* add mode belongs to the week */
 
+/* the canvas's tabs (views/canvas/tabs.js): text only, the shown one underlined; scrolls sideways, never wraps */
+#canvasTabs{position:absolute; top:0; left:0; right:0; z-index:1; height:var(--row-h); display:flex; align-items:center;
+  overflow-x:auto; overflow-y:hidden; scrollbar-width:none; overscroll-behavior-x:contain;
+  background:var(--base); border-bottom:1px solid var(--hairline)}
+#canvasTabs::-webkit-scrollbar{display:none}
+.canvas-tab{flex:none; box-sizing:border-box; height:100%; max-width:240px; padding:0 12px;   /* one long name can't fill a phone */
+  border:0; border-bottom:2px solid transparent; background:none; font:inherit; font-size:var(--fs-body); color:var(--fg-muted);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:color .15s}
+.canvas-tab:hover, .canvas-tab.active{color:var(--text)}
+.canvas-tab.active{font-weight:500; border-bottom-color:var(--text)}
+input.canvas-tab{outline:none; border-radius:0; field-sizing:content; min-width:4ch}   /* as wide as its text (where supported; else its size) */
+#canvasTabs .cbtn{margin-left:4px}
 #canvasScene{position:absolute; inset:0; overflow:auto; overscroll-behavior:contain; outline:none;
   overflow-anchor:none}                                       /* the rail opening or closing must never move the canvas (scroll anchoring did) */
 /* the grid: a dot where its lines would cross, one cell a day; its floor is its bottom edge */

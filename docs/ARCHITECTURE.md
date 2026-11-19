@@ -359,6 +359,7 @@ views/
   timeline/lanes.js         packs phases into lanes
   timeline/render.js        draws the timeline view, at any scale: the week's, and the canvas's rail (buildTimeline)
   canvas/render.js          the canvas view: its grid, its floor, its rail (§6.1)
+  canvas/tabs.js            the canvas's tabs: the bar, switching, renaming in place
   day/render.js             draws the day view
   focus/render.js           the focus view: one day over the app, its listeners, the back gesture
 

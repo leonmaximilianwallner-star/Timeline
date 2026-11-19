@@ -69,6 +69,7 @@ function drawCanvas(){
   applyTiers($rail, CANVAS_CELL);                                  // the rail's labels and lines at its scale: KW, weeks
   fitLabels(frag);
   measureRail();
+  renderCanvasTabs();                                              // the tabs' names may have changed (views/canvas/tabs.js)
 }
 
 /* the rail's two heights: closed (months, then lines) and open (the timeline's own rows), each capped */

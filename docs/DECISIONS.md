@@ -322,3 +322,12 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **Stateless fades, one rule** (`tiersFor(ppd, min)`, two finer tiers); no hysteresis. *Claude; Max agreed*
 - **The dots are one CSS layer of their own** (`#canvasDots`): per-frame variables restyle nothing else; finer layers only while shown; during the switch only the visible window. Cost: ~6–8 ms a frame more in the software-drawn test browser (repainting the dots); expected far less with a GPU. *Claude*
 
+## 2026-11-19 · Canvas tabs
+- **The canvas holds several sheets, like a spreadsheet's tabs**; choosing a tab is a deliberate fresh start, not a limit. RULEBOOK A.8 (Canvas tab). *Max*
+- **Built before canvas content exists**: today a tab owns only its name and its height; ideas will carry a `tabId` when they arrive. *Max (option A), against Claude's recommendation to wait*
+- **Tabs are records (`canvasTabs`), not one blob**: synced like every other record, so two devices editing offline lose nothing. *Max*
+- **The shown tab is per device; left–right is shared** by every tab and the week (no jump in time). Up–down is remembered per tab while the app runs; a switch from the week still lands on the floor (B.6.1 unchanged). *Max; Claude (the up–down detail)*
+- **The first tab has a fixed id (`canvas`) and the oldest possible stamp**: every device that creates it creates the same record, and any rename wins over it. It is guaranteed on every load and on a plan taken from the server, so no data version was needed (only a list is added). *Claude*
+- **Undoing a created tab shows the first tab**, not the one before it: the fallback for a missing tab, no extra state. *Claude*
+- **Known:** wheel-scrolling over the tab bar doesn't move the canvas (it is not part of the scroller). *Claude*
+
