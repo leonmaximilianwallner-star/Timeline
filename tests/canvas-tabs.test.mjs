@@ -112,10 +112,50 @@ await step('the tab bar scrolls sideways on a phone, never wraps', async () => {
   const p = await open(phone); await enter(p);
   await p.evaluate(() => mutate(plan => { for (let i = 1; i < 9; i++) plan.canvasTabs.push({ id: 't' + i, name: 'Ein langer Name ' + i, order: i }); }));
   const box = await p.$eval('#canvasTabs', el => ({ h: el.offsetHeight, sw: el.scrollWidth, cw: el.clientWidth }));
-  assert.equal(box.h, 44);
+  assert.equal(box.h, 36, 'as tall as the header buttons');
   assert.ok(box.sw > box.cw, 'overflows sideways');
   assert.equal(await p.$eval('#canvasTabs', el => el.scrollHeight === el.clientHeight), true, 'one line: nothing below it');
   await phone.close();
+});
+
+await step('in the header: no extra row; short of room the others become letter circles, then the strip scrolls; no flicker', async () => {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const p = await open(ctx); await enter(p);
+  const st = () => p.evaluate(() => +$canvasTabs.dataset.state);
+  assert.equal(await p.evaluate(() => $canvasTabs.parentElement.id), 'header');
+  assert.equal(await p.evaluate(() => $canvasTabs.offsetHeight), 36);
+  assert.equal(await p.evaluate(() => document.getElementById('header').offsetHeight), await p.evaluate(() => { document.documentElement.removeAttribute('data-view'); const h = document.getElementById('header').offsetHeight; document.documentElement.dataset.view = 'canvas'; return h; }), 'the header is as tall as in the week');
+  const add = n => p.evaluate(n => mutate(plan => { const o = plan.canvasTabs.length; for (let i = 0; i < n; i++) plan.canvasTabs.push({ id: 'k' + (o + i), name: 'Seminararbeit ' + (o + i), order: o + i }); }), n);
+  await add(3); assert.equal(await st(), 0);
+  let n = 3; while (await st() === 0 && n < 40) { await add(1); n++; }
+  assert.equal(await st(), 1, 'circles after ' + n);
+  const look = await p.$$eval('#canvasTabs .canvas-tab', els => els.map(e => ({ w: e.offsetWidth, a: e.classList.contains('active'), l: getComputedStyle(e, '::before').content })));
+  assert.ok(look.filter(x => !x.a).every(x => x.w === 36 && x.l === '"S"'), 'others: 36 px circles with their letter');
+  assert.ok(look.find(x => x.a).w > 36, 'the shown tab stays a pill');
+  while (await st() === 1 && n < 200) { await add(5); n += 5; }
+  assert.equal(await st(), 2);
+  assert.equal(await p.evaluate(() => Math.round(document.getElementById('wordmark').getBoundingClientRect().width)), 79, 'the wordmark keeps its size (as in the week)');
+  const last = await p.evaluate(() => canvasTabList().at(-1).id);
+  await p.evaluate(id => document.querySelector(`[data-id="${id}"]`).click(), last);
+  assert.equal(await p.evaluate(() => { const a = $canvasTabs.querySelector('.active').getBoundingClientRect(), s = $canvasTabs.getBoundingClientRect(); return a.left >= s.left - 1 && a.right <= s.right + 1; }), true, 'the shown tab scrolled into view');
+  assert.equal(await p.evaluate(() => $canvasTabs.classList.contains('fade-l')), true);
+  /* rename and + in the scrolling state */
+  await p.click('#canvasTabs .canvas-tab.active'); await p.keyboard.type('Ende'); await p.keyboard.press('Enter');
+  assert.equal(await p.evaluate(() => $canvasTabs.querySelector('.active').textContent), 'Ende');
+  /* back down to a few tabs, then resize 1 px at a time across the edge: each state is entered once */
+  await p.evaluate(() => mutate(plan => { plan.canvasTabs.splice(6); }));
+  const seen = [];
+  for (let w = 1440; w >= 700; w -= 4) { await p.setViewportSize({ width: w, height: 900 }); await p.waitForTimeout(0); seen.push(await st()); }
+  for (let w = 700; w <= 1440; w += 4) { await p.setViewportSize({ width: w, height: 900 }); await p.waitForTimeout(0); seen.push(await st()); }
+  const changes = seen.filter((s, i) => i && s !== seen[i - 1]).length;
+  assert.ok(new Set(seen).size >= 2, 'the states were crossed: ' + [...new Set(seen)]);
+  assert.ok(changes <= 2 * (new Set(seen).size - 1), 'no back and forth: ' + changes + ' changes');
+  /* wobble the window across the edge where it changed: within the spare room, the state holds */
+  let edge = 1440; for (let w = 1440; w >= 700; w -= 2) { await p.setViewportSize({ width: w, height: 900 }); await p.waitForTimeout(0); if (await st() !== 0) { edge = w; break; } }
+  const held = [];
+  for (const d of [4, -2, 6, 0, 8, -4, 10]) { await p.setViewportSize({ width: edge + d, height: 900 }); await p.waitForTimeout(0); held.push(await st()); }
+  assert.deepEqual([...new Set(held)], [1], 'held within ' + 'the spare 16 px: ' + held);
+  await ctx.close();
 });
 
 /* two devices: what one sends, the other applies (data/merge.js); the transport itself is tests/sync.test.mjs */

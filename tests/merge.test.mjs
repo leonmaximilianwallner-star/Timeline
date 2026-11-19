@@ -77,8 +77,8 @@ const tests = {
   },
   'rows of a list this version does not know are left alone'() {
     const p = plan();
-    assert.equal(applyRows(p, [row({ list: 'ideas', id: 'i1' })]), false);
-    assert.equal(p.ideas, undefined);
+    assert.equal(applyRows(p, [row({ list: 'piles', id: 'i1' })]), false);   // a list no version has yet
+    assert.equal(p.piles, undefined);
   },
 };
 

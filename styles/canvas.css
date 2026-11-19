@@ -29,20 +29,33 @@
 #views.dragging #scene{scroll-snap-type:none}
 /* an open phase's plan is the day's detail: it closes as the days narrow; the rail has none */
 #views.dragging #tlWrap .dropdown-row{height:calc(var(--h) * (1 - var(--p))); padding-block:calc(8px * (1 - var(--p))); opacity:calc(1 - 2 * var(--p)); overflow:clip; box-sizing:border-box}
-:root[data-view="canvas"] #fab, :root[data-view="canvas"] #addMenu{visibility:hidden}   /* add mode belongs to the week */
+:root[data-view="canvas"] #addMenu{visibility:hidden}   /* the add menu belongs to the week; the add button draws here (input/canvas-draw.js) */
+:root[data-draw] #canvasScene{touch-action:none}            /* draw mode: a finger draws, never scrolls; set before the gesture */
+:root[data-draw] #canvasGrid{cursor:crosshair}
 
-/* the canvas's tabs (views/canvas/tabs.js): text only, the shown one underlined; scrolls sideways, never wraps */
-#canvasTabs{position:absolute; top:0; left:0; right:0; z-index:1; height:var(--row-h); display:flex; align-items:center;
-  overflow-x:auto; overflow-y:hidden; scrollbar-width:none; overscroll-behavior-x:contain;
-  background:var(--base); border-bottom:1px solid var(--hairline)}
+/* the canvas's tabs (views/canvas/tabs.js), in the header row where the spacer is, while the canvas is the view.
+   36px like the header's buttons: the shown tab a filled pill, the others plain; short of room, the others are
+   outlined circles with their first letter (data-state 1), then the strip scrolls (2) */
+#canvasTabs{display:none; flex:1 1 0; min-width:0;   /* basis 0: only the free room, the wordmark and date never shrink */
+  gap:4px; align-items:center;
+  overflow-x:auto; overflow-y:hidden; scrollbar-width:none; overscroll-behavior-x:contain}
 #canvasTabs::-webkit-scrollbar{display:none}
-.canvas-tab{flex:none; box-sizing:border-box; height:100%; max-width:240px; padding:0 12px;   /* one long name can't fill a phone */
-  border:0; border-bottom:2px solid transparent; background:none; font:inherit; font-size:var(--fs-body); color:var(--fg-muted);
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:color .15s}
-.canvas-tab:hover, .canvas-tab.active{color:var(--text)}
-.canvas-tab.active{font-weight:500; border-bottom-color:var(--text)}
-input.canvas-tab{outline:none; border-radius:0; field-sizing:content; min-width:4ch}   /* as wide as its text (where supported; else its size) */
-#canvasTabs .cbtn{margin-left:4px}
+:root[data-view="canvas"] #canvasTabs{display:flex}
+:root[data-view="canvas"] #header .spacer{display:none}       /* the strip takes its room: the buttons stay at the right edge */
+#canvasTabs.fade-l{-webkit-mask-image:linear-gradient(to right, transparent, #000 16px); mask-image:linear-gradient(to right, transparent, #000 16px)}
+#canvasTabs.fade-r{-webkit-mask-image:linear-gradient(to left, transparent, #000 16px); mask-image:linear-gradient(to left, transparent, #000 16px)}
+#canvasTabs.fade-l.fade-r{-webkit-mask-image:linear-gradient(to right, transparent, #000 16px, #000 calc(100% - 16px), transparent); mask-image:linear-gradient(to right, transparent, #000 16px, #000 calc(100% - 16px), transparent)}
+.canvas-tab{flex:none; box-sizing:border-box; height:var(--round-btn); max-width:240px; padding:0 14px; border:0; border-radius:9999px;
+  background:transparent; font:inherit; font-size:var(--fs-body); color:var(--fg-muted);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:background .15s, color .15s}
+.canvas-tab > span{pointer-events:none}
+.canvas-tab:hover{background:color-mix(in srgb, var(--text) 8%, transparent); color:var(--text)}   /* as the header's buttons */
+.canvas-tab.active{background:var(--surface); color:var(--text); font-weight:500}
+#canvasTabs:not([data-state="0"]) .canvas-tab:not(.active){width:var(--round-btn); padding:0; border:1px solid currentColor}   /* outlined, as a round button */
+#canvasTabs:not([data-state="0"]) .canvas-tab:not(.active) > span{display:none}
+#canvasTabs:not([data-state="0"]) .canvas-tab:not(.active)::before{content:attr(data-letter); font-size:var(--fs-small); font-weight:500}
+input.canvas-tab{outline:none; field-sizing:content; min-width:4ch}   /* as wide as its text (where supported; else its size) */
+
 #canvasScene{position:absolute; inset:0; overflow:auto; overscroll-behavior:contain; outline:none;
   overflow-anchor:none}                                       /* the rail opening or closing must never move the canvas (scroll anchoring did) */
 /* the grid: a dot where its lines would cross, one cell a day; its floor is its bottom edge */
@@ -99,3 +112,10 @@ input.canvas-tab{outline:none; border-radius:0; field-sizing:content; min-width:
 #rail.measuring, #rail.measuring *{transition:none !important}
 
 /* text keeps its shape: labels step out while the timeline is stretched between the two scales (ui/canvas-morph.js) */
+
+/* the canvas's ideas (views/canvas/render.js): on the cells, corners on the dots; frei grey until they get a category.
+   One row is a pill, more a squircle, as phases and events. The preview is the dashed outline of every create (day, timeline) */
+#canvasIdeas{position:absolute; inset:0; pointer-events:none}
+.idea{position:absolute; box-sizing:border-box; background:var(--c-gray); border-radius:var(--r-small)}
+.idea.pill{border-radius:9999px}
+.idea.preview{background:transparent; border:1.5px dashed var(--fg-muted)}
