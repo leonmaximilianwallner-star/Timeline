@@ -62,21 +62,24 @@ const dayX = (days, px = 0) => `calc(${days} * var(--ppd) + ${px}px)`;
    apart, gone at the minimum, faded between: a function of the scale alone, so holding still holds steady.
    Coarser tiers are subsets of finer ones (Mondays are in Mon/Wed/Fri, which are days): nothing moves sideways. ── */
 const MIN_LABEL_PX = 88;       // closest two of a tier may sit (px), labels and lines alike. At the canvas's 40 px a day only the weeks are left
+const MIN_DOT_PX   = 32;       // the canvas's dots: closest two may sit (px). A tier is whole from 40 (one canvas day), so the grid stays 32–80 px
 const TIER_FADE    = 0.2;      // share above the minimum over which a tier fades
 const tierOpacity = (spacing, min) => Math.min(1, Math.max(0, (spacing - min) / (min * TIER_FADE)));
 /* the tiers at a scale (px a day): every opacity the days' labels and lines need */
-function tiersFor(ppd){
-  const alt = tierOpacity(2 * ppd, MIN_LABEL_PX);
+function tiersFor(ppd, min = MIN_LABEL_PX){
+  const alt = tierOpacity(2 * ppd, min);
   return {
-    day: tierOpacity(ppd, MIN_LABEL_PX),                              // Tue, Thu, Sat, Sun: their labels and lines
+    quarter: tierOpacity(ppd / 4, min),                                // inside a day, halving is free: 6 h …
+    half: tierOpacity(ppd / 2, min),                                   // … 12 h (the canvas's dots, zoomed in)
+    day: tierOpacity(ppd, min),                              // Tue, Thu, Sat, Sun: their labels and lines
     alt,                                                               // Wed, Fri: days two apart at least
-    mon: tierOpacity(2 * ppd, MIN_LABEL_PX * (1 + TIER_FADE)),         // a Monday's day label: gone first …
-    kw: Math.min(1 - alt, tierOpacity(7 * ppd, MIN_LABEL_PX)),         // … then its KW comes, never both at once
+    mon: tierOpacity(2 * ppd, min * (1 + TIER_FADE)),         // a Monday's day label: gone first …
+    kw: Math.min(1 - alt, tierOpacity(7 * ppd, min)),         // … then its KW comes, never both at once
   };                                                                   // a Monday's line is the week's: it stays
 }
 /* hands the tiers to the styles of a place (#scene while the scale changes, #rail at its own scale) */
-function applyTiers(el, ppd){
-  const t = tiersFor(ppd);
+function applyTiers(el, ppd, min){
+  const t = tiersFor(ppd, min);
   for(const k in t) el.style.setProperty("--t-" + k, t[k]);
 }
 function railW(){ return parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--rail-w")) || 68; }

@@ -36,11 +36,26 @@
 /* the grid: a dot where its lines would cross, one cell a day; its floor is its bottom edge */
 #canvasGrid{
   position:relative; display:flex; flex-direction:column; justify-content:flex-end; cursor:grab;
-  background-image:radial-gradient(circle, var(--canvas-dot) 1.25px, transparent 1.75px);
-  background-size:var(--cell) var(--cell);
-  background-position:calc(var(--cell) / -2) calc(var(--cell) / -2);
 }
 #canvasGrid.panning{cursor:grabbing}
+/* the dots: their own empty layer, so the switch's per-frame scale restyles nothing else (ui/canvas-morph.js).
+   One dot a day, then 12 h, then 6 h as the days widen (views/range.js tiersFor, at MIN_DOT_PX): the timeline's own scale
+   (--ppd) while the switch runs, the canvas's at rest, from the band's day 0 (--gx). Rows don't scale.
+   A finer layer is drawn only while its tier shows (.half, .quarter): each costs ~4 ms a frame */
+#canvasDots{position:absolute; inset:0; pointer-events:none;
+  --gp:var(--ppd, var(--cell)); --gy:calc(var(--cell) / -2);
+  --day:radial-gradient(circle, color-mix(in srgb, var(--canvas-dot) calc(var(--t-day, 1) * 100%), transparent) 1.25px, transparent 1.75px);
+  --half:radial-gradient(circle, color-mix(in srgb, var(--canvas-dot) calc(var(--t-half, 0) * 100%), transparent) 1.25px, transparent 1.75px);
+  --quarter:radial-gradient(circle, color-mix(in srgb, var(--canvas-dot) calc(var(--t-quarter, 0) * 100%), transparent) 1.25px, transparent 1.75px);
+  background-image:var(--day);
+  background-size:var(--gp) var(--cell);
+  background-position:calc(var(--gx, 0px) - var(--gp) / 2) var(--gy);
+}
+#views.dragging #canvasDots{top:auto; left:var(--sl); right:auto; width:100vw; height:100vh}   /* while the switch runs: only the window it can be seen through (the canvas doesn't scroll then); the whole width cost 8 ms a frame */
+#canvasDots.half{background-image:var(--day), var(--half); background-size:var(--gp) var(--cell), var(--gp) var(--cell);
+  background-position:calc(var(--gx, 0px) - var(--gp) / 2) var(--gy), var(--gx, 0px) var(--gy)}
+#canvasDots.quarter{background-image:var(--day), var(--half), var(--quarter); background-size:var(--gp) var(--cell), var(--gp) var(--cell), calc(var(--gp) / 2) var(--cell);
+  background-position:calc(var(--gx, 0px) - var(--gp) / 2) var(--gy), var(--gx, 0px) var(--gy), var(--gx, 0px) var(--gy)}
 #canvasFloor{position:sticky; bottom:0; height:0; flex:0 0 auto}   /* pinned to the floor, moves sideways with the canvas */
 
 /* the rail: the timeline at the canvas's scale. overflow:clip, not hidden: hidden would make it a scroller

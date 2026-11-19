@@ -177,7 +177,7 @@ await step('along the days, by scale: labels thin out by tier, never two texts o
   assert.deepEqual(r.overlaps, [], 'texts overlap at p = ' + r.overlaps.join(', '));
   assert.equal(r.held[0], r.held[1], 'held at a scale, it stays');
   assert.deepEqual(r.rail, [0, 0, 0, 1], 'the rail: only the weeks, their KW and lines');
-  assert.deepEqual(await q(() => tiersFor(TL_PPD)), { day: 1, alt: 1, mon: 1, kw: 0 }, 'the week view: every day, as before');
+  assert.deepEqual(await q(() => { const t = tiersFor(TL_PPD); return [t.day, t.alt, t.mon, t.kw]; }), [1, 1, 1, 0], 'the week view: every day, as before');
 });
 
 await step('the rail\'s day row is whole even when its rows don\'t fit; the switch lands on it exactly', async () => {
@@ -191,6 +191,24 @@ await step('the rail\'s day row is whole even when its rows don\'t fit; the swit
   assert.equal(Math.round(row.top), Math.round(r), 'the day header lands on it');
   await page.keyboard.press('Escape'); await settle();
   for (let k = 0; k < 8; k++) await q(() => undo());
+});
+
+await step('the canvas dots follow the switch\'s scale: a dot a day at the canvas, 12 h dots as the days widen, from the band\'s day 0', async () => {
+  const r = await q(() => {
+    morphStart(0);
+    const at = p => { morphTo(p); const t = tiersFor(parseFloat($canvasDots.style.getPropertyValue('--ppd')), MIN_DOT_PX);
+      return { ppd: $canvasDots.style.getPropertyValue('--ppd'), half: +t.half.toFixed(2), day: t.day, gx: parseFloat($canvasDots.style.getPropertyValue('--gx')) }; };
+    const out = { mid: at(0.5), end: at(1) };
+    out.dayAt = ((railW() - $scene.scrollLeft) % parseFloat(out.end.ppd) + 40) % 40;
+    morphRelease(0);
+    return out;
+  });
+  await settle();
+  assert.equal(r.end.ppd, '40px', 'at the canvas: its own scale');
+  assert.deepEqual([r.end.day, r.end.half], [1, 0], 'at the canvas: one dot a day, nothing between');
+  assert.equal(r.mid.half, 1, 'halfway (105 px a day): the 12 h dots are in');
+  assert.ok(Math.abs(r.end.gx - r.dayAt) < 0.01, 'anchored on the band\'s day 0');
+  assert.equal(await q(() => $canvasDots.style.getPropertyValue('--ppd') + $canvasDots.style.getPropertyValue('--gx')), '', 'nothing left behind');
 });
 
 await step('scrolling again while it settles catches it', async () => {
