@@ -13,7 +13,7 @@ function setAddMode(on){
   $addMenu.inert = !on;
   if(!on){ hideHover(); }
 }
-$fab.addEventListener("click", ()=> setAddMode(!UI.addMode));
+$fab.addEventListener("click", ()=> UI.canvas.active ? setDrawMode(!UI.drawMode) : setAddMode(!UI.addMode));   // one button: in the canvas it draws (input/canvas-draw.js)
 
 function hideHover(){
   const h=document.getElementById("hoverLine"), l=document.getElementById("hoverLab"), t=document.getElementById("tlHover");

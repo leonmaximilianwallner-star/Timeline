@@ -70,6 +70,15 @@ function drawCanvas(){
   fitLabels(frag);
   measureRail();
   renderCanvasTabs();                                              // the tabs' names may have changed (views/canvas/tabs.js)
+  renderIdeas();
+}
+/* the shown tab's ideas: placed from the floor up and from their day, so the grid can grow either way under them */
+const ideaClass = h => "idea" + (h === 1 ? " pill" : "");
+const ideaStyle = (c, row, w, h) => `left:${c * CANVAS_CELL}px; bottom:${row * CANVAS_CELL}px; width:${w * CANVAS_CELL}px; height:${h * CANVAS_CELL}px`;
+function renderIdeas(){
+  const tab = activeCanvasTab().id;
+  document.getElementById("canvasIdeas").innerHTML = S.ideas.filter(i => i.tabId === tab)
+    .map(i => `<div class="${ideaClass(i.h)}" style="${ideaStyle(dayIdx(i.day), i.row, i.w, i.h)}"></div>`).join("");
 }
 
 /* the rail's two heights: closed (months, then lines) and open (the timeline's own rows), each capped */
@@ -110,6 +119,7 @@ function showCanvas(){
   canvasScrollToDay(weekLeftDay());
 }
 function hideCanvas(){
+  if(UI.drawMode) setDrawMode(false);                             // draw mode belongs to the canvas
   UI.canvas.shown = UI.canvas.active = false;                     // its drawing is kept: the next pull finds it ready
 }
 

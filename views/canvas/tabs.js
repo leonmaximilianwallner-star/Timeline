@@ -7,6 +7,8 @@
    ════════════════════════════════════════════════════════════ */
 const CANVAS_TAB_NAME = "Canvas";      // a tab without a name, as an event without one is "Termin"
 
+const CANVAS_TAB_SPARE = 16;           // px of room beyond the need before the strip widens again: no flicker at the edge
+
 const $canvasTabs = document.getElementById("canvasTabs");
 const canvasTabY = {};                 // tab id → px from the view's top to the grid's bottom
 
@@ -17,9 +19,45 @@ function renderCanvasTabs(){
   if($canvasTabs.querySelector("input")) return;                 // being renamed: a redraw would drop the typing
   const active = activeCanvasTab();
   $canvasTabs.innerHTML = canvasTabList().map(t =>
-    `<button class="canvas-tab${t === active ? " active" : ""}" data-id="${t.id}">${esc(t.name)}</button>`).join("")
+    `<button class="canvas-tab${t === active ? " active" : ""}" data-id="${t.id}" data-letter="${esc([...t.name][0].toUpperCase())}"
+      title="${esc(t.name)}" aria-label="${esc(t.name)}"><span>${esc(t.name)}</span></button>`).join("")
     + `<button class="cbtn" data-create title="Neuer Tab" aria-label="Neuer Tab">${icon("plus")}</button>`;
+  canvasTabNeed = null;                                           // names may have changed: measure again
+  fitCanvasTabs();
 }
+
+/* three states, by the room the header leaves (RULEBOOK A.8, Canvas tab):
+   0 every tab a pill · 1 the shown tab a pill, the others circles · 2 the same, scrolling sideways */
+let canvasTabNeed = null, canvasTabState = 0;
+function fitCanvasTabs(){
+  const room = $canvasTabs.clientWidth;
+  if(!room) return;                                               // hidden (not the canvas): measured when shown
+  if(!canvasTabNeed){                                             // natural widths, read once per drawing
+    $canvasTabs.dataset.state = 0;
+    const tabs = [...$canvasTabs.children], gap = parseFloat(getComputedStyle($canvasTabs).columnGap) || 0;
+    const widths = tabs.map(el => el.offsetWidth), sum = widths.reduce((a, b) => a + b, 0) + gap * (tabs.length - 1);
+    const active = $canvasTabs.querySelector(".active");
+    canvasTabNeed = [sum, (active ? active.offsetWidth : 0) + (tabs.length - (active ? 1 : 0)) * tabs.at(-1).offsetWidth + gap * (tabs.length - 1)];
+  }
+  const [all, squeezed] = canvasTabNeed, cur = canvasTabState;
+  canvasTabState = room >= all + (cur > 0 ? CANVAS_TAB_SPARE : 0) ? 0 : room >= squeezed + (cur > 1 ? CANVAS_TAB_SPARE : 0) ? 1 : 2;
+  $canvasTabs.dataset.state = canvasTabState;
+  const active = $canvasTabs.querySelector(".active");
+  if(canvasTabState === 2 && active){                             // the shown tab in view
+    const l = active.offsetLeft, r = l + active.offsetWidth;
+    if(l < $canvasTabs.scrollLeft) $canvasTabs.scrollLeft = l;
+    else if(r > $canvasTabs.scrollLeft + room) $canvasTabs.scrollLeft = r - room;
+  }
+  fadeCanvasTabs();
+}
+/* the edges fade only where tabs are hidden past them */
+function fadeCanvasTabs(){
+  const x = $canvasTabs.scrollLeft, max = $canvasTabs.scrollWidth - $canvasTabs.clientWidth;
+  $canvasTabs.classList.toggle("fade-l", x > 1);
+  $canvasTabs.classList.toggle("fade-r", x < max - 1);
+}
+new ResizeObserver(fitCanvasTabs).observe($canvasTabs);
+$canvasTabs.addEventListener("scroll", fadeCanvasTabs, { passive:true });
 
 $canvasTabs.addEventListener("click", e => {
   const b = e.target.closest("button");

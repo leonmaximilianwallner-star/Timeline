@@ -359,7 +359,7 @@ views/
   timeline/lanes.js         packs phases into lanes
   timeline/render.js        draws the timeline view, at any scale: the week's, and the canvas's rail (buildTimeline)
   canvas/render.js          the canvas view: its grid, its floor, its rail (§6.1)
-  canvas/tabs.js            the canvas's tabs: the bar, switching, renaming in place
+  canvas/tabs.js            the canvas's tabs: the strip in the header, its three states, switching, renaming in place
   day/render.js             draws the day view
   focus/render.js           the focus view: one day over the app, its listeners, the back gesture
 
@@ -369,6 +369,7 @@ input/
   day-drag.js               creating, moving and resizing events by drag
   timeline-drag.js          creating and resizing phases, opening editors on the timeline (onTimelineClick: also the rail's)
   canvas-pull.js            the pull between the week and the canvas; panning the canvas; the rail on hover
+  canvas-draw.js            draw mode: a drag on the canvas draws an idea on the cells
 
 ui/
   loader.js                 loading screen

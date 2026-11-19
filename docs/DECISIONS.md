@@ -331,3 +331,12 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **Undoing a created tab shows the first tab**, not the one before it: the fallback for a missing tab, no extra state. *Claude*
 - **Known:** wheel-scrolling over the tab bar doesn't move the canvas (it is not part of the scroller). *Claude*
 
+## 2026-11-19 · Canvas tabs in the header; the add button draws
+- **The tabs sit in the header row**, where its spacer was, 36px like its buttons; no row of their own. The shown tab is a `--surface` pill, the others plain. *Max*
+- **Short of room, the others become circles with their first letter, neutral (outlined, as a round button)**, not coloured: coloured letters would read as categories (C.2, B.3). Shorter still, the strip scrolls; the shown tab is kept in view. *Max (neutral, after Claude raised the conflict)*
+- **The states switch by measured room** (ResizeObserver, natural widths read once per drawing), widening only with 16 px to spare: no flicker at the edge. *Claude*
+- **The add button is in every view; in the canvas it starts draw mode.** Reverses "the add button belongs to the week" (10 Nov). *Max*
+- **A drawn thing is an idea**, its pill or squircle look following its rows; whether a one-row pill can become a phase is left open. *Claude's recommendation; Max didn't decide*
+- **Ideas are records (`ideas`), placed by day and by row from the floor**, so the grid can grow left or up under them without moving them. *Claude*
+- **Desktop only for now** (**Max**): the canvas has no touch way in yet. The drawing follows the touch rules anyway (touch-action before the gesture, capture after the slop, cancel discards). *Max; Claude*
+

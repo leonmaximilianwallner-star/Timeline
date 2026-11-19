@@ -15,6 +15,7 @@ const UI = {
   editor:null,          // the open editor's context
   focus:null,           // the open focus view: { day, open } (views/focus/render.js)
   dragLive:false,
+  drawMode:false,        // the canvas's draw mode: the next drag draws an idea (input/canvas-draw.js)
   canvas:null,          // the canvas view: shown, active, moving, its rail (views/canvas/render.js)
 };
 
@@ -85,6 +86,7 @@ function toCurrentShape(d, takeDeviceState){
   /* the canvas has at least one tab (views/canvas/tabs.js). The same id and stamp on every device, so devices that
      each create it agree on one record, and any rename (stamped now) wins over it */
   if(!(d.canvasTabs||[]).length) d.canvasTabs = [{ id:"canvas", name:"Canvas", order:0, updatedAt:"1970-01-01T00:00:00.000Z" }];
+  d.ideas = d.ideas || [];                                 // the canvas's ideas (input/canvas-draw.js): a list added, no data version needed
   RECORD_LISTS.forEach(list => (d[list]||[]).forEach(r => { if(!r.updatedAt) r.updatedAt = now; }));
   d.deleted = d.deleted || {};
   return d;

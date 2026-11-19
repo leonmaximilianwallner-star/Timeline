@@ -251,12 +251,13 @@ await step('dragging the empty grid pans the canvas', async () => {
   assert.equal(Math.round(await q(() => $canvasScene.scrollLeft) - s0), 200);
 });
 
-await step('in the canvas: T goes to today, A does not start add mode, the add button is hidden', async () => {
+await step('in the canvas: T goes to today, A does not start add mode, the add button stays (it draws here)', async () => {
   await page.keyboard.press('t'); await page.waitForTimeout(800);
   assert.ok(Math.abs(await q(() => canvasLeftDay() - dayIdx(todayISO()))) < 0.01);
   await page.keyboard.press('a');
   assert.equal(await q(() => UI.addMode), false);
-  assert.equal(await q(() => getComputedStyle(document.getElementById('fab')).visibility), 'hidden');
+  assert.equal(await q(() => getComputedStyle(document.getElementById('fab')).visibility), 'visible');
+  assert.equal(await q(() => getComputedStyle(document.getElementById('addMenu')).visibility), 'hidden', 'the add menu stays the week\'s');
 });
 
 await step('a click on a phase in the rail opens its editor, as on the timeline', async () => {

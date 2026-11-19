@@ -70,6 +70,7 @@ function onScroll(e){
 /* ── the canvas: dragging its empty grid pans it (a mouse has no sideways wheel) ── */
 $canvasGrid.addEventListener("pointerdown", e => {
   if(e.button !== 0 || e.target.closest("#rail") || !UI.canvas.active || morph.on) return;
+  if(UI.drawMode) return startDraw(e);                             // draw mode: the drag draws instead (input/canvas-draw.js)
   const x0 = e.clientX, y0 = e.clientY, l0 = $canvasScene.scrollLeft, t0 = $canvasScene.scrollTop;
   $canvasGrid.setPointerCapture(e.pointerId);
   $canvasGrid.classList.add("panning");
