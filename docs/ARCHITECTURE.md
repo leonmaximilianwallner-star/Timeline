@@ -333,7 +333,7 @@ What exists now. Every file starts with one comment line saying what it holds an
 index.html                  page skeleton: meta, fonts, loading screen, app frame; loads everything below
 app.js                      keyboard shortcuts and start-up
 reminders.js                reminders: the push switch, and in-app reminders when push is off
-sw.js                       service worker: shows a push reminder, even with the app closed
+sw.js                       service worker: keeps the app on the device (starts from there, also offline); shows a push reminder, even with the app closed
 
 core/                       rules with no screen
   model.js                  constants, colour palette, starting data
@@ -372,7 +372,7 @@ input/
   canvas-drag.js            the canvas's rules for the one drag (pointer.js dragRect): drawing, moving, resizing ideas
 
 ui/
-  snake-pill.js             the snake pill, the one waiting animation: start-up (only if it takes > 0.3 s; the hourglass past 4.8 s) and Jetzt synchronisieren (ends with a check or an X); changes and ends only at the end of a lap
+  snake-pill.js             the snake pill, the one waiting animation: start-up (only if it takes > 0.3 s; the hourglass past 4.8 s) and Jetzt synchronisieren (ends with a check or an X); switches to the hourglass only at the end of a lap, ends at the next dot
   wordmark-draw.js          the drawn wordmark, once per device at the first sign-in (was the loading screen)
   toast.js                  toast message
   editor.js                 editor and its todo list

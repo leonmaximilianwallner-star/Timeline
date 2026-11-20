@@ -8,11 +8,12 @@
      sync       top and bottom rows, in opposite directions    (Jetzt synchronisieren)
      done / cancel   a check / an X drawn once                 (how a sync ended)
    The wait decides what is shown (Max, 20 Nov): under 0.3 s nothing (start-up only), then the loop,
-   past SNAKE_PILL_LONG_MS the hourglass and a line of text. A change of kind, and the end, always
-   come at the end of a lap, where the pill is a dot at the top left: nothing jumps mid-move.
+   past SNAKE_PILL_LONG_MS the hourglass and a line of text. Nothing jumps mid-move: the switch to the
+   hourglass comes at the end of a lap (both start top left); the end comes at the next point where the
+   loop is only dots (SNAKE_PILL_REST), at most 0.6 s (0.9 s for sync) after the wait is over.
      showSnakePill(kind, { dim })   centred; dim darkens the app (false: over the settings panel,
                                     which dims already; a phone still dims, its panel fills the screen)
-     pill.stop({ result })          finishes the lap; result "done" | "cancel" draws that mark first
+     pill.stop({ result })          ends at the next dot; result "done" | "cancel" draws that mark first
    Loaded before the app's own scripts: the start-up one is in index.html from the first frame.
    ════════════════════════════════════════════════════════════ */
 const SNAKE_PILL_BOOT_PREVIEW_MS = 7200;   // TEMPORARY: start-up holds two loops and one hourglass so both can be seen.
@@ -36,23 +37,28 @@ function snakePillHTML(kind){
   return `<div class="snake-pill ${kind}" role="status" aria-label="${SNAKE_PILL_LABEL[kind]}">${inner}</div>`;
 }
 
-/* ms until the lap now running ends (0: no animation, e.g. reduced motion) */
-function snakePillLapRest(layer){
+/* where a loop may end without a jump: wherever it is only dots (Max, 20 Nov: "never mid-move").
+   loading and hourglass: at every corner, each quarter lap · sync: each half lap, both rows at their ends */
+const SNAKE_PILL_REST = { loading:.25, hourglass:.25, sync:.5 };
+
+/* ms until the loop now running next reaches such a point (whole: the end of the lap); 0 without animation */
+function snakePillLapRest(layer, whole = false){
   const anim = layer.querySelector(".lap")?.getAnimations()[0];
   if(!anim) return 0;
-  const lap = anim.effect.getComputedTiming().duration;
-  return lap - (anim.currentTime % lap);
+  const step = anim.effect.getComputedTiming().duration * (whole ? 1 : SNAKE_PILL_REST[layer.dataset.kind] || 1);
+  return step - (anim.currentTime % step);
 }
 
 function snakePillOn(layer, kind, bornAt = performance.now()){
   let stopping = null;
-  const show = k => { layer.innerHTML = snakePillHTML(k); };
+  const show = k => { layer.dataset.kind = k; layer.innerHTML = snakePillHTML(k); };
+  layer.dataset.kind = kind;
   const wait = ms => new Promise(r => setTimeout(r, ms));
 
   /* a long wait: at the end of the lap that crosses SNAKE_PILL_LONG_MS, the loop becomes the hourglass */
   if(kind === "loading"){
     wait(Math.max(0, SNAKE_PILL_LONG_MS - (performance.now() - bornAt) - 100))   // just before that lap ends
-      .then(()=>{ if(!stopping && layer.isConnected) return wait(snakePillLapRest(layer)); throw 0; })
+      .then(()=>{ if(!stopping && layer.isConnected) return wait(snakePillLapRest(layer, true)); throw 0; })   // the hourglass starts top left
       .then(()=>{ if(!stopping && layer.isConnected) show("hourglass"); })
       .catch(()=>{});
   }

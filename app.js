@@ -43,3 +43,6 @@ updateUndoButtons();
 scrollToToday(false);          // auto-landing: today, around the current hour
 checkPush().then(checkReminders);   // push on here? then the server reminds, not the app
 syncNow();                     // catch up with other devices (does nothing until signed in)
+/* the app kept on the device (sw.js): the next start comes from here, also offline. Push registers the same worker (reminders.js).
+   After the page has loaded, so storing the app never slows the start it is for. */
+if("serviceWorker" in navigator) window.addEventListener("load", ()=>navigator.serviceWorker.register("sw.js").catch(e=>console.warn("service worker", e)), { once:true });
