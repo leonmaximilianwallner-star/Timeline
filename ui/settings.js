@@ -155,6 +155,20 @@ function syncPage(){
     <p class="hint" id="syncStatus">${esc(syncStatusText())}</p></div>`;
 }
 
+/* Jetzt synchronisieren, shown: the snake pill while it runs, then a check or an X.
+   One at a time: a press while it shows does nothing. Worked: settings close once the check is done. */
+let syncShown = null;
+function syncNowShown(){
+  if(syncShown) return;
+  const pill = showSnakePill("sync", { dim:false });   // the panel already dims the app (a phone: see styles/snake-pill.css)
+  syncShown = syncNow()
+    .then(()=>{
+      const result = sync.state === "ok" ? "done" : sync.state === "busy" ? null : "cancel";   // busy: another sync runs on
+      return pill.stop({ result }).then(()=>{ if(result === "done" && UI.settingsOpen) toggleSettings(false); });
+    })
+    .finally(()=>{ syncShown = null; });
+}
+
 /* ── wiring ────────────────────────────────────────────────── */
 function wireSettings(page, c){
   const $ = sel => $set.querySelector(sel);
@@ -250,11 +264,7 @@ function wireSettings(page, c){
       signInBtn.onclick = go;
       $("#sPassword").addEventListener("keydown", e=>{ if(e.key==="Enter") go(); });
     }
-    on("#sSyncNow", "click", ()=>{                     // the panel already dims the app, so the snake pill doesn't
-      const pill = showSnakePill("sync", { dim:false });
-      syncNow().finally(()=>pill.stop({                // at least one whole lap, then the lap it is in, then how it ended
-        result: sync.state === "ok" ? "done" : sync.state === "busy" ? null : "cancel" }));   // busy: another sync runs on; it isn't over
-    });
+    on("#sSyncNow", "click", syncNowShown);
     on("#sSignOut", "click", ()=>disablePush().catch(()=>{}).then(signOut).then(()=>renderSettings()));   // no reminders for a signed-out device
   }
 }
