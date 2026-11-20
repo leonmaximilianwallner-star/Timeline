@@ -340,3 +340,11 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **Ideas are records (`ideas`), placed by day and by row from the floor**, so the grid can grow left or up under them without moving them. *Claude*
 - **Desktop only for now** (**Max**): the canvas has no touch way in yet. The drawing follows the touch rules anyway (touch-action before the gesture, capture after the slop, cancel discards). *Max; Claude*
 
+## 2026-11-20 · Ideas follow the dots; the rail edits; tabs can be deleted
+- **No camera object, no canvas zoom yet.** The canvas has one scale at rest; only the switch changes it. The existing structure is kept: one scale (`--gp`, on `#canvasGrid`) that the dots and the ideas both read, so they can't drift apart. A camera is revisited when zoom inside the canvas becomes relevant. *Max, after Claude pushed back on a per-tab camera (left–right is shared)*
+- **Ideas scale across with the days; up and down they keep 40 px, as the dot rows do** ("Rows don't scale", 17 Nov). They follow the dots exactly. *Max (follow the dots); Claude (the dots' rows don't scale, so neither do the ideas')*
+- **The dots' window during the switch is whole cells tall** (`round(up, 100vh, cell)`): its rows had been counted from a window edge half a cell off the floor, so they jumped half a cell when the switch landed. *Claude*
+- **The open rail resizes and creates through the timeline's own code** (`onTimelinePointerDown`, `startPhaseCreate`, `tlPos(e, inner)`): the rail is the same drawing at another scale, so only the container and scale are passed. No move or project resize: the timeline has neither. Edge auto-pan stays the timeline's. *Max*
+- **In the canvas, draw mode creates a phase when the drag starts on the rail**, an idea when it starts on the grid. *Max*
+- **Deleting a tab**: right-click → one row; a tab with ideas asks in that row (the app has no confirm window, C.3); its ideas are deleted with it. *Max; Claude (the in-row confirm)*
+

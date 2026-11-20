@@ -74,7 +74,7 @@ function drawCanvas(){
 }
 /* the shown tab's ideas: placed from the floor up and from their day, so the grid can grow either way under them */
 const ideaClass = h => "idea" + (h === 1 ? " pill" : "");
-const ideaStyle = (c, row, w, h) => `left:${c * CANVAS_CELL}px; bottom:${row * CANVAS_CELL}px; width:${w * CANVAS_CELL}px; height:${h * CANVAS_CELL}px`;
+const ideaStyle = (c, row, w, h) => `--c:${c}; --w:${w}; bottom:${row * CANVAS_CELL}px; height:${h * CANVAS_CELL}px`;   // across: by the dots' scale (styles/canvas.css)
 function renderIdeas(){
   const tab = activeCanvasTab().id;
   document.getElementById("canvasIdeas").innerHTML = S.ideas.filter(i => i.tabId === tab)

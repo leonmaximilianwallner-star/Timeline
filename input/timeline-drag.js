@@ -6,8 +6,10 @@ $tlWrap.addEventListener("pointermove", e=>{
   const th = document.getElementById("tlHover");
   if(th){ th.style.display=""; th.style.left = (tlPos(e)+.5)*TL_PPD+"px"; }
 });
-$tlWrap.addEventListener("pointerdown", e=>{
+/* the timeline view's pointer, and the canvas's rail's: the rail is the same drawing, so the same code (Max, 20 Nov) */
+function onTimelinePointerDown(e){
   if(e.button!==undefined && e.button!==0) return;
+  const inner = e.target.closest("#rail") ? $railInner : $tlInner, ppd = inner === $railInner ? CANVAS_CELL : TL_PPD;
 
   /* resize handles on phase pills */
   const handle = e.target.closest(".ph-handle");
@@ -33,13 +35,13 @@ $tlWrap.addEventListener("pointerdown", e=>{
         if(phColor){ ghost.style.borderColor = phColor; ghost.style.background = phColor + "24"; }
         lane.appendChild(ghost);
       }
-      const x = dayIdx(ns)*TL_PPD, w = Math.max((diffDays(ns,ne)+1)*TL_PPD, 26);   // +1: ne is the last day, shown
+      const x = dayIdx(ns)*ppd, w = Math.max((diffDays(ns,ne)+1)*ppd, 26);   // +1: ne is the last day, shown
       ghost.style.left = x+"px"; ghost.style.width = w+"px";
     };
     const move = mv=>{
       panFollow(mv.clientX, mv.clientY);
       if(!armed){ if(Math.hypot(mv.clientX-sx, mv.clientY-sy) > MOVE_THRESHOLD) clearTimeout(armTimer); return; }
-      const d = idxDate(tlPos(mv));
+      const d = idxDate(tlPos(mv, inner));
       if(side==="l") ns = d <= last ? d : last; else ne = d >= ph.start ? d : ph.start;
       drawGhost();
     };
@@ -52,7 +54,7 @@ $tlWrap.addEventListener("pointerdown", e=>{
       if(ghost) ghost.remove();
       if(ns!==ph.start || ne!==last) mutate(s=>{ const t=s.phases.find(p=>p.id===ph.id); t.start=ns; t.end=dayAfter(ne); });
     };
-    panBind(move, "x", e.clientX, e.clientY); 
+    if(inner === $tlInner) panBind(move, "x", e.clientX, e.clientY);   // edge pan scrolls the week's scroller: not from the rail
     window.addEventListener("pointermove",move); window.addEventListener("pointerup",up); window.addEventListener("pointercancel",up);
     return;
   }
@@ -60,7 +62,7 @@ $tlWrap.addEventListener("pointerdown", e=>{
   /* expand arrow / edit clicks are handled in the click handler below */
   if(e.target.closest(".ph-exp,.phase,.milestone-chip,.milestone-dot,.projLabel,.dropdown")) return;   // a dropdown is a thing: holding it creates nothing
 
-  if(UI.addMode){ startPhaseCreate(e, false); return; }   // mouse/touch: add-mode → drag to create
+  if(UI.addMode || UI.drawMode){ startPhaseCreate(e, false); return; }   // add mode (the week) or draw mode on the rail (the canvas) → drag to create
 
   if(e.pointerType !== "mouse"){
     /* touch/pen: hold to arm phase creation, then drag across days, release → editor */
@@ -72,30 +74,33 @@ $tlWrap.addEventListener("pointerdown", e=>{
     window.addEventListener("pointermove", cancel);
     window.addEventListener("pointerup", off); window.addEventListener("pointercancel", off);
   }
-});
+}
+$tlWrap.addEventListener("pointerdown", onTimelinePointerDown);
 
 /* phase / milestone creation drag on the empty timeline (shared by add-mode + long-press) */
 function startPhaseCreate(e, fromHold=false){
-  const a = tlPos(e);
+  const inner = e.target.closest("#rail") ? $railInner : $tlInner, ppd = inner === $railInner ? CANVAS_CELL : TL_PPD;
+  const a = tlPos(e, inner);
   /* anchor the ghost in the lane row the user pressed in — gives it the same
      coordinate system as real phase pills (top:4px inside a 34px lane) and lets
      it pan with the content instead of drifting against the viewport */
-  const lane = e.target.closest(".laneRow") || e.target.closest(".tlRow") || $tlInner.firstChild;
-  $tlWrap.setPointerCapture(e.pointerId); UI.dragLive = true;
+  const lane = e.target.closest(".laneRow") || e.target.closest(".tlRow") || inner.firstChild;
+  inner.setPointerCapture(e.pointerId); UI.dragLive = true;
   let b = a, ghost = null, moved = false;
   const move = mv=>{
     panFollow(mv.clientX, mv.clientY);
-    b = tlPos(mv); if(b!==a) moved = true;
+    b = tlPos(mv, inner); if(b!==a) moved = true;
     if(!ghost){ ghost = document.createElement("div"); ghost.className="tlCreate"; lane.appendChild(ghost); }
     const lo = Math.min(a,b), hi = Math.max(a,b);
-    ghost.style.left = lo*TL_PPD+"px"; ghost.style.width = (hi-lo+1)*TL_PPD+"px";
+    ghost.style.left = lo*ppd+"px"; ghost.style.width = (hi-lo+1)*ppd+"px";
   };
   const up = ()=>{
-    try{ $tlWrap.releasePointerCapture(e.pointerId); }catch(_){}
+    try{ inner.releasePointerCapture(e.pointerId); }catch(_){}
     window.removeEventListener("pointermove",move); window.removeEventListener("pointerup",up); window.removeEventListener("pointercancel",up);
     panRelease(); 
     UI.dragLive = false;
     if(ghost) ghost.remove();
+    if(UI.drawMode) setDrawMode(false);                          // one thing created ends draw mode, as add mode
     if(!moved){
       /* hold without drag → milestone on that day; add-mode click without drag → nothing */
       if(fromHold) openEditor({ type:"milestone", initial:{ date:idxDate(a) } });
@@ -105,7 +110,7 @@ function startPhaseCreate(e, fromHold=false){
     if(lo===hi) openEditor({ type:"milestone", initial:{ date:lo } });
     else        openEditor({ type:"phase", initial:{ start:lo, end:dayAfter(hi) } });
   };
-  panBind(move, "x", e.clientX, e.clientY);
+  if(inner === $tlInner) panBind(move, "x", e.clientX, e.clientY);
   window.addEventListener("pointermove",move); window.addEventListener("pointerup",up); window.addEventListener("pointercancel",up);
 }
 

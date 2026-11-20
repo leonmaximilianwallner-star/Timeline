@@ -95,3 +95,4 @@ $rail.addEventListener("pointerleave", () => {
   railHoverT = setTimeout(() => { if(UI.canvas.active && !morph.on) openRail(false); }, RAIL_HOVER_CLOSE);
 });
 $rail.addEventListener("click", onTimelineClick);
+$rail.addEventListener("pointerdown", onTimelinePointerDown);   // resize, create: the timeline's own code (input/timeline-drag.js)

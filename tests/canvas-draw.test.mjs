@@ -155,6 +155,82 @@ await step('leaving the canvas ends draw mode; the week\'s add mode is untouched
   assert.equal(await q(() => UI.drawMode || $fab.classList.contains('on') || document.documentElement.hasAttribute('data-draw')), false);
 });
 
+await step('during the switch the ideas stay on their dots, across and up (every frame is morphTo)', async () => {
+  await enter();
+  const off = await q(() => {
+    morphStart(1);
+    const out = [];
+    for (const p of [1, 0.8, 0.5, 0.25]) {
+      morphTo(p);
+      const d = $canvasDots.getBoundingClientRect(), ppd = parseFloat($canvasGrid.style.getPropertyValue('--ppd')), gx = parseFloat($canvasDots.style.getPropertyValue('--gx'));
+      for (const el of document.querySelectorAll('#canvasIdeas .idea')) {
+        const r = el.getBoundingClientRect(), across = (r.left - d.left - gx) / ppd, up = (r.bottom - d.top) / CANVAS_CELL;
+        out.push(Math.abs(across - Math.round(across)) * ppd, Math.abs(up - Math.round(up)) * CANVAS_CELL, Math.abs(r.width / ppd - Math.round(r.width / ppd)) * ppd);
+      }
+    }
+    morphTo(1); morphEnd(1);
+    return Math.max(...out);
+  });
+  assert.ok(off < 0.5, 'off the dots by ' + off + ' px');
+});
+
+await step('the rail is the timeline: in draw mode a drag on it creates a phase; its handles resize', async () => {
+  await q(() => openRail(true));
+  await page.waitForTimeout(400);
+  const lane = await q(() => { const r = $railInner.getBoundingClientRect(), s = $canvasScene.getBoundingClientRect(); return { y: r.top + 30, x: s.left + 400 }; });
+  await page.click('#fab');
+  await page.mouse.move(lane.x, lane.y); await page.mouse.down();
+  for (let i = 1; i <= 5; i++) await page.mouse.move(lane.x + i * 40, lane.y);
+  await page.mouse.up();
+  const ed = await q(() => UI.editor && UI.editor.type);
+  assert.equal(ed, 'phase', 'the phase editor, as on the timeline');
+  assert.equal(await q(() => UI.drawMode), false, 'one thing created ends draw mode');
+  assert.equal(await q(() => document.querySelectorAll('.idea.preview').length + S.ideas.length), 2, 'no idea drawn');
+  await page.keyboard.press('Escape');
+  await q(() => openRail(true)); await page.waitForTimeout(400);
+  const h = await q(() => { const el = document.querySelector('#railInner .phase .ph-handle.r'); const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, id: el.closest('.phase').dataset.phase }; });
+  const end0 = await q(id => S.phases.find(p => p.id === id).end, h.id);
+  await page.mouse.move(h.x, h.y); await page.mouse.down();
+  for (let i = 1; i <= 6; i++) await page.mouse.move(h.x + i * 20, h.y);
+  await page.mouse.up();
+  const end1 = await q(id => S.phases.find(p => p.id === id).end, h.id);
+  assert.equal(await q(([a, b]) => diffDays(a, b), [end0, end1]), 3, 'three cells to the right: three days longer');
+  assert.ok(await q(() => $canvasScene.scrollLeft) > 0, 'the canvas did not pan');
+  const w = await q(id => document.querySelector(`#tlInner .phase[data-phase="${id}"]`).offsetWidth / TL_PPD, h.id);
+  assert.ok(Math.abs(w - (await q(id => { const p = S.phases.find(x => x.id === id); return diffDays(p.start, p.end); }, h.id))) < 1, 'the timeline view shows the same phase');
+});
+
+await step('a tab\'s menu: right-click → Löschen; one with ideas asks once; the shown one hands over; the last one stays', async () => {
+  const tabs = () => q(() => canvasTabList().map(t => t.name + (t === activeCanvasTab() ? '*' : '')));
+  const first = await q(() => canvasTabList()[0].id);
+  await page.click('#canvasTabs [data-create]'); await page.keyboard.type('Leer'); await page.keyboard.press('Enter');
+  await page.click(`#canvasTabs [data-id="${first}"]`);
+  await page.click(`#canvasTabs [data-id="${first}"]`, { button: 'right' });
+  assert.equal(await q(() => !!document.querySelector('.tab-menu')), true);
+  await page.keyboard.press('Escape');
+  assert.equal(await q(() => !!document.querySelector('.tab-menu') || !UI.canvas.active), false, 'Escape closes the menu only');
+  await page.click(`#canvasTabs [data-id="${first}"]`, { button: 'right' });
+  await page.mouse.click(700, 500);
+  assert.equal(await q(() => !!document.querySelector('.tab-menu')), false, 'a click outside closes it');
+  const n = (await tabs()).length;
+  await page.click(`#canvasTabs [data-id="${first}"]`, { button: 'right' });
+  await page.click('.tab-menu .row');
+  assert.equal((await tabs()).length, n, 'with ideas: it asks first');
+  assert.match(await q(() => document.querySelector('.tab-menu .row-label').textContent), /Mit 2 Ideen löschen\?/);
+  await page.click('.tab-menu .row');
+  assert.equal((await tabs()).length, n - 1);
+  assert.equal(await q(() => S.ideas.length), 0, 'its ideas went with it');
+  assert.equal(await q(() => S.deleted && Object.keys(S.deleted).length > 0), true, 'remembered as deleted, for sync');
+  assert.equal((await tabs())[0].endsWith('*'), true, 'its neighbour is shown');
+  while ((await tabs()).length > 1) { await page.click('#canvasTabs .canvas-tab.active', { button: 'right' }); await page.click('.tab-menu .row'); }
+  await page.click('#canvasTabs .canvas-tab.active', { button: 'right' });
+  assert.equal(await q(() => document.querySelector('.tab-menu .row').disabled), true, 'the last tab cannot go');
+  await page.keyboard.press('Escape');
+  const keep = await tabs();
+  await page.reload(); await page.waitForTimeout(300); await enter();
+  assert.deepEqual(await tabs(), keep, 'a reload shows the same tabs');
+});
+
 await browser.close();
 server.close();
 if (failed) { console.error(`\n${failed} failed`); process.exit(1); }
