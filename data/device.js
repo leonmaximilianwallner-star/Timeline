@@ -8,6 +8,7 @@
    canvasTab   id of the canvas tab shown here (views/canvas/tabs.js); missing or gone: the first
    syncSentUpTo / syncSeenUpTo  how far this device has sent and received (data/sync.js)
    pushWanted  push reminders were switched on here: if the browser drops the subscription, it is renewed (reminders.js)
+   wordmarkSeen  the drawn wordmark was shown here, at the first sign-in (ui/wordmark-draw.js)
    Changes here are not undoable and don't count as changes to the plan.
    ════════════════════════════════════════════════════════════ */
 function loadDevice(){

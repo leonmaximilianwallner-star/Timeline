@@ -1,0 +1,70 @@
+/* styles/snake-pill.css — the snake pill: Timeline's one waiting animation (ui/snake-pill.js).
+   A pill on the 3×3 dot grid of the logo. Its head reaches the next dot, then its tail follows.
+     .loading  around the four outer dots (the start of the app)
+     .sync     top and bottom rows, left ↔ right, always in opposite directions (Jetzt synchronisieren)
+   Rule: only left / top / width / height animate, all numbers. Never switch between left and right
+   (or top and bottom): `auto` can't be blended, so the pill would jump a whole dot in one frame. */
+.snake-pill-layer{
+  position:fixed; inset:0; z-index:9999;
+  display:grid; place-items:center;
+  pointer-events:none;
+  transition:opacity .25s var(--soft), background .25s var(--soft);
+}
+.snake-pill-layer.dim{ background:var(--scrim); pointer-events:auto; }   /* blocks the app while it waits */
+/* over the settings panel the app is dimmed already; on a phone the panel fills the screen, so the pill would sit on its rows: dim there too */
+@media (max-width:600px){ .snake-pill-layer.over-panel{ background:var(--scrim); } }
+.snake-pill-layer.out{ opacity:0; }
+/* start-up only: shown only if the wait lasts longer than 0.3 s; quicker, it never appears (ui/snake-pill.js) */
+.snake-pill-layer.after-a-moment{ animation:snake-pill-appear .2s var(--soft) .3s both; }
+@keyframes snake-pill-appear{ from{ opacity:0; } }
+
+.snake-pill{
+  --dot:24px;
+  --grid:calc(var(--dot) * 3);            /* 72px: one dot, one dot of gap, one dot */
+  --far:calc(var(--grid) - var(--dot));   /* 48px: where the far dot starts */
+  --ease:cubic-bezier(0.65, 0, 0.35, 1);
+  position:relative; width:var(--grid); height:var(--grid);
+  color:var(--text);
+}
+/* the four dots it travels between, faint: only while something is still going on */
+.snake-pill::before{
+  content:""; position:absolute; inset:0; opacity:.16;
+  background:
+    radial-gradient(circle, currentColor 50%, transparent 52%) top left,
+    radial-gradient(circle, currentColor 50%, transparent 52%) top right,
+    radial-gradient(circle, currentColor 50%, transparent 52%) bottom right,
+    radial-gradient(circle, currentColor 50%, transparent 52%) bottom left;
+  background-size:var(--dot) var(--dot); background-repeat:no-repeat;
+}
+.snake-pill-body{
+  position:absolute; left:0; top:0; width:var(--dot); height:var(--dot);
+  background:currentColor; border-radius:999px;
+}
+
+/* ── loading: the perimeter, 2.4 s a lap ── */
+.snake-pill.loading .snake-pill-body{ animation:snake-pill-loading 2.4s var(--ease) infinite; }
+@keyframes snake-pill-loading{
+  0%,100% { left:0;          top:0;          width:var(--dot);  height:var(--dot); }
+  12.5%   { left:0;          top:0;          width:var(--grid); height:var(--dot); }
+  25%     { left:var(--far); top:0;          width:var(--dot);  height:var(--dot); }
+  37.5%   { left:var(--far); top:0;          width:var(--dot);  height:var(--grid); }
+  50%     { left:var(--far); top:var(--far); width:var(--dot);  height:var(--dot); }
+  62.5%   { left:0;          top:var(--far); width:var(--grid); height:var(--dot); }
+  75%     { left:0;          top:var(--far); width:var(--dot);  height:var(--dot); }
+  87.5%   { left:0;          top:0;          width:var(--dot);  height:var(--grid); }
+}
+
+/* ── sync: two rows, half a lap apart, 1.8 s a lap ── */
+.snake-pill.sync .snake-pill-body{ animation:snake-pill-sync 1.8s var(--ease) infinite; }
+.snake-pill.sync .snake-pill-body + .snake-pill-body{ top:var(--far); animation-delay:-.9s; }
+@keyframes snake-pill-sync{
+  0%,100% { left:0;          width:var(--dot); }
+  25%     { left:0;          width:var(--grid); }
+  50%     { left:var(--far); width:var(--dot); }
+  75%     { left:0;          width:var(--grid); }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .snake-pill .snake-pill-body{ animation:none !important; width:var(--grid); }
+  .snake-pill-layer{ transition:none; animation:none; }
+}

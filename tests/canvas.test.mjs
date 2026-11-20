@@ -32,7 +32,7 @@ const errors = [];
 page.on('pageerror', e => errors.push(e.message));
 await page.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
 await page.goto(APP);
-await page.waitForFunction(() => !document.getElementById('tl-loader'), null, { timeout: 8000 }).catch(() => {});
+await page.waitForFunction(() => !document.getElementById('bootSnakePill'), null, { timeout: 8000 }).catch(() => {});
 await page.waitForTimeout(600);
 
 const q = (fn, a) => page.evaluate(fn, a);

@@ -366,3 +366,13 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **The last note touched is drawn in front** (`z`, synced with the note). *Max*
 - **Open:** notes and events are tinted at 82 % (`d0`), so overlapping notes show through each other; solid fills (B.3) would fix it for both. *Claude, for Max to decide*
 
+## 2026-11-20 · The snake pill; the wordmark becomes a greeting
+- **One waiting animation, the snake pill** (`ui/snake-pill.js`, `styles/snake-pill.css`): a pill on the logo's 3×3 dot grid whose head reaches the next dot, then its tail follows. Two kinds: `loading` (around the four outer dots, 2.4 s a lap) and `sync` (top and bottom rows, left ↔ right, always in opposite directions, 1.8 s a lap). *Max (the design, the name, opposite rows); Claude (one component, two kinds)*
+- **It loops as long as the wait lasts, and always finishes its lap** before it goes, so it plays once, twice or more and never stops mid-move. *Max*
+- **Only numbers animate** (left, top, width, height). The first version swapped between `left` and `right`, which a browser can't blend: the pill jumped a whole dot (24 px) in one frame, measured. *Claude (found)*
+- **Centred, the app dimmed behind it.** Synchronising leaves the dimming to the settings panel, except on a phone, where the panel fills the screen and the pill would sit on its rows. *Max; Claude (the phone exception)*
+- **Neutral colour (`--text`)**, faint dots only while something is still going on. Colour belongs to categories (C.2). *Claude*
+- **A quick start shows nothing:** the start-up pill appears only after 0.3 s; a start quicker than that never shows it. A loading screen should make the wait feel shorter, never add to it. *Max (the principle); Claude (the threshold)*
+- **TEMPORARY: the start-up pill holds two laps (4.8 s)** so it can be looked at (`SNAKE_PILL_BOOT_PREVIEW_MS`); automated tests skip it. Set to 0 once seen. *Max*
+- **The drawn wordmark no longer gates every start** (steward S2). It is kept in `index.html` as a `<template>` and plays once per device, at the first sign-in (`device.wordmarkSeen`); `playWordmarkDraw()` shows it any time. A tap skips it; its fade is 0.5 s (was 1.6 s). *Max (when); Claude (once per device, not per account)*
+- **Open:** the logo's thickness (24 / 27 / 30 px of 72) and whether the logo is a frozen frame of the loader or drawn heavier. *Max to decide*
