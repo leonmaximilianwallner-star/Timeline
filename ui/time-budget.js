@@ -6,7 +6,7 @@
    ════════════════════════════════════════════════════════════ */
 function openBudget(){
   closeBudget(true);
-  UI.budgetOpen = true; document.getElementById("btnBudget").classList.add("open");
+  UI.budgetOpen = true; document.getElementById("btnBudget").classList.add("open"); setIcon(document.getElementById("btnBudget"), true);
   const ov = document.createElement("div"); ov.className="overlay"; ov.id="budgetPage";
   ov.innerHTML = `<div class="overlay-window"><div class="overlay-window-header"><h2>Zeitbudget</h2>
     <button type="button" class="rbtn outline" id="bClose" title="Schließen">${icon("close")}</button></div>
@@ -34,7 +34,7 @@ function closeBudget(instant){
     if(instant || matchMedia("(prefers-reduced-motion: reduce)").matches) o.remove();
     else { o.classList.add("editor-leaving"); setTimeout(()=>o.remove(), 220); }
   }
-  UI.budgetOpen=false; document.getElementById("btnBudget").classList.remove("open");
+  UI.budgetOpen=false; document.getElementById("btnBudget").classList.remove("open"); setIcon(document.getElementById("btnBudget"), false);
 }
 function renderBudgetBody(){
   const N = UI.budgetDays, to = todayISO(), from = isoDate(addDays(parseISO(to), -(N-1)));

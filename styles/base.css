@@ -61,7 +61,6 @@ input,select,textarea{font-family:inherit; font-size:14px; color:var(--text)}
 }
 .cbtn:hover{background:color-mix(in srgb, var(--text) 8%, transparent); color:var(--text)}
 .cbtn:active{transform:scale(.92)}
-.cbtn svg{width:20px; height:20px; display:block; stroke-width:1.5}
 .cbtn.open{background:var(--text); color:var(--on-primary)}
 button:focus-visible{outline:2px solid var(--text); outline-offset:2px}
 .cbtn[disabled]{opacity:.35; pointer-events:none}

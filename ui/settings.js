@@ -20,6 +20,7 @@ function toggleSettings(on, page){
   $set.classList.toggle("open", UI.settingsOpen);
   $setScrim.classList.toggle("open", UI.settingsOpen);
   document.getElementById("btnSettings").classList.toggle("open", UI.settingsOpen);   // its button fills while open (mockup)
+  setIcon(document.getElementById("btnSettings"), UI.settingsOpen);                    // rows ⇄ columns, by every route (ui/header-icons.js)
 }
 /* the app below the header dims while settings are open; a tap on it closes them */
 const $setScrim = document.createElement("div");

@@ -16,7 +16,6 @@ const MORPH_ARRIVE  = 140;         // ms before the new view's own parts start t
 const MORPH_STAGGER = 180;         // ms: the farthest arriving part starts this much later than the nearest
 const MORPH_RISE    = 16;          // px the arriving parts rise, and the leaving ones sink
 
-const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 const morphEase = () => getComputedStyle(document.documentElement).getPropertyValue("--soft").trim() || "ease-out";
 const rectOf = el => el.getBoundingClientRect();
 

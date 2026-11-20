@@ -26,7 +26,6 @@
   --dot:24px;
   --grid:calc(var(--dot) * 3);            /* 72px: one dot, one dot of gap, one dot */
   --far:calc(var(--grid) - var(--dot));   /* 48px: where the far dot starts */
-  --ease:cubic-bezier(0.65, 0, 0.35, 1);
   position:relative; width:var(--grid); height:var(--grid);
   color:var(--snake-pill-colour, var(--text));
 }

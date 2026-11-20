@@ -13,7 +13,7 @@ let cancelDraw = null;                             // the draw in progress: canc
 function setDrawMode(on){
   if(!on && cancelDraw) cancelDraw();                              // never a half-drawn idea
   UI.drawMode = on;
-  $fab.classList.toggle("on", on);
+  $fab.classList.toggle("on", on); setIcon($fab, on);   // plus ⇄ X, as add mode
   $fab.title = on ? "Zeichnen beenden (Esc)" : "Hinzufügen (A)";
   document.documentElement.toggleAttribute("data-draw", on);     // touch-action:none on the canvas, before any gesture
 }
