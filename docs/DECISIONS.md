@@ -376,3 +376,13 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **TEMPORARY: the start-up pill holds two laps (4.8 s)** so it can be looked at (`SNAKE_PILL_BOOT_PREVIEW_MS`); automated tests skip it. Set to 0 once seen. *Max*
 - **The drawn wordmark no longer gates every start** (steward S2). It is kept in `index.html` as a `<template>` and plays once per device, at the first sign-in (`device.wordmarkSeen`); `playWordmarkDraw()` shows it any time. A tap skips it; its fade is 0.5 s (was 1.6 s). *Max (when); Claude (once per device, not per account)*
 - **Open:** the logo's thickness (24 / 27 / 30 px of 72) and whether the logo is a frozen frame of the loader or drawn heavier. *Max to decide*
+
+## 2026-11-20 · The snake pill matches the wait; a sync ends with its result
+- **The wait decides what is shown** (Max: short waits a small motion, long waits something more, like a description). Under 0.3 s nothing; then the loop; **past 4.8 s (two loops) the hourglass and one line, "Dauert länger als sonst …"**. *Max (the principle, the hourglass); Claude (the threshold)*
+- **The hourglass** (Gemini's draft: top, diagonal, bottom, diagonal; 0.6 s a leg) **rebuilt in CSS** with the stroke technique of the check and the X; the draft's 200-line JavaScript loop, speed buttons and trail were left out. Its diagonals are √2 longer in the same time, so it moves faster there (measured: 10.3 vs 7.3 px a frame); no jump. *Max (the shape); Claude (the build)*
+- **Changes of kind only at the end of a lap**, where every loop is a dot at the top left: the switch measured 0.1 px. *Max*
+- **The line of text sits on a small surface pill**, so it reads over whatever the app shows behind it. *Claude (found in the light theme)*
+- **A sync ends with its result:** after its last lap, a check when it worked, an X when it didn't (offline, an error, an expired sign-in). Check in the pill's colour, X in `--danger`; no dots behind either (a result, not a wait). *Max (check / X); Claude (the colours)*
+- **TEMPORARY preview is now 7.2 s** (two loops and one hourglass). *Max*
+- **Colour token `--snake-pill-colour`** (default `--text`). **Open:** blue in the light theme. C.2 keeps the interface colourless and the only blue is a category's (`--c-blue`). *Max to decide*
+- **Logo proportion: 3 : 8 on a 64 box** — thickness 24, gap 16, every number on the spacing scale; the same as the favoured 27 of 72. **Open:** its colours, and whether the loader moves to the same 64 box so the logo is again its frozen frame. *Claude (proposal); Max to decide*
