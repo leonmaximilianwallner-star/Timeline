@@ -73,12 +73,11 @@ function drawCanvas(){
   renderIdeas();
 }
 /* the shown tab's ideas: placed from the floor up and from their day, so the grid can grow either way under them */
-const ideaClass = h => "idea" + (h === 1 ? " pill" : "");
 const ideaStyle = (c, row, w, h) => `--c:${c}; --w:${w}; bottom:${row * CANVAS_CELL}px; height:${h * CANVAS_CELL}px`;   // across: by the dots' scale (styles/canvas.css)
 function renderIdeas(){
   const tab = activeCanvasTab().id;
   document.getElementById("canvasIdeas").innerHTML = S.ideas.filter(i => i.tabId === tab)
-    .map(i => `<div class="${ideaClass(i.h)}" style="${ideaStyle(dayIdx(i.day), i.row, i.w, i.h)}"></div>`).join("");
+    .map(i => `<div class="idea" data-idea="${i.id}" style="${ideaStyle(dayIdx(i.day), i.row, i.w, i.h)}"></div>`).join("");
 }
 
 /* the rail's two heights: closed (months, then lines) and open (the timeline's own rows), each capped */

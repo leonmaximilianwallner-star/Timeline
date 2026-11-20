@@ -112,11 +112,9 @@ input.canvas-tab{outline:none; field-sizing:content; min-width:4ch}   /* as wide
 
 /* text keeps its shape: labels step out while the timeline is stretched between the two scales (ui/canvas-morph.js) */
 
-/* the canvas's ideas (views/canvas/render.js): on the cells, corners on the dots; frei grey until they get a category.
-   One row is a pill, more a squircle, as phases and events. The preview is the dashed outline of every create (day, timeline) */
+/* the canvas's ideas (views/canvas/render.js): on the cells, corners on the dots; frei grey until they get a category */
 #canvasIdeas{position:absolute; inset:0; pointer-events:none}
-.idea{position:absolute; box-sizing:border-box; left:calc(var(--ox, 0px) + var(--c) * var(--gp)); width:calc(var(--w) * var(--gp)); background:var(--c-gray); border-radius:var(--r-small)}
-.idea.pill{border-radius:9999px}
-.idea.preview{background:transparent; border:1.5px dashed var(--fg-muted)}
-/* a tab's menu (views/canvas/tabs.js): one list row, floating under the tab as a raised list with a hairline edge (C.2) */
-.tab-menu{position:fixed; z-index:40; min-width:200px; background:var(--raised); border:1px solid var(--hairline)}
+/* an idea and its ghost: on its cells, by the dots' scale across (--gp), one radius for all, half a row: the browser
+   keeps a radius to half the shorter side, so one row is a pill and taller ones are pills drawn out (as events) */
+#canvasIdeas > *{position:absolute; box-sizing:border-box; left:calc(var(--ox, 0px) + var(--c) * var(--gp)); width:calc(var(--w) * var(--gp)); border-radius:calc(var(--cell) / 2)}
+.idea{background:var(--c-gray); pointer-events:auto; cursor:grab}
