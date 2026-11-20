@@ -188,7 +188,7 @@ await step('the rail is the timeline: in draw mode a drag on it creates a phase;
   assert.equal(await q(() => document.querySelectorAll('#canvasIdeas .ghost').length + S.ideas.length), 2, 'no idea drawn');
   await page.keyboard.press('Escape');
   await q(() => openRail(true)); await page.waitForTimeout(400);
-  const h = await q(() => { const el = document.querySelector('#railInner .phase .ph-handle.r'); const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, id: el.closest('.phase').dataset.phase }; });
+  const h = await q(() => { const el = document.querySelector('#railInner .phase .rez[data-rez="r"]'); const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, id: el.closest('.phase').dataset.phase }; });
   const end0 = await q(id => S.phases.find(p => p.id === id).end, h.id);
   await page.mouse.move(h.x, h.y); await page.mouse.down();
   for (let i = 1; i <= 6; i++) await page.mouse.move(h.x + i * 20, h.y);

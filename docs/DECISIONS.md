@@ -357,3 +357,12 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **Small behaviour changes, on purpose:** a cancelled pointer (the browser took the gesture) never saves; a touch scroll that starts on an event no longer opens its editor; a click is "the snapped rectangle never changed", so a few pixels of jitter on an event still opens it. *Claude*
 - **Corners of a rounded idea:** near the arc counts for both sides; the exact corner point is outside the shape. *Claude*
 
+## 2026-11-20 · Notes; one shadow, one hover, one cursor rule; stacking
+- **Notes open in the events' editor**, as a fourth kind (`idea`, "Notiz"); the phase's text part became shared (`textPartHTML`) and gained a checklist. *Max*
+- **One text format: sanitised HTML** (bold, italic, list, checklist as `ul[data-check]` with `li[data-done]`), as the phase's note already was. The rulebook's line format, where a checkbox line is a step, comes with steps. *Max, after Claude laid out both*
+- **`sanitize` parses in a `<template>`**: in a detached `<div>` the browser loaded an `<img>` and ran its `onerror` before it was stripped, so synced text could run code. *Claude (found by the test)*
+- **A single click opens a note**, as an event or a phase. *Max*
+- **One elevation `--lift`, one hover, one cursor rule for every thing**; resize handles are one element everywhere (`.rez[data-rez]`), and every drag reads its zone from the handle pressed. *Max; Claude (the handles)*
+- **The last note touched is drawn in front** (`z`, synced with the note). *Max*
+- **Open:** notes and events are tinted at 82 % (`d0`), so overlapping notes show through each other; solid fills (B.3) would fix it for both. *Claude, for Max to decide*
+

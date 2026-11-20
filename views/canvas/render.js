@@ -74,10 +74,15 @@ function drawCanvas(){
 }
 /* the shown tab's ideas: placed from the floor up and from their day, so the grid can grow either way under them */
 const ideaStyle = (c, row, w, h) => `--c:${c}; --w:${w}; bottom:${row * CANVAS_CELL}px; height:${h * CANVAS_CELL}px`;   // across: by the dots' scale (styles/canvas.css)
+/* an idea shows what its height holds, as an event does: one row its title; taller, its text below, faded where cut.
+   It wears its category's colour as an event; its handles are an event's and a phase's (styles/base.css) */
+const RESIZE_HANDLES = ["l", "r", "t", "b", "lt", "rt", "lb", "rb"].map(z => `<span class="rez" data-rez="${z}"></span>`).join("");
 function renderIdeas(){
   const tab = activeCanvasTab().id;
-  document.getElementById("canvasIdeas").innerHTML = S.ideas.filter(i => i.tabId === tab)
-    .map(i => `<div class="idea" data-idea="${i.id}" style="${ideaStyle(dayIdx(i.day), i.row, i.w, i.h)}"></div>`).join("");
+  document.getElementById("canvasIdeas").innerHTML = S.ideas.filter(i => i.tabId === tab).sort((a, b) => (a.z || 0) - (b.z || 0))
+    .map(i => `<div class="idea" data-idea="${i.id}" style="${ideaStyle(dayIdx(i.day), i.row, i.w, i.h)}; background:${cat(i.categoryId).color}d0">`
+      + (i.title ? `<span class="idea-title">${esc(i.title)}</span>` : "")
+      + (i.h > 1 && i.body ? `<div class="idea-body rich">${sanitize(i.body)}</div>` : "") + RESIZE_HANDLES + `</div>`).join("");
 }
 
 /* the rail's two heights: closed (months, then lines) and open (the timeline's own rows), each capped */

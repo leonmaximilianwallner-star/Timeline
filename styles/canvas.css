@@ -95,7 +95,7 @@ input.canvas-tab{outline:none; field-sizing:content; min-width:4ch}   /* as wide
 #railDays{flex:none; padding-bottom:env(safe-area-inset-bottom); background:var(--base)}   /* the days: whole, above the phone's home indicator */
 #rail.measuring{height:auto !important}                        /* measured at their own heights */
 #rail .ph-exp{visibility:hidden}                              /* no dropdowns here; kept in place so the pills match the timeline's */
-#rail:not(.open) .ph-handle{display:none}                     /* the open rail resizes as the timeline does; the thin one is lines only */
+#rail:not(.open) .rez{display:none}                     /* the open rail resizes as the timeline does; the thin one is lines only */
 /* closed: the months, then every row as a line */
 #rail .tlRow, #rail .phase, #rail .milestone-chip{transition:height .22s var(--soft), top .22s var(--soft), padding .22s var(--soft)}
 #rail .ph-stick, #rail .projLabel, #rail .milestone-label, #rail .chip-title, #rail .chip-note, #rail .monthLabel{transition:opacity .16s}
@@ -117,4 +117,7 @@ input.canvas-tab{outline:none; field-sizing:content; min-width:4ch}   /* as wide
 /* an idea and its ghost: on its cells, by the dots' scale across (--gp), one radius for all, half a row: the browser
    keeps a radius to half the shorter side, so one row is a pill and taller ones are pills drawn out (as events) */
 #canvasIdeas > *{position:absolute; box-sizing:border-box; left:calc(var(--ox, 0px) + var(--c) * var(--gp)); width:calc(var(--w) * var(--gp)); border-radius:calc(var(--cell) / 2)}
-.idea{background:var(--c-gray); pointer-events:auto; cursor:grab}
+.idea{display:flex; flex-direction:column; padding:10px 16px; color:#ededec; font-size:var(--fs-body); line-height:20px; pointer-events:auto}
+.idea-title{flex:none; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.idea-body{flex:1 1 0; min-height:0; overflow:hidden; font-size:var(--fs-small); line-height:16px; margin-top:4px;   /* what its height holds, faded where cut */
+  -webkit-mask-image:linear-gradient(#000 calc(100% - 16px), transparent); mask-image:linear-gradient(#000 calc(100% - 16px), transparent)}

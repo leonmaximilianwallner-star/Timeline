@@ -62,7 +62,6 @@
      doesn't scroll) and break it. */
   clip-path: inset(0 round 9999px);
 }
-.phase:hover{filter:brightness(1.12)}
 .phase.done{opacity:.45}                                      /* finished: the app-wide done rule */
 .phase .ph-fill{position:absolute; left:0; top:0; bottom:0; border-radius:9999px; pointer-events:none}
 .phase .ph-count{position:absolute; right:12px; top:0; bottom:0; display:flex; align-items:center;
@@ -80,8 +79,6 @@
 .phase .ph-exp svg{transition:transform .2s var(--soft)}
 .phase.open .ph-exp svg{transform:rotate(180deg)}
 .phase .ph-label{ font-size:12px; font-weight:600; }
-.phase .ph-handle{position:absolute; top:0; height:100%; width:10px; cursor:ew-resize}
-.phase .ph-handle.l{left:0}.phase .ph-handle.r{right:0}
 .dropdown-row{padding:8px 0; display:grid; z-index:4}   /* over the today line (3): the line runs behind the plan */
 /* plans in one row share its height; 8px from the phase, 8px to the next lane */
 .dropdown-anchor{display:flex; grid-area:1/1; align-self:start}
@@ -109,7 +106,6 @@
   border-radius:9999px; padding:3px 14px 4px; text-align:center;
   color:#ededec; cursor:pointer; white-space:nowrap; line-height:1.15;
 }
-.milestone-chip:hover{filter:brightness(1.12)}
 .milestone-chip .chip-title{font-size:var(--fs-small); font-weight:600; display:block}
 .milestone-chip .chip-note{font-size:var(--fs-label); opacity:.85; display:block}
 .milestone-chip::after{content:""; position:absolute; left:50%; top:100%; width:1.5px; height:9px; background:var(--hairline); transform:translateX(-50%)}

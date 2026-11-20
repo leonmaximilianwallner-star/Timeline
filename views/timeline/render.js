@@ -113,7 +113,7 @@ function appendPhaseLanes(frag, phases, ppd, rail){
         `<span class="ph-stick"><span class="ph-label">${esc(ph.title)}</span>`+
         `<button class="ph-exp" data-expand="${ph.id}" aria-expanded="${isOpen}" title="Fahrplan">${CHEVRON}</button></span>`+
         (total && w >= 90 ? `<span class="ph-count">${done}/${total}${noDay ? ` · ${noDay} ohne Tag` : ""}</span>` : "")+
-        `<span class="ph-handle l" data-rez="l"></span><span class="ph-handle r" data-rez="r"></span>`;
+        `<span class="rez" data-rez="l"></span><span class="rez" data-rez="r"></span>`;
       r.appendChild(el);
     });
 

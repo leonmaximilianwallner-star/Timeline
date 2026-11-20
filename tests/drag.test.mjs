@@ -108,12 +108,12 @@ await step('day view, add mode: a drag creates an event; its ghost stays behind 
 const ph = () => q(() => { const p = S.phases.find(x => x.id === 'ph1'); return [dayIdx(p.start), diffDays(p.start, p.end)]; });
 await step('timeline: the right handle lengthens a phase by two days, the left shortens it by one', async () => {
   await q(() => { $scene.scrollTop = 0; $scene.scrollLeft = (dayIdx(todayISO()) - 1) * TL_PPD; }); await page.waitForTimeout(400);
-  assert.equal(await q(() => { const r = document.querySelector('#tlInner .phase[data-phase="ph1"] .ph-handle.r').getBoundingClientRect(); return document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.className; }), 'ph-handle r', 'the handle is on screen');
+  assert.equal(await q(() => { const r = document.querySelector('#tlInner .phase[data-phase="ph1"] .rez[data-rez="r"]').getBoundingClientRect(); return document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.className; }), 'rez', 'the handle is on screen');
   const [x0, w0] = await ph(), ppd = await q(() => TL_PPD);
-  let h = await box('#tlInner .phase[data-phase="ph1"] .ph-handle.r');
+  let h = await box('#tlInner .phase[data-phase="ph1"] .rez[data-rez="r"]');
   await drag({ x: h.x + h.w / 2, y: h.y + h.h / 2 }, { x: h.x + h.w / 2 + 2 * ppd, y: h.y + h.h / 2 });
   assert.deepEqual(await ph(), [x0, w0 + 2]);
-  h = await box('#tlInner .phase[data-phase="ph1"] .ph-handle.l');
+  h = await box('#tlInner .phase[data-phase="ph1"] .rez[data-rez="l"]');
   await drag({ x: h.x + h.w / 2, y: h.y + h.h / 2 }, { x: h.x + h.w / 2 + ppd, y: h.y + h.h / 2 });
   assert.deepEqual(await ph(), [x0 + 1, w0 + 1]);
   await closeEditor();

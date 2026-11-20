@@ -70,3 +70,31 @@ button:focus-visible{outline:2px solid var(--text); outline-offset:2px}
    Each view shapes the ghost as its things (styles/timeline.css, canvas.css); a ghost wears its thing's colour */
 .ghost{position:absolute; border:1.5px dashed var(--fg-muted); border-radius:var(--r-small); background:rgba(127,127,140,.08); z-index:12; pointer-events:none; box-sizing:border-box}
 :is(.event, .phase, .idea).dragging{opacity:.35}
+
+/* things: events, phases, ideas, milestone chips. One elevation (a flat offset shadow, --lift), one hover (a little
+   brighter), one cursor rule: a finger over a thing (a click opens it), the grabbing hand while it moves, a double
+   arrow on its handles and while resizing, a crosshair while creating. During a drag the drag's cursor holds everywhere */
+:is(.event, .phase, .idea, .milestone-chip){box-shadow:var(--lift); cursor:pointer}
+:is(.event, .phase, .idea, .milestone-chip):hover{filter:brightness(1.1)}
+#rail:not(.open) .phase{box-shadow:none}                          /* the thin rail draws phases as lines */
+/* resize handles: the sides a drag resizes from (input/pointer.js reads data-rez), 8 px deep, corners 16 px */
+.rez{position:absolute; z-index:1}
+.rez[data-rez*="l"]{left:0} .rez[data-rez*="r"]{right:0} .rez[data-rez*="t"]{top:0} .rez[data-rez*="b"]{bottom:0}
+.rez:is([data-rez="l"], [data-rez="r"]){top:0; bottom:0; width:8px}
+.rez:is([data-rez="t"], [data-rez="b"]){left:0; right:0; height:8px}
+.rez:is([data-rez="lt"], [data-rez="rt"], [data-rez="lb"], [data-rez="rb"]){width:16px; height:16px; z-index:2}
+:is([data-rez="l"], [data-rez="r"]), :root:is([data-drag="l"], [data-drag="r"]){cursor:ew-resize}
+:is([data-rez="t"], [data-rez="b"]), :root:is([data-drag="t"], [data-drag="b"]){cursor:ns-resize}
+:is([data-rez="lt"], [data-rez="rb"]), :root:is([data-drag="lt"], [data-drag="rb"]){cursor:nwse-resize}
+:is([data-rez="rt"], [data-rez="lb"]), :root:is([data-drag="rt"], [data-drag="lb"]){cursor:nesw-resize}
+:root[data-drag="move"]{cursor:grabbing}
+:root[data-drag="new"]{cursor:crosshair}
+:root[data-drag] *{cursor:inherit !important}
+
+/* formatted text (ui/editor.js textPartHTML): the editor's and a note's preview on the canvas */
+.rich ul, .rich ol{padding-left:18px; margin:0}
+.rich ul[data-check]{list-style:none; padding-left:0}
+.rich ul[data-check] > li{position:relative; padding-left:22px}
+.rich ul[data-check] > li::before{content:""; position:absolute; left:2px; top:calc(50% - 7px); width:14px; height:14px; box-sizing:border-box; border:1.5px solid currentColor; border-radius:4px; opacity:.7}
+.rich ul[data-check] > li[data-done]::before{background:currentColor; opacity:1}
+.rich ul[data-check] > li[data-done]{text-decoration:line-through; opacity:.6}
