@@ -368,8 +368,9 @@ input/
   add-mode.js               add mode (the + button)
   day-drag.js               creating, moving and resizing events by drag
   timeline-drag.js          creating and resizing phases, opening editors on the timeline (onTimelineClick: also the rail's)
-  canvas-pull.js            the pull between the week and the canvas; panning the canvas; the rail on hover
-  canvas-drag.js            the canvas's rules for the one drag (pointer.js dragRect): drawing, moving, resizing ideas
+  canvas-pull.js            the pull between the week and the canvas; panning the canvas (Space, Shift, the middle button, two fingers) and which gesture a press on it starts; the rail on hover
+  canvas-drag.js            the canvas's rules for the one drag (pointer.js dragRect): drawing, moving (with the selection), resizing ideas
+  canvas-select.js          the canvas's selection (view state): the marquee and its two modes, Shift + click, the select button
 
 ui/
   snake-pill.js             the snake pill, the one waiting animation: start-up (only if it takes > 0.3 s; the hourglass past 4.8 s) and Jetzt synchronisieren (ends with a check or an X); switches to the hourglass only at the end of a lap, ends at the next dot

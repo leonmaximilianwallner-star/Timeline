@@ -420,3 +420,14 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **The canvas has the touch to itself** (`touch-action:none` while it is the view; before, only in draw mode), so one finger can select. *Claude*
 - **Cursor:** the open hand while Space is held, the closed hand while panning; the empty canvas no longer shows the hand at rest (it doesn't pan any more). *Max (the hands); Claude (none at rest)*
 - **Shift + click on an idea** is part E's (add it to or take it from the selection); Shift + drag stays a pan. *Max*
+
+## 2026-11-20 · Selecting on the canvas
+- **A plain drag on the empty canvas draws the marquee**; a drag on an idea still moves it, the add button still draws. *Max*
+- **Touch is the default mode** (anything the marquee overlaps), **enclose the other** (wholly inside). The marquee isn't snapped and a finger is imprecise, so enclosing would ask for an exact overshoot; touching forgives it. The select icon fits: crossing corners at rest (touching), the closed marquee when active (enclosing). Per device, not synced. *Max (touch); Claude (the reason, per device)*
+- **A click on an idea opens it, and it is then the selection.** Shift + click adds or takes away one idea; Shift + drag pans (part D). Ctrl/Cmd + marquee adds or takes away what it hits. A click on the empty canvas, or Escape, clears (Escape: after draw mode, before leaving the canvas). *Max (click opens, Shift pans); Claude (Ctrl for the marquee, since Shift pans)*
+- **Group move is the one drag**: the pressed idea's ghost, and one more ghost for each other selected idea at the same offset, as parts of it; all faded; one `mutate`, so one undo step; their order front to back is kept. Pressing an idea that isn't selected makes it the selection, so it moves alone. Out of scope: group resize, delete, copy, align. *Max (scope); Claude (the build)*
+- **The marquee's line is an svg**: a CSS dashed border can't set its gaps. Same 1.5 px line in `--fg-muted` as the ghost, dashes 4.5, gaps 7.5; the ideas' radius, kept to half the shorter side. *Claude*
+- **The selected look:** the hard ring of C.2, 2 px in `--text`, 2 px off the idea, following its radius. *Claude, from the rulebook*
+- **The selection is view state**: `UI.selection`, pruned to the shown tab's ideas whenever they are drawn (a tab change, a deletion from another device). *Claude*
+- **Text in ideas can't be selected by a drag** (`user-select:none`, as events and phases): the marquee was selecting titles. *Claude (found)*
+- **Not done:** auto-panning at the screen's edge while drawing the marquee (the edge pan moves the week only). *Claude, for later*

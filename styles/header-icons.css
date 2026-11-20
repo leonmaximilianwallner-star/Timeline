@@ -1,6 +1,7 @@
 /* styles/header-icons.css — the header's icons and the add button's (ui/header-icons.js): filled pills and dots,
    16 thick on a 72 box, drawn at 20 px. Colour is the button's (currentColor), so filled, plain and outlined
    buttons need nothing of their own. */
+:root:not([data-view="canvas"]) #btnSelect{display:none}   /* the select button belongs to the canvas, as its tabs */
 svg.glyph{width:20px; height:20px; display:block; overflow:visible; flex:none}
 svg.glyph *{fill:currentColor}
 svg.glyph .arc{stroke:currentColor; stroke-linejoin:round}

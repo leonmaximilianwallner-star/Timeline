@@ -8,11 +8,12 @@
    canvasTab   id of the canvas tab shown here (views/canvas/tabs.js); missing or gone: the first
    syncSentUpTo / syncSeenUpTo  how far this device has sent and received (data/sync.js)
    pushWanted  push reminders were switched on here: if the browser drops the subscription, it is renewed (reminders.js)
+   selectMode  what the canvas's marquee selects: "touch" (what it touches) or "enclose" (input/canvas-select.js)
    wordmarkSeen  the drawn wordmark was shown here, at the first sign-in (ui/wordmark-draw.js)
    Changes here are not undoable and don't count as changes to the plan.
    ════════════════════════════════════════════════════════════ */
 function loadDevice(){
-  const fallback = { theme:"dark", density:5, dayStart:6, openPhases:[], syncSentUpTo:null, syncSeenUpTo:null };
+  const fallback = { theme:"dark", density:5, dayStart:6, selectMode:"touch", openPhases:[], syncSentUpTo:null, syncSeenUpTo:null };
   try{
     const raw = localStorage.getItem(DEVICE_KEY);
     if(raw){ const d = Object.assign(fallback, JSON.parse(raw)); if(d.dayStart === 0) d.dayStart = 5; return d; }   // 0:00 is gone (Max, 20 Nov): the nearest

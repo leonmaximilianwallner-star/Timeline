@@ -47,7 +47,7 @@ function drawNow(g, t){
   ring.setAttribute("r", f2(lerp(28, 22, t))); ring.setAttribute("stroke-width", f2(lerp(16, 12, t)));
 }
 
-/* Auswahl: at rest two crossing corners (touching selects); active, the selection frame, four corners with uneven legs,
+/* Auswahl: at rest two crossing corners (touching selects); active, the closed marquee, four corners with uneven legs,
    14 ahead and 6 behind, all the same way round, as if caught mid-march (enclosing selects). Legs 14 + 6 leave 28
    between corners: 12 clear, the set's gap. Nothing loops */
 const SELECT_REST = [
@@ -110,9 +110,9 @@ const HEADER_ICON = {
           } },
 };
 /* a two-state icon drawn by draw(g, p): from where it is to where it goes, in the share of the time that is left */
-function setDrawn(def, g, on, st){
+function setDrawn(def, g, on, st, instant){
   const from = st.p ?? 0, to = on ? 1 : 0;
-  st.stop(); st.stop = tween(def.ms * Math.abs(to - from), t => { st.p = lerp(from, to, t); def.draw(g, st.p); });
+  st.stop(); st.stop = tween(instant ? 0 : def.ms * Math.abs(to - from), t => { st.p = lerp(from, to, t); def.draw(g, st.p); });
 }
 
 const iconState = new WeakMap();                       // per button: its name, whether it is on, what it is doing
@@ -124,17 +124,17 @@ function mountIcon(el, name){
   if(def.init) def.init(g); else if(def.draw) def.draw(g, 0);
   return g;
 }
-function setIcon(el, on){
+function setIcon(el, on, instant){                    // instant: no motion (the state it starts with)
   const st = iconState.get(el); if(!st || st.on === !!on) return;   // only a change moves it
   st.on = !!on;
   const def = HEADER_ICON[st.name];
-  def.set ? def.set(st.g, st.on, st) : setDrawn(def, st.g, st.on, st);
+  def.set ? def.set(st.g, st.on, st) : setDrawn(def, st.g, st.on, st, instant);
 }
 function playIcon(el){
   const st = iconState.get(el); if(st && !el.disabled) HEADER_ICON[st.name].play(st.g, st);
 }
 
 /* the header's buttons and the add button get theirs at once; the canvas tabs' + takes the add icon at rest (views/canvas/tabs.js) */
-[["btnUndo", "undo"], ["btnRedo", "redo"], ["btnToday", "now"], ["btnBudget", "time"], ["btnSettings", "settings"], ["fab", "add"]]
+[["btnSelect", "select"], ["btnUndo", "undo"], ["btnRedo", "redo"], ["btnToday", "now"], ["btnBudget", "time"], ["btnSettings", "settings"], ["fab", "add"]]
   .forEach(([id, name]) => mountIcon(document.getElementById(id), name));
 const addIconHTML = () => { const b = document.createElement("span"); mountIcon(b, "add"); return b.innerHTML; };

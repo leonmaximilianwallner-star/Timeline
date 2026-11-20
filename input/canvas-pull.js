@@ -146,16 +146,18 @@ $canvasGrid.addEventListener("pointerdown", e => {
   }
   if(e.button === 1 || (e.button === 0 && (spaceHeld || e.shiftKey))){
     e.stopPropagation(); e.preventDefault();                     // the rail's and the ideas' own handlers never see it
-    return startPan(e);
+    const idea = e.shiftKey && !spaceHeld && e.button === 0 && !e.target.closest("#rail") && e.target.closest(".idea");
+    return startPan(e, idea ? () => toggleSelected(idea.dataset.idea) : null);   // Shift + click on an idea: in or out of the selection
   }
 }, true);
 
-/* ── the canvas, after panning has had its say: the thing under the pointer first, then draw mode ── */
+/* ── the canvas, after panning has had its say: the thing under the pointer first, then draw mode, then the marquee ── */
 $canvasGrid.addEventListener("pointerdown", e => {
   if(e.button !== 0 || e.target.closest("#rail") || !UI.canvas.active || morph.on || twoFingers) return;
   const idea = e.target.closest(".idea");
   if(idea){ oneFinger = startIdeaDrag(e, idea); return; }         // move or resize it (input/canvas-drag.js)
   if(UI.drawMode){ oneFinger = startDraw(e); return; }           // draw mode: the drag draws
+  oneFinger = startMarquee(e);                                     // else it selects (input/canvas-select.js)
 });
 
 /* ── the rail: opens while the pointer rests on it; a click opens what it hits, as on the timeline ── */
