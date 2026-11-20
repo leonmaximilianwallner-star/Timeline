@@ -30,7 +30,7 @@ async function open(context){
   page.on('pageerror', e => { failed++; console.error('✗ page error:', e.message); });
   await page.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
   await page.goto(APP);
-  await page.waitForFunction(() => !document.getElementById('tl-loader'), null, { timeout: 8000 }).catch(() => {});
+  await page.waitForFunction(() => !document.getElementById('bootSnakePill'), null, { timeout: 8000 }).catch(() => {});
   await page.waitForTimeout(300);
   return page;
 }

@@ -29,7 +29,7 @@ const page = await (await browser.newContext({ viewport: { width: 1440, height: 
 page.on('pageerror', e => { failed++; console.error('✗ page error:', e.message); });
 await page.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
 await page.goto(APP);
-await page.waitForFunction(() => !document.getElementById('tl-loader'), null, { timeout: 8000 }).catch(() => {});
+await page.waitForFunction(() => !document.getElementById('bootSnakePill'), null, { timeout: 8000 }).catch(() => {});
 await page.waitForTimeout(300);
 const q = (fn, a) => page.evaluate(fn, a);
 const box = sel => q(sel => { const r = document.querySelector(sel).getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height, r: r.right, b: r.bottom }; }, sel);

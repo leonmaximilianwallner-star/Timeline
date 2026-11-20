@@ -372,7 +372,8 @@ input/
   canvas-drag.js            the canvas's rules for the one drag (pointer.js dragRect): drawing, moving, resizing ideas
 
 ui/
-  loader.js                 loading screen
+  snake-pill.js             the snake pill, the one waiting animation: start-up (only if it takes > 0.3 s) and Jetzt synchronisieren; finishes its lap before it goes
+  wordmark-draw.js          the drawn wordmark, once per device at the first sign-in (was the loading screen)
   toast.js                  toast message
   editor.js                 editor and its todo list
   time-budget.js            time budget
@@ -382,7 +383,7 @@ ui/
   focus-morph.js            from the event editor to Fokus in one motion (a container transform)
   canvas-morph.js           between the week and the canvas: the timeline becomes the rail and back (§6.1)
 
-styles/   tokens · base · timeline · canvas · day · focus · add-button · lists (rows, overlines, switches: shared by editor and settings) · editor · todos (todo rows, the celebration) · settings · time-budget · toast · device · loader
+styles/   tokens · base · timeline · canvas · day · focus · add-button · lists (rows, overlines, switches: shared by editor and settings) · editor · todos (todo rows, the celebration) · settings · time-budget · toast · device · snake-pill · wordmark-draw
 
 supabase/
   schema.sql                the plan's table (records): who may read it, the server's two rules

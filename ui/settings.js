@@ -241,13 +241,19 @@ function wireSettings(page, c){
         const email = $("#sEmail").value.trim(), password = $("#sPassword").value;
         if(!email || !password){ setSyncState("off", "E-Mail und Passwort eingeben"); return; }
         signInBtn.disabled = true; setSyncState("busy", "");
-        signIn(email, password).then(()=>renderSettings())
+        signIn(email, password).then(()=>{
+          renderSettings();
+          if(!device.wordmarkSeen){ setDevice(dv=>{ dv.wordmarkSeen = true; }); playWordmarkDraw(); }   // the greeting, once per device (ui/wordmark-draw.js)
+        })
           .catch(e=>{ signInBtn.disabled = false; setSyncState("off", e instanceof TypeError ? "Keine Verbindung" : e.message); });
       };
       signInBtn.onclick = go;
       $("#sPassword").addEventListener("keydown", e=>{ if(e.key==="Enter") go(); });
     }
-    on("#sSyncNow", "click", ()=>syncNow());
+    on("#sSyncNow", "click", ()=>{                     // the panel already dims the app, so the snake pill doesn't
+      const pill = showSnakePill("sync", { dim:false });
+      syncNow().finally(()=>pill.stop());              // at least one whole lap, then the lap it is in
+    });
     on("#sSignOut", "click", ()=>disablePush().catch(()=>{}).then(signOut).then(()=>renderSettings()));   // no reminders for a signed-out device
   }
 }
