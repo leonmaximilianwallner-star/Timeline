@@ -59,7 +59,7 @@ input.canvas-tab{outline:none; field-sizing:content; min-width:4ch}   /* as wide
 #canvasScene{position:absolute; inset:0; overflow:auto; overscroll-behavior:contain; outline:none;
   overflow-anchor:none}                                       /* the rail opening or closing must never move the canvas (scroll anchoring did) */
 /* the grid: a dot where its lines would cross, one cell a day; its floor is its bottom edge */
-#canvasGrid{
+#canvasGrid{--gp:var(--ppd, var(--cell));   /* px a day: the canvas's, or the switch's (ui/canvas-morph.js); dots and ideas both */
   position:relative; display:flex; flex-direction:column; justify-content:flex-end; cursor:grab;
 }
 #canvasGrid.panning{cursor:grabbing}
@@ -67,8 +67,7 @@ input.canvas-tab{outline:none; field-sizing:content; min-width:4ch}   /* as wide
    One dot a day, then 12 h, then 6 h as the days widen (views/range.js tiersFor, at MIN_DOT_PX): the timeline's own scale
    (--ppd) while the switch runs, the canvas's at rest, from the band's day 0 (--gx). Rows don't scale.
    A finer layer is drawn only while its tier shows (.half, .quarter): each costs ~4 ms a frame */
-#canvasDots{position:absolute; inset:0; pointer-events:none;
-  --gp:var(--ppd, var(--cell)); --gy:calc(var(--cell) / -2);
+#canvasDots{position:absolute; inset:0; pointer-events:none; --gy:calc(var(--cell) / -2);
   --day:radial-gradient(circle, color-mix(in srgb, var(--canvas-dot) calc(var(--t-day, 1) * 100%), transparent) 1.25px, transparent 1.75px);
   --half:radial-gradient(circle, color-mix(in srgb, var(--canvas-dot) calc(var(--t-half, 0) * 100%), transparent) 1.25px, transparent 1.75px);
   --quarter:radial-gradient(circle, color-mix(in srgb, var(--canvas-dot) calc(var(--t-quarter, 0) * 100%), transparent) 1.25px, transparent 1.75px);
@@ -76,7 +75,7 @@ input.canvas-tab{outline:none; field-sizing:content; min-width:4ch}   /* as wide
   background-size:var(--gp) var(--cell);
   background-position:calc(var(--gx, 0px) - var(--gp) / 2) var(--gy);
 }
-#views.dragging #canvasDots{top:auto; left:var(--sl); right:auto; width:100vw; height:100vh}   /* while the switch runs: only the window it can be seen through (the canvas doesn't scroll then); the whole width cost 8 ms a frame */
+#views.dragging #canvasDots{top:auto; left:var(--sl); right:auto; width:100vw; height:round(up, 100vh, var(--cell))}   /* whole cells: its rows count from the floor, as at rest */   /* while the switch runs: only the window it can be seen through (the canvas doesn't scroll then); the whole width cost 8 ms a frame */
 #canvasDots.half{background-image:var(--day), var(--half); background-size:var(--gp) var(--cell), var(--gp) var(--cell);
   background-position:calc(var(--gx, 0px) - var(--gp) / 2) var(--gy), var(--gx, 0px) var(--gy)}
 #canvasDots.quarter{background-image:var(--day), var(--half), var(--quarter); background-size:var(--gp) var(--cell), var(--gp) var(--cell), calc(var(--gp) / 2) var(--cell);
@@ -96,7 +95,7 @@ input.canvas-tab{outline:none; field-sizing:content; min-width:4ch}   /* as wide
 #railDays{flex:none; padding-bottom:env(safe-area-inset-bottom); background:var(--base)}   /* the days: whole, above the phone's home indicator */
 #rail.measuring{height:auto !important}                        /* measured at their own heights */
 #rail .ph-exp{visibility:hidden}                              /* no dropdowns here; kept in place so the pills match the timeline's */
-#rail .ph-handle{display:none}
+#rail:not(.open) .ph-handle{display:none}                     /* the open rail resizes as the timeline does; the thin one is lines only */
 /* closed: the months, then every row as a line */
 #rail .tlRow, #rail .phase, #rail .milestone-chip{transition:height .22s var(--soft), top .22s var(--soft), padding .22s var(--soft)}
 #rail .ph-stick, #rail .projLabel, #rail .milestone-label, #rail .chip-title, #rail .chip-note, #rail .monthLabel{transition:opacity .16s}
@@ -116,6 +115,8 @@ input.canvas-tab{outline:none; field-sizing:content; min-width:4ch}   /* as wide
 /* the canvas's ideas (views/canvas/render.js): on the cells, corners on the dots; frei grey until they get a category.
    One row is a pill, more a squircle, as phases and events. The preview is the dashed outline of every create (day, timeline) */
 #canvasIdeas{position:absolute; inset:0; pointer-events:none}
-.idea{position:absolute; box-sizing:border-box; background:var(--c-gray); border-radius:var(--r-small)}
+.idea{position:absolute; box-sizing:border-box; left:calc(var(--ox, 0px) + var(--c) * var(--gp)); width:calc(var(--w) * var(--gp)); background:var(--c-gray); border-radius:var(--r-small)}
 .idea.pill{border-radius:9999px}
 .idea.preview{background:transparent; border:1.5px dashed var(--fg-muted)}
+/* a tab's menu (views/canvas/tabs.js): one list row, floating under the tab as a raised list with a hairline edge (C.2) */
+.tab-menu{position:fixed; z-index:40; min-width:200px; background:var(--raised); border:1px solid var(--hairline)}

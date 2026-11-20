@@ -12,7 +12,7 @@ const SETTLE_W    = 2 * Math.PI / (SETTLE_S * 1.2);   // its rate (1/s), as Moti
 const FLICK_RATE  = 0.998;     // how far a flick carries: Apple's deceleration rate (project)
 const VELOCITY_MS = 100;       // only the last stretch of the hand counts for its speed
 
-const morph = { on:false, from:0, y:0, floor:1, f:0, p:0, raf:0, gen:0, hist:[] };
+const morph = { on:false, from:0, y:0, floor:1, f:0, p:0, raf:0, gen:0, hist:[], sl:0 };
 const project = v => (v / 1000) * FLICK_RATE / (1 - FLICK_RATE);         // px/s → px it would still travel
 
 /* takes hold: the canvas in place under the week, at the week's day; from 0 (the week) or 1 (the canvas) */
@@ -26,7 +26,8 @@ function morphStart(from){
   $scene.scrollTop = 0;
   $scene.scrollLeft = morph.f * TL_PPD;
   canvasScrollToDay(morph.f);
-  $canvasDots.style.setProperty("--sl", $canvasScene.scrollLeft + "px");   // the dots' window (styles/canvas.css)
+  morph.sl = $canvasScene.scrollLeft;                              // the canvas doesn't scroll while the switch runs
+  $canvasDots.style.setProperty("--sl", morph.sl + "px");         // the dots' window (styles/canvas.css)
   morph.floor = $railInner.getBoundingClientRect().top - $views.getBoundingClientRect().top;   // the band lands on the rail's rows
   $tlWrap.querySelectorAll(".dropdown-row").forEach(r => r.style.setProperty("--h", r.offsetHeight + "px"));   // it closes from here (styles/canvas.css)
   morph.y = from * morph.floor;
@@ -54,11 +55,12 @@ function morphTo(p){
   $scene.style.setProperty("--p", p);
   applyTiers($scene, ppd);                                         // what is drawn along the days, at this scale (views/range.js)
   $scene.scrollLeft = morph.f * ppd;
-  const dots = tiersFor(ppd, MIN_DOT_PX);                          // the dots: same scale, their own spacing …
-  $canvasDots.style.setProperty("--ppd", ppd + "px"); applyTiers($canvasDots, ppd, MIN_DOT_PX);
+  const dots = tiersFor(ppd, MIN_DOT_PX);                          // the dots and ideas: same scale, the dots their own spacing …
+  $canvasGrid.style.setProperty("--ppd", ppd + "px"); applyTiers($canvasDots, ppd, MIN_DOT_PX);
   $canvasDots.classList.toggle("half", dots.half > 0); $canvasDots.classList.toggle("quarter", dots.quarter > 0);
   const gx = railW() - $scene.scrollLeft;                           // … from the band's day 0, in the dots' window: one system
   $canvasDots.style.setProperty("--gx", (gx % ppd + ppd) % ppd + "px");
+  $canvasGrid.style.setProperty("--ox", morph.sl + gx + "px");      // the ideas: day 0 of the same system, in the grid (0 at rest)
   $tlWrap.style.transform = `translateY(${y}px)`;
   $dayWrap.style.transform = `translateY(${y - p * UI.canvas.railClip}px)`;   // its header lands on the rail's row of days, under the rows the cap shows
   $canvasView.style.transform = `translateY(${y - morph.floor}px)`;
@@ -97,7 +99,7 @@ function morphSettle(to, v){
 function morphEnd(to){
   morph.on = false; morph.gen++;
   [$tlWrap, $dayWrap, $canvasView].forEach(el => { el.style.transform = ""; });
-  for(const k of ["--ppd", "--p", "--gx", "--sl", ...Object.keys(tiersFor(1)).map(k => "--t-" + k)]) [$scene, $canvasDots].forEach(el => el.style.removeProperty(k));
+  for(const k of ["--ppd", "--p", "--gx", "--sl", "--ox", ...Object.keys(tiersFor(1)).map(k => "--t-" + k)]) [$scene, $canvasDots, $canvasGrid].forEach(el => el.style.removeProperty(k));
   $canvasDots.classList.remove("half", "quarter");
   $views.classList.remove("dragging");
   UI.canvas.active = to === 1;

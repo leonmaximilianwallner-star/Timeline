@@ -16,9 +16,10 @@ function gridPos(e){
   const min = snapMin(yToMin(y));
   return { x, y, day, min };
 }
-function tlPos(e){
-  const r = $tlInner.getBoundingClientRect();
-  return clamp(Math.floor((e.clientX - r.left - railW())/TL_PPD), 0, UI.range.days-1);
+/* the day under the pointer: on the timeline view, or on the canvas's rail (the same drawing at the canvas's scale) */
+function tlPos(e, inner = $tlInner){
+  const r = inner.getBoundingClientRect(), rail = inner === $railInner;
+  return clamp(Math.floor((e.clientX - r.left - (rail ? 0 : railW()))/(rail ? CANVAS_CELL : TL_PPD)), 0, UI.range.days-1);
 }
 function vibrate(ms){ if(navigator.vibrate) try{ navigator.vibrate(ms); }catch(_){} }
 

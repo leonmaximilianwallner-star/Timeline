@@ -196,8 +196,8 @@ await step('the rail\'s day row is whole even when its rows don\'t fit; the swit
 await step('the canvas dots follow the switch\'s scale: a dot a day at the canvas, 12 h dots as the days widen, from the band\'s day 0', async () => {
   const r = await q(() => {
     morphStart(0);
-    const at = p => { morphTo(p); const t = tiersFor(parseFloat($canvasDots.style.getPropertyValue('--ppd')), MIN_DOT_PX);
-      return { ppd: $canvasDots.style.getPropertyValue('--ppd'), half: +t.half.toFixed(2), day: t.day, gx: parseFloat($canvasDots.style.getPropertyValue('--gx')) }; };
+    const at = p => { morphTo(p); const t = tiersFor(parseFloat($canvasGrid.style.getPropertyValue('--ppd')), MIN_DOT_PX);
+      return { ppd: $canvasGrid.style.getPropertyValue('--ppd'), half: +t.half.toFixed(2), day: t.day, gx: parseFloat($canvasDots.style.getPropertyValue('--gx')) }; };
     const out = { mid: at(0.5), end: at(1) };
     out.dayAt = ((railW() - $scene.scrollLeft) % parseFloat(out.end.ppd) + 40) % 40;
     morphRelease(0);
@@ -208,7 +208,7 @@ await step('the canvas dots follow the switch\'s scale: a dot a day at the canva
   assert.deepEqual([r.end.day, r.end.half], [1, 0], 'at the canvas: one dot a day, nothing between');
   assert.equal(r.mid.half, 1, 'halfway (105 px a day): the 12 h dots are in');
   assert.ok(Math.abs(r.end.gx - r.dayAt) < 0.01, 'anchored on the band\'s day 0');
-  assert.equal(await q(() => $canvasDots.style.getPropertyValue('--ppd') + $canvasDots.style.getPropertyValue('--gx')), '', 'nothing left behind');
+  assert.equal(await q(() => $canvasGrid.style.getPropertyValue('--ppd') + $canvasGrid.style.getPropertyValue('--ox') + $canvasDots.style.getPropertyValue('--gx')), '', 'nothing left behind');
 });
 
 await step('scrolling again while it settles catches it', async () => {
