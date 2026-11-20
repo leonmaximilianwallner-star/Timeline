@@ -9,14 +9,14 @@ $tlWrap.addEventListener("pointermove", e=>{
 /* the timeline view's pointer, and the canvas's rail's: the rail is the same drawing, so the same code (Max, 20 Nov) */
 function onTimelinePointerDown(e){
   if(e.button!==undefined && e.button!==0) return;
-  const inner = e.target.closest("#rail") ? $railInner : $tlInner, ppd = inner === $railInner ? CANVAS_CELL : TL_PPD;
+  const inner = e.target.closest("#rail") ? $railInner : $tlInner;
 
   /* a phase: its handles resize it, the rest of it moves it (Max, 20 Nov: the same as events and ideas) */
   const phEl = !e.target.closest(".ph-exp") && e.target.closest(".phase"), ph = phEl && S.phases.find(p=>p.id===phEl.dataset.phase);
   if(ph){
     dragRect(e, { at:m=>({ x:tlPos(m, inner), y:0 }), cells:"x", min:{ w:1 }, zone: e.target.closest(".rez")?.dataset.rez || "move",
       rect:{ x:dayIdx(ph.start), y:0, w:diffDays(ph.start, ph.end), h:0 }, el:phEl, dim:phEl, layer:phEl.parentElement,
-      pan: inner === $tlInner, color: ph.categoryId ? cat(ph.categoryId).color : null, place:(g, r)=>placeTimelineGhost(g, r, ppd),
+      pan: inner === $tlInner, color: ph.categoryId ? cat(ph.categoryId).color : null, place:(g, r)=>placeTimelineGhost(g, r, inner),
       done:(r, moved)=>{ if(moved) mutate(s=>{ const t = s.phases.find(p=>p.id===ph.id); t.start = idxDate(r.x); t.end = idxDate(r.x + r.w); }); } });   // a click: the click handler opens it
     return;
   }
@@ -39,15 +39,26 @@ function onTimelinePointerDown(e){
 }
 $tlWrap.addEventListener("pointerdown", onTimelinePointerDown);
 
-/* the timeline's ghost: in the lane it was pressed in, shaped as a phase there (styles/timeline.css) */
-function placeTimelineGhost(g, r, ppd){ g.el.style.left = r.x*ppd+"px"; g.el.style.width = Math.max(r.w*ppd, 26)+"px"; }
+/* the timeline's ghost: in the lane it was pressed in, shaped as a phase there (styles/timeline.css). Its days light up in
+   the row of days below it, as the day view's ghost marks its times on the hour rail: one of the ghost's parts, so it
+   goes with it (clearPreview). One band over the days, not a label each, so it reads at every tier (Max, 20 Nov) */
+function placeTimelineGhost(g, r, inner){
+  const rail = inner === $railInner, ppd = rail ? CANVAS_CELL : TL_PPD;
+  g.el.style.left = r.x*ppd+"px"; g.el.style.width = Math.max(r.w*ppd, 26)+"px";
+  if(!g.parts.length){
+    const row = rail ? $railDays.firstChild : document.getElementById("dayHead");
+    if(!row) return;
+    const lit = document.createElement("div"); lit.className = "daysLit"; row.append(lit); g.parts.push(lit);
+  }
+  Object.assign(g.parts[0].style, { left:dayX(r.x, rail ? 0 : railW()), width:dayX(Math.max(r.w, 1)) });
+}
 
 /* phase / milestone creation drag on the empty timeline (shared by add-mode + long-press) */
 function startPhaseCreate(e, fromHold=false){
-  const inner = e.target.closest("#rail") ? $railInner : $tlInner, ppd = inner === $railInner ? CANVAS_CELL : TL_PPD, p = tlPos(e, inner);
+  const inner = e.target.closest("#rail") ? $railInner : $tlInner, p = tlPos(e, inner);
   const lane = e.target.closest(".laneRow") || e.target.closest(".tlRow") || inner.firstChild;
   dragRect(e, { at:m=>({ x:tlPos(m, inner), y:0 }), cells:"x", zone:"new", rect:{ x:p, y:0, w:0, h:0 }, el:inner, layer:lane,
-    pan: inner === $tlInner, place:(g, r)=>placeTimelineGhost(g, r, ppd),
+    pan: inner === $tlInner, place:(g, r)=>placeTimelineGhost(g, r, inner),
     done:(r, moved)=>{
       if(UI.drawMode) setDrawMode(false);                          // one thing created ends draw mode, as add mode
       if(!moved){ if(fromHold) openEditor({ type:"milestone", initial:{ date:idxDate(p) } }); return; }   // hold without drag → milestone; a click → nothing

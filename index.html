@@ -11,27 +11,27 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles/tokens.css?v=8f32803bd0">
-<link rel="stylesheet" href="styles/base.css?v=8f32803bd0">
-<link rel="stylesheet" href="styles/timeline.css?v=8f32803bd0">
-<link rel="stylesheet" href="styles/canvas.css?v=8f32803bd0">
-<link rel="stylesheet" href="styles/day.css?v=8f32803bd0">
-<link rel="stylesheet" href="styles/add-button.css?v=8f32803bd0">
-<link rel="stylesheet" href="styles/lists.css?v=8f32803bd0">
-<link rel="stylesheet" href="styles/editor.css?v=8f32803bd0">
-<link rel="stylesheet" href="styles/todos.css?v=8f32803bd0">
-<link rel="stylesheet" href="styles/settings.css?v=8f32803bd0">
-<link rel="stylesheet" href="styles/time-budget.css?v=8f32803bd0">
-<link rel="stylesheet" href="styles/focus.css?v=8f32803bd0">
-<link rel="stylesheet" href="styles/toast.css?v=8f32803bd0">
-<link rel="stylesheet" href="styles/device.css?v=8f32803bd0">
-<link rel="stylesheet" href="styles/snake-pill.css?v=8f32803bd0">
-<link rel="stylesheet" href="styles/wordmark-draw.css?v=8f32803bd0">
+<link rel="stylesheet" href="styles/tokens.css?v=95d83715c6">
+<link rel="stylesheet" href="styles/base.css?v=95d83715c6">
+<link rel="stylesheet" href="styles/timeline.css?v=95d83715c6">
+<link rel="stylesheet" href="styles/canvas.css?v=95d83715c6">
+<link rel="stylesheet" href="styles/day.css?v=95d83715c6">
+<link rel="stylesheet" href="styles/add-button.css?v=95d83715c6">
+<link rel="stylesheet" href="styles/lists.css?v=95d83715c6">
+<link rel="stylesheet" href="styles/editor.css?v=95d83715c6">
+<link rel="stylesheet" href="styles/todos.css?v=95d83715c6">
+<link rel="stylesheet" href="styles/settings.css?v=95d83715c6">
+<link rel="stylesheet" href="styles/time-budget.css?v=95d83715c6">
+<link rel="stylesheet" href="styles/focus.css?v=95d83715c6">
+<link rel="stylesheet" href="styles/toast.css?v=95d83715c6">
+<link rel="stylesheet" href="styles/device.css?v=95d83715c6">
+<link rel="stylesheet" href="styles/snake-pill.css?v=95d83715c6">
+<link rel="stylesheet" href="styles/wordmark-draw.css?v=95d83715c6">
 </head>
 <body>
 <!-- the snake pill while the app starts (ui/snake-pill.js) -->
 <div class="snake-pill-layer dim after-a-moment" id="bootSnakePill"><div class="snake-pill loading" role="status" aria-label="Lädt"><div class="snake-pill-body lap"></div></div></div>
-<script src="ui/snake-pill.js?v=8f32803bd0"></script>
+<script src="ui/snake-pill.js?v=95d83715c6"></script>
 
 <!-- the drawn wordmark, kept for a first sign-in on a device (ui/wordmark-draw.js) -->
 <template id="wordmarkDrawTemplate">
@@ -129,44 +129,44 @@
 <div id="setPanel" role="dialog" aria-label="Einstellungen"></div>
 <div id="toast"></div>
 
-<script src="core/model.js?v=8f32803bd0"></script>
-<script src="core/dates.js?v=8f32803bd0"></script>
-<script src="core/text.js?v=8f32803bd0"></script>
-<script src="core/repeat.js?v=8f32803bd0"></script>
-<script src="core/todos.js?v=8f32803bd0"></script>
-<script src="core/hierarchy.js?v=8f32803bd0"></script>
-<script src="core/actuals.js?v=8f32803bd0"></script>
-<script src="core/focus.js?v=8f32803bd0"></script>
-<script src="ui/toast.js?v=8f32803bd0"></script>
-<script src="data/device.js?v=8f32803bd0"></script>
-<script src="data/changes.js?v=8f32803bd0"></script>
-<script src="data/store.js?v=8f32803bd0"></script>
-<script src="data/merge.js?v=8f32803bd0"></script>
-<script src="data/sync.js?v=8f32803bd0"></script>
-<script src="views/range.js?v=8f32803bd0"></script>
-<script src="views/timeline/lanes.js?v=8f32803bd0"></script>
-<script src="views/render-all.js?v=8f32803bd0"></script>
-<script src="views/timeline/render.js?v=8f32803bd0"></script>
-<script src="views/day/render.js?v=8f32803bd0"></script>
-<script src="views/focus/render.js?v=8f32803bd0"></script>
-<script src="views/canvas/render.js?v=8f32803bd0"></script>
-<script src="views/canvas/tabs.js?v=8f32803bd0"></script>
-<script src="views/viewport.js?v=8f32803bd0"></script>
-<script src="input/pointer.js?v=8f32803bd0"></script>
-<script src="input/add-mode.js?v=8f32803bd0"></script>
-<script src="input/day-drag.js?v=8f32803bd0"></script>
-<script src="input/timeline-drag.js?v=8f32803bd0"></script>
-<script src="input/canvas-pull.js?v=8f32803bd0"></script>
-<script src="input/canvas-drag.js?v=8f32803bd0"></script>
-<script src="ui/editor.js?v=8f32803bd0"></script>
-<script src="ui/day-todos.js?v=8f32803bd0"></script>
-<script src="ui/time-budget.js?v=8f32803bd0"></script>
-<script src="ui/recording.js?v=8f32803bd0"></script>
-<script src="ui/focus-morph.js?v=8f32803bd0"></script>
-<script src="ui/canvas-morph.js?v=8f32803bd0"></script>
-<script src="ui/wordmark-draw.js?v=8f32803bd0"></script>
-<script src="ui/settings.js?v=8f32803bd0"></script>
-<script src="reminders.js?v=8f32803bd0"></script>
-<script src="app.js?v=8f32803bd0"></script>
+<script src="core/model.js?v=95d83715c6"></script>
+<script src="core/dates.js?v=95d83715c6"></script>
+<script src="core/text.js?v=95d83715c6"></script>
+<script src="core/repeat.js?v=95d83715c6"></script>
+<script src="core/todos.js?v=95d83715c6"></script>
+<script src="core/hierarchy.js?v=95d83715c6"></script>
+<script src="core/actuals.js?v=95d83715c6"></script>
+<script src="core/focus.js?v=95d83715c6"></script>
+<script src="ui/toast.js?v=95d83715c6"></script>
+<script src="data/device.js?v=95d83715c6"></script>
+<script src="data/changes.js?v=95d83715c6"></script>
+<script src="data/store.js?v=95d83715c6"></script>
+<script src="data/merge.js?v=95d83715c6"></script>
+<script src="data/sync.js?v=95d83715c6"></script>
+<script src="views/range.js?v=95d83715c6"></script>
+<script src="views/timeline/lanes.js?v=95d83715c6"></script>
+<script src="views/render-all.js?v=95d83715c6"></script>
+<script src="views/timeline/render.js?v=95d83715c6"></script>
+<script src="views/day/render.js?v=95d83715c6"></script>
+<script src="views/focus/render.js?v=95d83715c6"></script>
+<script src="views/canvas/render.js?v=95d83715c6"></script>
+<script src="views/canvas/tabs.js?v=95d83715c6"></script>
+<script src="views/viewport.js?v=95d83715c6"></script>
+<script src="input/pointer.js?v=95d83715c6"></script>
+<script src="input/add-mode.js?v=95d83715c6"></script>
+<script src="input/day-drag.js?v=95d83715c6"></script>
+<script src="input/timeline-drag.js?v=95d83715c6"></script>
+<script src="input/canvas-pull.js?v=95d83715c6"></script>
+<script src="input/canvas-drag.js?v=95d83715c6"></script>
+<script src="ui/editor.js?v=95d83715c6"></script>
+<script src="ui/day-todos.js?v=95d83715c6"></script>
+<script src="ui/time-budget.js?v=95d83715c6"></script>
+<script src="ui/recording.js?v=95d83715c6"></script>
+<script src="ui/focus-morph.js?v=95d83715c6"></script>
+<script src="ui/canvas-morph.js?v=95d83715c6"></script>
+<script src="ui/wordmark-draw.js?v=95d83715c6"></script>
+<script src="ui/settings.js?v=95d83715c6"></script>
+<script src="reminders.js?v=95d83715c6"></script>
+<script src="app.js?v=95d83715c6"></script>
 </body>
 </html>
