@@ -30,7 +30,8 @@
 /* an open phase's plan is the day's detail: it closes as the days narrow; the rail has none */
 #views.dragging #tlWrap .dropdown-row{height:calc(var(--h) * (1 - var(--p))); padding-block:calc(8px * (1 - var(--p))); opacity:calc(1 - 2 * var(--p)); overflow:clip; box-sizing:border-box}
 :root[data-view="canvas"] #addMenu{visibility:hidden}   /* the add menu belongs to the week; the add button draws here (input/canvas-draw.js) */
-:root[data-draw] #canvasScene{touch-action:none}            /* draw mode: a finger draws, never scrolls; set before the gesture */
+:root[data-view="canvas"] #canvasScene{touch-action:none}   /* one finger selects or draws, two pan (input/canvas-pull.js): never the browser's; set before the gesture */
+:root[data-pan-ready] :is(#canvasView, #canvasView *){cursor:grab !important}   /* Space held: the hand, over everything on the canvas */
 :root[data-draw] #canvasGrid{cursor:crosshair}
 
 /* the canvas's tabs (views/canvas/tabs.js), in the header row where the spacer is, while the canvas is the view.
@@ -60,7 +61,7 @@ input.canvas-tab{outline:none; field-sizing:content; min-width:4ch}   /* as wide
   overflow-anchor:none}                                       /* the rail opening or closing must never move the canvas (scroll anchoring did) */
 /* the grid: a dot where its lines would cross, one cell a day; its floor is its bottom edge */
 #canvasGrid{--gp:var(--ppd, var(--cell));   /* px a day: the canvas's, or the switch's (ui/canvas-morph.js); dots and ideas both */
-  position:relative; display:flex; flex-direction:column; justify-content:flex-end; cursor:grab;
+  position:relative; display:flex; flex-direction:column; justify-content:flex-end;
 }
 #canvasGrid.panning{cursor:grabbing}
 /* the dots: their own empty layer, so the switch's per-frame scale restyles nothing else (ui/canvas-morph.js).

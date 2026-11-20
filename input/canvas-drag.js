@@ -30,7 +30,7 @@ function canvasRules(){
 /* draw mode, on the empty grid (input/canvas-pull.js) */
 function startDraw(e){
   const rules = canvasRules();
-  cancelDraw = dragRect(e, { ...rules, zone:"new", rect:{ ...rules.at(e), w:0, h:0 }, el:$canvasGrid,
+  return cancelDraw = dragRect(e, { ...rules, zone:"new", rect:{ ...rules.at(e), w:0, h:0 }, el:$canvasGrid,
     done:(r, moved) => {
       cancelDraw = null;
       if(!moved || r.w * r.h === 1) return;                        // a click or a drag within one cell: nothing
@@ -43,7 +43,7 @@ function startDraw(e){
 function startIdeaDrag(e, el){
   const idea = S.ideas.find(x => x.id === el.dataset.idea); if(!idea) return;
   const rules = canvasRules();
-  dragRect(e, { ...rules, zone: e.target.closest(".rez")?.dataset.rez || "move", el, dim:el,
+  return dragRect(e, { ...rules, zone: e.target.closest(".rez")?.dataset.rez || "move", el, dim:el,
     rect:{ x:dayIdx(idea.day), y:UI.canvas.rows - idea.row - idea.h, w:idea.w, h:idea.h },
     done:(r, moved) => {
       if(!moved) return openEditor({ type:"idea", edit:idea });    // a click opens it, as an event

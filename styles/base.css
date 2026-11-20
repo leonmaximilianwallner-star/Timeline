@@ -86,7 +86,7 @@ button:focus-visible{outline:2px solid var(--text); outline-offset:2px}
 :is([data-rez="t"], [data-rez="b"]), :root:is([data-drag="t"], [data-drag="b"]){cursor:ns-resize}
 :is([data-rez="lt"], [data-rez="rb"]), :root:is([data-drag="lt"], [data-drag="rb"]){cursor:nwse-resize}
 :is([data-rez="rt"], [data-rez="lb"]), :root:is([data-drag="rt"], [data-drag="lb"]){cursor:nesw-resize}
-:root[data-drag="move"]{cursor:grabbing}
+:root[data-drag="move"], :root[data-drag="pan"]{cursor:grabbing}
 :root[data-drag="new"]{cursor:crosshair}
 :root[data-drag] *{cursor:inherit !important}
 

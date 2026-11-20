@@ -91,7 +91,7 @@ function dragRect(e, o){
   let r = r0, moved = false, g = null, armed = e.pointerType === "mouse" || e.pointerType === "pen" || o.zone === "new";
   const arm = setTimeout(() => { armed = true; UI.dragLive = true; vibrate(12); }, armed ? 0 : o.zone === "move" ? LONGPRESS : RESIZE_HOLD);
   if(armed) UI.dragLive = true;
-  o.el.setPointerCapture(e.pointerId);
+  try{ o.el.setPointerCapture(e.pointerId); }catch(_){}           // a pointer already gone (a second finger came first): nothing to capture
   const move = m => {
     if(m.pointerId !== undefined && m.pointerId !== e.pointerId) return;
     if(!armed){ if(Math.hypot(m.clientX - e.clientX, m.clientY - e.clientY) > MOVE_THRESHOLD) end(false); return; }   // a scroll, not a hold

@@ -412,3 +412,11 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **The icons from the reference** (`timeline-settings-rows.html`): moon ⇄ sun, the days as pills, a sunrise whose sun climbs with the hour; the value rises in. Each icon is a shape of numbers per value, tweened from the shape it shows, so a tap mid-motion turns from where it is. *Max (the icons); Claude (the build)*
 - **The panel is not redrawn on a tap** (it would cut the motion off); only the row's value and icon change. The app below redraws as before. *Claude*
 - **Kept:** the label "Tag beginnt um" (the reference says "Aufstehen"; not decided). The editor's rows (Gehört zu, Wiederholung, Erinnerung) keep their pickers. *Open for Max*
+
+## 2026-11-20 · Panning the canvas moves off the plain drag
+- **The plain drag on the empty canvas is left for selecting** (part E). The canvas pans by **Space + drag, Shift + drag** (as in CAD software, where Shift moves the view), **the middle button**, a trackpad's two-finger scroll (the browser's own, unchanged), and on touch **two fingers**. Pinch and Ctrl + wheel stay what they were: toward the week or the canvas. *Max (the inputs, Shift); Claude (the touch rules)*
+- **A pan press decides first**, before the rail's and the ideas' own handlers: Space, Shift or the middle button pan over an idea or the rail too, and change nothing there. *Claude*
+- **Two fingers pan until their spread changes by 24 px (`PINCH_SLOP`)**, then pinch: two fingers never move quite together, and without it every pan began a switch to the week. A second finger undoes what the first began (a hold on an idea, a drawing). *Claude*
+- **The canvas has the touch to itself** (`touch-action:none` while it is the view; before, only in draw mode), so one finger can select. *Claude*
+- **Cursor:** the open hand while Space is held, the closed hand while panning; the empty canvas no longer shows the hand at rest (it doesn't pan any more). *Max (the hands); Claude (none at rest)*
+- **Shift + click on an idea** is part E's (add it to or take it from the selection); Shift + drag stays a pan. *Max*

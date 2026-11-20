@@ -62,7 +62,7 @@ await step('in the canvas the same button turns draw mode on and off; Escape end
   assert.equal(await q(() => getComputedStyle($canvasScene).touchAction), 'none', 'a finger draws, set before the gesture');
   await page.click('#fab');
   assert.equal(await q(() => UI.drawMode || $fab.classList.contains('on')), false);
-  assert.equal(await q(() => getComputedStyle($canvasScene).touchAction), 'auto');
+  assert.equal(await q(() => getComputedStyle($canvasScene).touchAction), 'none', 'out of draw mode too: one finger selects, two pan (part D)');
   await page.click('#fab'); await page.keyboard.press('Escape');
   assert.equal(await q(() => UI.drawMode), false);
   assert.equal(await q(() => UI.canvas.active && !morph.on), true, 'still in the canvas');
@@ -129,10 +129,10 @@ await step('Escape, the add button or pointercancel mid-drag leave nothing behin
   await page.keyboard.press('Escape');
 });
 
-await step('outside draw mode a drag still pans', async () => {
+await step('outside draw mode a plain drag draws nothing and no longer pans (tests/canvas-pan.test.mjs)', async () => {
   const x0 = await q(() => $canvasScene.scrollLeft), n = (await ideas()).length;
   await drag(await cell(10, 0), await cell(6, 0));
-  assert.ok(await q(() => $canvasScene.scrollLeft) > x0 + 100);
+  assert.equal(await q(() => $canvasScene.scrollLeft), x0);
   assert.equal((await ideas()).length, n);
 });
 
