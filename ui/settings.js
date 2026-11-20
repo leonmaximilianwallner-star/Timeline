@@ -252,7 +252,8 @@ function wireSettings(page, c){
     }
     on("#sSyncNow", "click", ()=>{                     // the panel already dims the app, so the snake pill doesn't
       const pill = showSnakePill("sync", { dim:false });
-      syncNow().finally(()=>pill.stop());              // at least one whole lap, then the lap it is in
+      syncNow().finally(()=>pill.stop({                // at least one whole lap, then the lap it is in, then how it ended
+        result: sync.state === "ok" ? "done" : sync.state === "busy" ? null : "cancel" }));   // busy: another sync runs on; it isn't over
     });
     on("#sSignOut", "click", ()=>disablePush().catch(()=>{}).then(signOut).then(()=>renderSettings()));   // no reminders for a signed-out device
   }

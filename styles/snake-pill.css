@@ -1,7 +1,11 @@
 /* styles/snake-pill.css — the snake pill: Timeline's one waiting animation (ui/snake-pill.js).
    A pill on the 3×3 dot grid of the logo. Its head reaches the next dot, then its tail follows.
-     .loading  around the four outer dots (the start of the app)
-     .sync     top and bottom rows, left ↔ right, always in opposite directions (Jetzt synchronisieren)
+     .loading    around the four outer dots (the start of the app)
+     .hourglass  top, diagonal, bottom, diagonal, and a line of text (a start that takes long)
+     .sync       top and bottom rows, left ↔ right, always in opposite directions (Jetzt synchronisieren)
+     .done / .cancel  a check / an X, drawn once, all at 45° (how a sync ended)
+   Lines (hourglass, check, X) are one SVG path each, pathLength 1, dash "1 2":
+     dashoffset .999 → a dot at the start · 0 → the whole line · -.999 → a dot at the end.
    Rule: only left / top / width / height animate, all numbers. Never switch between left and right
    (or top and bottom): `auto` can't be blended, so the pill would jump a whole dot in one frame. */
 .snake-pill-layer{
@@ -24,9 +28,16 @@
   --far:calc(var(--grid) - var(--dot));   /* 48px: where the far dot starts */
   --ease:cubic-bezier(0.65, 0, 0.35, 1);
   position:relative; width:var(--grid); height:var(--grid);
-  color:var(--text);
+  color:var(--snake-pill-colour, var(--text));
 }
-/* the four dots it travels between, faint: only while something is still going on */
+.snake-pill svg{ position:absolute; inset:0; width:100%; height:100%; overflow:visible; }
+.snake-pill-stroke{
+  fill:none; stroke:currentColor; stroke-width:24;
+  stroke-linecap:round; stroke-linejoin:round;
+  stroke-dasharray:1 2; stroke-dashoffset:.999; opacity:0;
+}
+/* the four dots it travels between, faint: only while something is still going on (not on a result) */
+.snake-pill.done::before, .snake-pill.cancel::before{ display:none; }
 .snake-pill::before{
   content:""; position:absolute; inset:0; opacity:.16;
   background:
@@ -64,7 +75,54 @@
   75%     { left:0;          width:var(--grid); }
 }
 
+/* ── hourglass: four legs, 0.6 s each, one after the other in a 2.4 s lap ── */
+.snake-pill.hourglass .snake-pill-stroke{ animation:snake-pill-leg 2.4s var(--ease) infinite; }
+.snake-pill.hourglass .snake-pill-stroke:nth-child(2){ animation-delay:-1.8s; }
+.snake-pill.hourglass .snake-pill-stroke:nth-child(3){ animation-delay:-1.2s; }
+.snake-pill.hourglass .snake-pill-stroke:nth-child(4){ animation-delay:-.6s; }
+@keyframes snake-pill-leg{
+  0%        { stroke-dashoffset:.999;  opacity:1; }   /* a dot where the leg before ended */
+  12.5%     { stroke-dashoffset:0;     opacity:1; }   /* the head arrives */
+  25%       { stroke-dashoffset:-.999; opacity:1; }   /* the tail follows */
+  25.01%,100%{ stroke-dashoffset:-.999; opacity:0; }
+}
+.snake-pill-note{
+  position:absolute; top:calc(100% + 24px); left:50%; transform:translateX(-50%); margin:0;
+  white-space:nowrap; font-size:13px; color:var(--fg-muted);
+  background:var(--surface); border-radius:999px; padding:4px 12px;   /* reads over whatever the app shows behind */
+  animation:snake-pill-appear .4s var(--soft) both;
+}
+
+/* ── how a sync ended: drawn once, the head first, the tail into the last dot ── */
+.snake-pill.cancel{ color:var(--danger); }
+.snake-pill.done .snake-pill-stroke{ animation:snake-pill-check 1.5s var(--ease) forwards; }
+@keyframes snake-pill-check{
+  0%       { stroke-dashoffset:.999;  opacity:0; }
+  6%       { stroke-dashoffset:.999;  opacity:1; }
+  45%, 65% { stroke-dashoffset:0;     opacity:1; }   /* the whole check, held to be read */
+  92%      { stroke-dashoffset:-.999; opacity:1; }
+  100%     { stroke-dashoffset:-.999; opacity:0; }
+}
+/* the X's lines overlap in time: the whole X is on screen around the middle */
+.snake-pill.cancel .snake-pill-stroke{ animation:snake-pill-x1 1.7s var(--ease) forwards; }
+.snake-pill.cancel .snake-pill-stroke + .snake-pill-stroke{ animation-name:snake-pill-x2; }
+@keyframes snake-pill-x1{
+  0%       { stroke-dashoffset:.999;  opacity:0; }
+  4%       { stroke-dashoffset:.999;  opacity:1; }
+  30%, 60% { stroke-dashoffset:0;     opacity:1; }
+  85%      { stroke-dashoffset:-.999; opacity:1; }
+  100%     { stroke-dashoffset:-.999; opacity:0; }
+}
+@keyframes snake-pill-x2{
+  0%, 24%  { stroke-dashoffset:.999;  opacity:0; }
+  28%      { stroke-dashoffset:.999;  opacity:1; }
+  52%, 70% { stroke-dashoffset:0;     opacity:1; }
+  92%      { stroke-dashoffset:-.999; opacity:1; }
+  100%     { stroke-dashoffset:-.999; opacity:0; }
+}
+
 @media (prefers-reduced-motion: reduce){
+  .snake-pill .snake-pill-stroke{ animation:none !important; stroke-dashoffset:0; opacity:1; }
   .snake-pill .snake-pill-body{ animation:none !important; width:var(--grid); }
   .snake-pill-layer{ transition:none; animation:none; }
 }

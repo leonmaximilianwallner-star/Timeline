@@ -1,43 +1,72 @@
 // ui/snake-pill.js — the snake pill: Timeline's one waiting animation (styles/snake-pill.css).
 "use strict";
 /* ════════════════════════════════════════════════════════════
-   It loops for as long as the wait lasts. Told to stop, it first finishes the lap it is in,
-   so it always ends where it began: once, twice, as often as needed, never cut off mid-move.
-     showSnakePill("loading" | "sync", { dim })   centred on the screen; dim = darken the app behind it
-                                                  (dim:false is for over the settings panel, which dims already; a phone still dims)
-     snakePill.stop()                             finishes the lap, fades, removes; returns a promise
-   At start-up it appears only if the wait lasts longer than 0.3 s; a quicker start shows nothing.
-   Loaded first, before the app's own scripts: the start-up one is already in index.html and
-   runs from the first frame. Uses nothing of the app's.
+   A pill on the logo's 3×3 dot grid: its head reaches the next dot, then its tail follows.
+   Kinds, all on the same grid, the loops starting and ending as a dot at the top left:
+     loading    around the four outer dots                     (start-up)
+     hourglass  top, diagonal, bottom, diagonal + one line text (start-up taking long)
+     sync       top and bottom rows, in opposite directions    (Jetzt synchronisieren)
+     done / cancel   a check / an X drawn once                 (how a sync ended)
+   The wait decides what is shown (Max, 20 Nov): under 0.3 s nothing (start-up only), then the loop,
+   past SNAKE_PILL_LONG_MS the hourglass and a line of text. A change of kind, and the end, always
+   come at the end of a lap, where the pill is a dot at the top left: nothing jumps mid-move.
+     showSnakePill(kind, { dim })   centred; dim darkens the app (false: over the settings panel,
+                                    which dims already; a phone still dims, its panel fills the screen)
+     pill.stop({ result })          finishes the lap; result "done" | "cancel" draws that mark first
+   Loaded before the app's own scripts: the start-up one is in index.html from the first frame.
    ════════════════════════════════════════════════════════════ */
-const SNAKE_PILL_BOOT_PREVIEW_MS = 4800;   // TEMPORARY: start-up shows at least two laps, so it can be seen
-                                           // even when the app is ready at once. Set to 0 (or delete) when done looking.
+const SNAKE_PILL_BOOT_PREVIEW_MS = 7200;   // TEMPORARY: start-up holds two loops and one hourglass so both can be seen.
+                                           // Set to 0 (or delete) when done looking.
+const SNAKE_PILL_UNSEEN_MS = 300;          // a start-up quicker than this shows nothing (.after-a-moment in the CSS)
+const SNAKE_PILL_LONG_MS   = 4800;         // two loops; a wait still going then becomes the hourglass
+const SNAKE_PILL_MARK_MS   = { done:1500, cancel:1700 };   // the check / X keyframes in the CSS
+const SNAKE_PILL_LONG_NOTE = "Dauert länger als sonst …";
+const SNAKE_PILL_LABEL = { loading:"Lädt", hourglass:"Lädt", sync:"Synchronisiert", done:"Erledigt", cancel:"Fehlgeschlagen" };
 
 function snakePillHTML(kind){
-  const bodies = kind === "sync" ? 2 : 1;
-  return `<div class="snake-pill ${kind}" role="status" aria-label="${kind === "sync" ? "Synchronisiert" : "Lädt"}">`
-    + `<div class="snake-pill-body"></div>`.repeat(bodies) + `</div>`;
+  const path = (d, cls = "") => `<path class="snake-pill-stroke ${cls}" pathLength="1" d="${d}"/>`;
+  const svg  = s => `<svg viewBox="0 0 72 72" aria-hidden="true">${s}</svg>`;
+  const inner =
+      kind === "loading"   ? `<div class="snake-pill-body lap"></div>`
+    : kind === "sync"      ? `<div class="snake-pill-body lap"></div><div class="snake-pill-body"></div>`
+    : kind === "hourglass" ? svg(path("M12 12 L60 12", "lap") + path("M60 12 L12 60") + path("M12 60 L60 60") + path("M60 60 L12 12"))
+                             + `<p class="snake-pill-note">${SNAKE_PILL_LONG_NOTE}</p>`
+    : kind === "done"      ? svg(path("M12 33 L30 51 L60 21"))
+    :                        svg(path("M12 12 L60 60") + path("M12 60 L60 12"));
+  return `<div class="snake-pill ${kind}" role="status" aria-label="${SNAKE_PILL_LABEL[kind]}">${inner}</div>`;
 }
 
-/* the handle for a layer already on the page */
-const SNAKE_PILL_UNSEEN_MS = 300;          // a start-up quicker than this shows nothing (.after-a-moment in the CSS)
+/* ms until the lap now running ends (0: no animation, e.g. reduced motion) */
+function snakePillLapRest(layer){
+  const anim = layer.querySelector(".lap")?.getAnimations()[0];
+  if(!anim) return 0;
+  const lap = anim.effect.getComputedTiming().duration;
+  return lap - (anim.currentTime % lap);
+}
 
-function snakePillOn(layer, bornAt = performance.now()){
+function snakePillOn(layer, kind, bornAt = performance.now()){
   let stopping = null;
+  const show = k => { layer.innerHTML = snakePillHTML(k); };
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+
+  /* a long wait: at the end of the lap that crosses SNAKE_PILL_LONG_MS, the loop becomes the hourglass */
+  if(kind === "loading"){
+    wait(Math.max(0, SNAKE_PILL_LONG_MS - (performance.now() - bornAt) - 100))   // just before that lap ends
+      .then(()=>{ if(!stopping && layer.isConnected) return wait(snakePillLapRest(layer)); throw 0; })
+      .then(()=>{ if(!stopping && layer.isConnected) show("hourglass"); })
+      .catch(()=>{});
+  }
+
   return {
-    stop(){
+    stop({ result } = {}){
       if(stopping) return stopping;
       if(layer.classList.contains("after-a-moment") && performance.now() - bornAt < SNAKE_PILL_UNSEEN_MS){
         layer.remove(); return stopping = Promise.resolve();   // never seen: nothing to finish
       }
-      const anim = layer.querySelector(".snake-pill-body")?.getAnimations()[0];
-      const lap = anim ? anim.effect.getComputedTiming().duration : 0;
-      const into = anim ? (anim.currentTime + (anim.effect.getComputedTiming().delay || 0)) % lap : 0;
-      const rest = anim && lap ? lap - into : 0;            // reduced motion: no animation, stop at once
-      stopping = new Promise(done => setTimeout(()=>{
-        layer.classList.add("out");
-        setTimeout(()=>{ layer.remove(); done(); }, 260);   // the fade in styles/snake-pill.css
-      }, rest));
+      stopping = wait(snakePillLapRest(layer))
+        .then(()=>{ if(result){ show(result); return wait(SNAKE_PILL_MARK_MS[result]); } })
+        .then(()=>{ layer.classList.add("out"); return wait(260); })   // the fade in styles/snake-pill.css
+        .then(()=>{ layer.remove(); });
       return stopping;
     }
   };
@@ -48,14 +77,15 @@ function showSnakePill(kind, { dim = true } = {}){
   layer.className = "snake-pill-layer" + (dim ? " dim" : " over-panel");
   layer.innerHTML = snakePillHTML(kind);
   document.body.appendChild(layer);
-  return snakePillOn(layer);
+  return snakePillOn(layer, kind);
 }
 
 /* start-up: the one in index.html goes once the page has loaded (and the preview time has passed) */
 (function(){
   const layer = document.getElementById("bootSnakePill");
   if(!layer) return;
+  const pill    = snakePillOn(layer, "loading", 0);   // 0: it exists from the page's first moment
   const loaded  = new Promise(r => document.readyState === "complete" ? r() : window.addEventListener("load", r, { once:true }));
   const preview = new Promise(r => setTimeout(r, navigator.webdriver ? 0 : SNAKE_PILL_BOOT_PREVIEW_MS));   // tests don't sit through the preview
-  Promise.all([loaded, preview]).then(()=>snakePillOn(layer, 0).stop());   // 0: it exists from the page's first moment
+  Promise.all([loaded, preview]).then(()=>pill.stop());
 })();

@@ -372,7 +372,7 @@ input/
   canvas-drag.js            the canvas's rules for the one drag (pointer.js dragRect): drawing, moving, resizing ideas
 
 ui/
-  snake-pill.js             the snake pill, the one waiting animation: start-up (only if it takes > 0.3 s) and Jetzt synchronisieren; finishes its lap before it goes
+  snake-pill.js             the snake pill, the one waiting animation: start-up (only if it takes > 0.3 s; the hourglass past 4.8 s) and Jetzt synchronisieren (ends with a check or an X); changes and ends only at the end of a lap
   wordmark-draw.js          the drawn wordmark, once per device at the first sign-in (was the loading screen)
   toast.js                  toast message
   editor.js                 editor and its todo list
