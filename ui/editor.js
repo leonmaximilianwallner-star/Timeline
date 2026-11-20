@@ -70,8 +70,18 @@ function rowHTML({ icon:ic, label, value="", pick="", chev=false, cls="", id="",
 const optionsHTML = (opts, current) => opts.map(([k,l])=>`<option value="${k}" ${String(current)===String(k)?"selected":""}>${l}</option>`).join("");
 const REPEATS   = [["none","Keine"],["daily","Täglich"],["weekly","Wöchentlich"],["weekdays","Werktags"],["monthly","Monatlich"]];
 const REMINDERS = [["","Keine"],["0","Zum Start"],["5","5 min vorher"],["15","15 min vorher"],["30","30 min vorher"],["60","1 h vorher"],["1440","1 Tag vorher"]];
-const KIND_WORD = { event:"Termin", phase:"Phase", milestone:"Meilenstein", actual:"Ist" };
-const KIND_LIST = { event:"events", phase:"phases", milestone:"milestones", actual:"actuals" };
+const KIND_WORD = { event:"Termin", phase:"Phase", milestone:"Meilenstein", actual:"Ist", idea:"Notiz" };
+const KIND_LIST = { event:"events", phase:"phases", milestone:"milestones", actual:"actuals", idea:"ideas" };
+/* formatted text, one format for every thing that has some: HTML cut to a few tags by sanitize (core/text.js).
+   Bold, italic, a list, a checklist (a list marked data-check; a ticked item data-done) */
+const textPartHTML = html => `<div class="list">
+  <div class="text-tools">
+    <button type="button" data-cmd="bold" title="Fett"><b>B</b></button>
+    <button type="button" data-cmd="italic" title="Kursiv"><i style="font-family:serif">I</i></button>
+    <button type="button" data-cmd="insertUnorderedList" title="Liste"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.4" fill="currentColor" stroke="none"/><circle cx="4.5" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="4.5" cy="18" r="1.4" fill="currentColor" stroke="none"/></svg></button>
+    <button type="button" data-cmd="checklist" title="Checkliste"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 6h9M11 12h9M11 18h9"/><rect x="3" y="4" width="4" height="4" rx="1"/><path d="M3.5 12.5l1.5 1.5 2.5-3"/><rect x="3" y="16" width="4" height="4" rx="1"/></svg></button>
+  </div>
+  <div class="rte rich" id="fText" contenteditable="true">${sanitize(html||"")}</div></div>`;
 /* an actual has no name of its own: it shows its plan's, or "Ohne Plan" (RULEBOOK A.6) */
 /* a phase's span in a few characters: "3.–15. Nov." or "28. Okt.–5. Nov." */
 function shortSpan(p){
@@ -310,15 +320,9 @@ function renderEditorBody(){
       <div class="list"><div class="todoList" id="editorSteps"></div>
         <label class="row add"><span class="row-icon">${icon("plus")}</span><span class="row-main"><input id="fNewStep" class="row-input" placeholder="Schritt hinzufügen" autocomplete="off" enterkeyhint="done"></span></label>
       </div></div>`;
-    h += `<div class="part"><h3 class="overline" style="padding:0 4px">Notiz</h3>
-      <div class="list">
-        <div class="text-tools">
-          <button type="button" data-cmd="bold" title="Fett"><b>B</b></button>
-          <button type="button" data-cmd="italic" title="Kursiv"><i style="font-family:serif">I</i></button>
-          <button type="button" data-cmd="insertUnorderedList" title="Liste"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.4" fill="currentColor" stroke="none"/><circle cx="4.5" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="4.5" cy="18" r="1.4" fill="currentColor" stroke="none"/></svg></button>
-        </div>
-        <div class="rte" id="fDetails" contenteditable="true">${sanitize(v.details||"")}</div></div></div>`;
+    h += `<div class="part"><h3 class="overline" style="padding:0 4px">Notiz</h3>${textPartHTML(v.details)}</div>`;
   }
+  else if(kind==="idea") h += `<div class="part">${textPartHTML(v.body)}</div>`;   // a note: its title in the header, its text here
   else if(kind==="milestone"){
     h += `<div class="when">
       <div class="when-top"><span class="when-big"><input id="fDate" type="date" aria-label="Datum" value="${v.date||todayISO()}"></span></div>
@@ -398,10 +402,19 @@ function renderEditorBody(){
   /* a click on a time or date opens its picker, instead of putting the cursor into its digits (Max, 22 Oct) */
   B.querySelectorAll(".when input").forEach(inp=>inp.addEventListener("click", ()=>{ try{ inp.showPicker(); }catch(_){} }));
 
-  /* the phase's text tools */
+  /* the text tools: the browser's own editing (deprecated, fine for this scope); a checklist is a list marked as one */
+  const text = B.querySelector("#fText");
   B.querySelectorAll(".text-tools button").forEach(b=>b.onclick=e=>{
-    e.preventDefault(); document.getElementById("fDetails").focus();
-    document.execCommand(b.dataset.cmd, false, null);            // deprecated, fine for this scope
+    e.preventDefault(); text.focus();
+    if(b.dataset.cmd !== "checklist") return document.execCommand(b.dataset.cmd, false, null);
+    const list = () => getSelection().anchorNode?.parentElement?.closest("#fText ul"), was = list();
+    if(was?.hasAttribute("data-check")) return was.removeAttribute("data-check");   // a checklist back to a list
+    if(!was) document.execCommand("insertUnorderedList", false, null);
+    list()?.setAttribute("data-check", "");
+  });
+  text?.addEventListener("click", e=>{                            // a click on an item's box ticks it
+    const li = e.target.closest("ul[data-check] > li");
+    if(li && e.clientX - li.getBoundingClientRect().left < 22) li.toggleAttribute("data-done");
   });
 
   /* todos */
@@ -517,6 +530,7 @@ function renderEditorBody(){
       else if(k==="phase") deletePhase(s, ed.id);                     // its steps go with it, its events stay, free
       else if(k==="milestone") s.milestones = s.milestones.filter(x=>x.id!==ed.id);
       else if(k==="actual") s.actuals = s.actuals.filter(x=>x.id!==ed.id);
+      else if(k==="idea") s.ideas = s.ideas.filter(x=>x.id!==ed.id);
     });
     toast("Gelöscht");
     closeEditor();
@@ -603,11 +617,15 @@ function saveEditor(opts = {}){
     if(b<a) [a,b]=[b,a];
     const data = { title:(val("fTitle")||"").trim()||"Phase",
       categoryId: val("fProj")||null, start:a, end:dayAfter(b),           // the field shows the last day; stored end is the day after
-      details: sanitize(B.querySelector("#fDetails").innerHTML) };
+      details: sanitize(B.querySelector("#fText").innerHTML) };
     mutate(st=>{ if(ed){ Object.assign(st.phases.find(x=>x.id===ed.id), data); carryCategory(st, ed.id, data.categoryId); }
                  else { const id = uid(); st.phases.push({ id, ...data });
                         (ctx.steps||[]).forEach(x => st.steps.push({ ...x, parentId:id })); } });   // a new phase's steps come with ✓
     if(UI.addMode) setAddMode(false);
+  }
+  else if(kind==="idea"){                                          // a note: drawn on the canvas, so always one that exists
+    mutate(st=>Object.assign(st.ideas.find(x=>x.id===ed.id), { title:(val("fTitle")||"").trim()||"Notiz",
+      categoryId: val("fProj")||null, body: sanitize(B.querySelector("#fText").innerHTML) }));
   }
   else if(kind==="actual"){
     const s = clamp(mins("fStart")??ed.startMin, HOUR_START*60, HOUR_END*60);

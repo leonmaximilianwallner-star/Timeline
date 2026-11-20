@@ -79,8 +79,7 @@ function startCreateDrag(e, p, fromHold=false){
 /* ---------- existing event: move / resize / copy-move ---------- */
 function eventPointerDown(e, eventEl){
   const ev = S.events.find(x=>x.id===eventEl.dataset.ev); if(!ev) return;
-  const dateISO = eventEl.dataset.date, rect = eventEl.getBoundingClientRect();
-  const zone = (e.clientY - rect.top) <= EDGE ? "t" : (rect.bottom - e.clientY) <= EDGE ? "b" : "move";
+  const dateISO = eventEl.dataset.date, zone = e.target.closest(".rez")?.dataset.rez || "move";   // its handles: top, bottom
   const copy = e.ctrlKey || e.metaKey, grid = document.getElementById("dayGrid");
   dragRect(e, { ...DAY_RULES, zone, rect:{ x:dayIdx(dateISO), y:ev.startMin, w:1, h:ev.endMin - ev.startMin },
     el:eventEl, dim: copy ? null : eventEl, layer:grid, pan:true, color: ev.categoryId ? cat(ev.categoryId).color : null,

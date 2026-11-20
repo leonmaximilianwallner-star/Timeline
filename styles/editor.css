@@ -82,7 +82,7 @@ html[data-theme="light"] .when input{color-scheme:light}
 .text-tools button:hover{background:var(--hairline); color:var(--text)}
 .text-tools svg{width:16px; height:16px}
 .rte{min-height:84px; max-height:220px; overflow:auto; padding:8px 16px 12px; font-size:14px; line-height:20px; outline:none}
-.rte ul,.rte ol{padding-left:18px}
+
 
 /* a panel without a colour of its own (a day's todos): the header on the list surface */
 .editor.neutral{--ink:var(--text); background:var(--surface); border-color:var(--hairline)}

@@ -3,6 +3,7 @@
    --add, the red --accent, shadows) were merged into these. */
 :root{
   --base:#111118; --surface:#191923;
+  --lift:2px 2px 0 rgb(0 0 0 / .45);   /* the one elevation: a flat offset, no blur (styles/base.css) */
   --line-soft:#26262f;       /* the day grid's lines: quieter than --hairline between rows */
   --text:#ededec;
   --c-amber:#f4971f; --c-red:#e9473a; --c-teal:#40838b; --c-blue:#6498c0;
@@ -36,6 +37,7 @@
 }
 html[data-theme="light"]{
   --base:#f2f1ee; --surface:#ffffff;
+  --lift:2px 2px 0 rgb(0 0 0 / .14);
   --line-soft:#e6e4df;
   --text:#1d1d24;
   --raised:#f7f6f3; --hairline:#e6e4df; --fg-muted:#5d5d68; --border-control:#8a8a96;

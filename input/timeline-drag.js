@@ -14,8 +14,7 @@ function onTimelinePointerDown(e){
   /* a phase: its handles resize it, the rest of it moves it (Max, 20 Nov: the same as events and ideas) */
   const phEl = !e.target.closest(".ph-exp") && e.target.closest(".phase"), ph = phEl && S.phases.find(p=>p.id===phEl.dataset.phase);
   if(ph){
-    const handle = e.target.closest(".ph-handle");
-    dragRect(e, { at:m=>({ x:tlPos(m, inner), y:0 }), cells:"x", min:{ w:1 }, zone: handle ? handle.dataset.rez : "move",
+    dragRect(e, { at:m=>({ x:tlPos(m, inner), y:0 }), cells:"x", min:{ w:1 }, zone: e.target.closest(".rez")?.dataset.rez || "move",
       rect:{ x:dayIdx(ph.start), y:0, w:diffDays(ph.start, ph.end), h:0 }, el:phEl, dim:phEl, layer:phEl.parentElement,
       pan: inner === $tlInner, color: ph.categoryId ? cat(ph.categoryId).color : null, place:(g, r)=>placeTimelineGhost(g, r, ppd),
       done:(r, moved)=>{ if(moved) mutate(s=>{ const t = s.phases.find(p=>p.id===ph.id); t.start = idxDate(r.x); t.end = idxDate(r.x + r.w); }); } });   // a click: the click handler opens it

@@ -48,16 +48,16 @@
 #nowLine::before{content:""; position:absolute; left:-4px; top:-5px; width:8px; height:8px; border-radius:50%; background:var(--now)}
 .event{
   position:absolute; border-radius:var(--r-small);
-  color:#ededec; overflow:hidden; cursor:pointer; user-select:none;
+  color:#ededec; overflow:hidden; user-select:none;
   padding:4px 8px; z-index:5; display:flex; flex-direction:column;
   transition:filter .12s;
   touch-action:none;
 }
 .event.narrow{padding:4px 6px}
-.event:hover{filter:brightness(1.1); z-index:6}
+.event:hover{z-index:6}
 /* Soll and Ist (RULEBOOK C.3): a plan that has an actual is only its coloured outline (solid: dashed means a drag preview);
    the actual stands in front of it, with the hard ring in the page colour (no shadow) */
-.event.outline{box-shadow:inset 0 0 0 1.5px var(--cat-fill); color:var(--text)}
+.event.outline{box-shadow:inset 0 0 0 1.5px var(--cat-fill), var(--lift); color:var(--text)}
 .event.outline .et,.event.outline .em,.event.outline .badge{opacity:.6}
 .event.actual{z-index:7; outline:2px solid var(--base); touch-action:pan-x pan-y}   /* a tap opens it; a finger still scrolls over it (no drag yet) */
 /* text lines of 16px; the title gets what the height leaves (--title-lines, views/day/render.js) */
@@ -67,8 +67,6 @@
 .event .marks{display:inline-flex; gap:3px; margin-left:4px; vertical-align:-1px}
 .event .marks svg{width:11px; height:11px}
 .event .badge{font-size:var(--fs-label); line-height:16px; font-weight:600; font-variant-numeric:tabular-nums; opacity:.85; flex:0 0 auto}
-.event .rezH{position:absolute; left:0; right:0; height:7px; cursor:ns-resize}
-.event .rezH.t{top:0}.event .rezH.b{bottom:0}
 #hoverLine{position:absolute; left:0; right:0; height:0; border-top:1px solid var(--fg-muted); z-index:8; pointer-events:none; display:none}
 #hoverLab{position:absolute; z-index:16; right:6px; transform:translateY(-50%); display:none;
   font-size:var(--fs-label); font-variant-numeric:tabular-nums; color:var(--text); background:var(--base); padding:0 3px}
@@ -78,7 +76,7 @@
   outline:2px solid var(--base);                        /* a hard ring, not a shadow */
   opacity:.96;
 }
-.floatCopy .rezH{display:none}
+.floatCopy .rez{display:none}
 .snapLab{position:absolute; z-index:16; right:6px; transform:translateY(-50%);
   font-size:var(--fs-label); font-variant-numeric:tabular-nums; color:var(--text); background:var(--base); padding:0 3px; pointer-events:none}
 

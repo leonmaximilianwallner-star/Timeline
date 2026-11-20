@@ -4,7 +4,7 @@
    input — unified Pointer Events pipeline, drag machines
    one pipeline for mouse / touch / pen; branch on pointerType only
    ════════════════════════════════════════════════════════════ */
-const MOVE_THRESHOLD = 5, LONGPRESS = 500, EDGE = 7, RESIZE_HOLD = 140;
+const MOVE_THRESHOLD = 5, LONGPRESS = 500, RESIZE_HOLD = 140;
 
 /* single passive:false touchmove — suppresses native scroll while a drag is live */
 window.addEventListener("touchmove", e=>{ if(UI.dragLive) e.preventDefault(); }, { passive:false });
@@ -107,6 +107,7 @@ function dragRect(e, o){
       if(o.color){ g.el.style.borderColor = o.color; g.el.style.background = o.color + "24"; }
       o.layer.append(g.el);
       if(o.dim) o.dim.classList.add("dragging");
+      document.documentElement.dataset.drag = o.zone;              // its cursor, wherever the pointer goes (styles/base.css)
     }
     o.place(g, r);
   };
@@ -119,6 +120,7 @@ function dragRect(e, o){
     panRelease();
     UI.dragLive = false;
     if(o.dim) o.dim.classList.remove("dragging");
+    delete document.documentElement.dataset.drag;
     const keep = commit && o.done(r, moved, g);
     if(g && !keep) clearPreview(g);
   };

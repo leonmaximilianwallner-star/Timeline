@@ -122,7 +122,7 @@ const tests = {
   },
   async 'resizing a phase by one day moves the stored end by one day'(page) {
     const ph = (await data(page)).phases[0];
-    const handle = page.locator(`[data-phase="${ph.id}"] .ph-handle[data-rez="r"]`).first();
+    const handle = page.locator(`[data-phase="${ph.id}"] .rez[data-rez="r"]`).first();
     await handle.scrollIntoViewIfNeeded();
     const box = await handle.boundingBox();
     const ppd = await page.evaluate(() => TL_PPD);

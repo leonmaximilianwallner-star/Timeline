@@ -146,7 +146,7 @@ function renderEvent(ev, dIso, x, w, outline){
   el.innerHTML = (lines >= 1 ? `<span class="et">${esc(ev.title)}</span>` : "") +
     (showTime ? `<span class="em">${fullTime ? `${fmtMin(ev.startMin)}–${fmtMin(ev.endMin)}${marks ? `<span class="marks">${marks}</span>` : ""}` : fmtMin(ev.startMin)}</span>` : "") +
     (showTodos ? `<span class="badge">✓ ${done}/${todos.length}${todos.some(t=>t.state==="postponed") ? " · →" : ""}</span>` : "") +
-    `<span class="rezH t"></span><span class="rezH b"></span>`;
+    `<span class="rez" data-rez="t"></span><span class="rez" data-rez="b"></span>`;
   return el;
 }
 /* an actual: the plan's look, in front, with the plan's title (or its category's name without a plan).
