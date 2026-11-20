@@ -62,7 +62,7 @@ await step('in the canvas the same button turns draw mode on and off; Escape end
   assert.equal(await q(() => getComputedStyle($canvasScene).touchAction), 'none', 'a finger draws, set before the gesture');
   await page.click('#fab');
   assert.equal(await q(() => UI.drawMode || $fab.classList.contains('on')), false);
-  assert.equal(await q(() => getComputedStyle($canvasScene).touchAction), 'auto');
+  assert.equal(await q(() => getComputedStyle($canvasScene).touchAction), 'none', 'out of draw mode too: one finger selects, two pan (part D)');
   await page.click('#fab'); await page.keyboard.press('Escape');
   assert.equal(await q(() => UI.drawMode), false);
   assert.equal(await q(() => UI.canvas.active && !morph.on), true, 'still in the canvas');
@@ -129,10 +129,10 @@ await step('Escape, the add button or pointercancel mid-drag leave nothing behin
   await page.keyboard.press('Escape');
 });
 
-await step('outside draw mode a drag still pans', async () => {
+await step('outside draw mode a plain drag draws nothing and no longer pans (tests/canvas-pan.test.mjs)', async () => {
   const x0 = await q(() => $canvasScene.scrollLeft), n = (await ideas()).length;
   await drag(await cell(10, 0), await cell(6, 0));
-  assert.ok(await q(() => $canvasScene.scrollLeft) > x0 + 100);
+  assert.equal(await q(() => $canvasScene.scrollLeft), x0);
   assert.equal((await ideas()).length, n);
 });
 
@@ -192,7 +192,11 @@ await step('the rail is the timeline: in draw mode a drag on it creates a phase;
   const end0 = await q(id => S.phases.find(p => p.id === id).end, h.id);
   await page.mouse.move(h.x, h.y); await page.mouse.down();
   for (let i = 1; i <= 6; i++) await page.mouse.move(h.x + i * 20, h.y);
+  const lit = await q(id => { const l = document.querySelector('#railDays .day-row > .daysLit'), g = document.querySelector('#railInner .ghost');
+    return l && g && [Math.round(l.getBoundingClientRect().left - g.getBoundingClientRect().left), Math.round(l.getBoundingClientRect().width / CANVAS_CELL)]; }, h.id);
+  assert.ok(lit && lit[0] === 0 && lit[1] >= 2, 'the rail\'s days under the ghost light up, as the day view\'s hours: ' + lit);
   await page.mouse.up();
+  assert.equal(await q(() => document.querySelectorAll('.daysLit').length), 0, 'gone on release');
   const end1 = await q(id => S.phases.find(p => p.id === id).end, h.id);
   assert.equal(await q(([a, b]) => diffDays(a, b), [end0, end1]), 3, 'three cells to the right: three days longer');
   assert.ok(await q(() => $canvasScene.scrollLeft) > 0, 'the canvas did not pan');

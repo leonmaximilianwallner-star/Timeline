@@ -20,6 +20,7 @@ function toggleSettings(on, page){
   $set.classList.toggle("open", UI.settingsOpen);
   $setScrim.classList.toggle("open", UI.settingsOpen);
   document.getElementById("btnSettings").classList.toggle("open", UI.settingsOpen);   // its button fills while open (mockup)
+  setIcon(document.getElementById("btnSettings"), UI.settingsOpen);                    // rows ⇄ columns, by every route (ui/header-icons.js)
 }
 /* the app below the header dims while settings are open; a tap on it closes them */
 const $setScrim = document.createElement("div");
@@ -90,12 +91,8 @@ function mainPage(){
 
     <div class="part"><h3 class="overline">Darstellung</h3>
       <div class="list">
-        ${rowHTML({ icon:"moon", label:"Thema", value: device.theme==="light" ? "Hell" : "Dunkel",
-          pick:`<select id="sTheme" class="row-pick" aria-label="Thema">${optionsHTML([["dark","Dunkel"],["light","Hell"]], device.theme)}</select>` })}
-        ${rowHTML({ icon:"columns", label:"Sichtbare Tage", value: String(device.density),
-          pick:`<select id="sDens" class="row-pick" aria-label="Sichtbare Tage">${optionsHTML([[3,"3"],[5,"5"],[7,"7"]], device.density)}</select>` })}
-        ${rowHTML({ icon:"sun", label:"Tag beginnt um", value: (device.dayStart ?? 6) ? `${device.dayStart ?? 6}:00` : "0:00",
-          pick:`<select id="sDayStart" class="row-pick" aria-label="Tag beginnt um">${optionsHTML([[0,"0:00 (ganzer Tag)"],[5,"5:00"],[6,"6:00"],[7,"7:00"],[8,"8:00"]], device.dayStart ?? 6)}</select>` })}
+        ${DISPLAY_ROWS.map(d => rowHTML({ icon:`<svg class="glyph" viewBox="0 0 72 72" aria-hidden="true">${d.svg}</svg>`, label:d.label,
+          value:d.text(device[d.key]), id:d.id })).join("")}
       </div>
       <p class="hint">Die Stunden davor bleiben erreichbar, nur schmal.</p></div>
   </div>`;
@@ -169,6 +166,65 @@ function syncNowShown(){
     .finally(()=>{ syncShown = null; });
 }
 
+/* ── Darstellung: the row is the control (Max, 20 Nov) ──────────
+   No menu: a tap moves to the next value at once and saves it. Two values toggle, more cycle (3 → 5 → 7 → 3).
+   Each row's icon shows its value, on the header icons' measure (16 thick on the 72 box), and moves to the next
+   one by the one tween (ui/motion.js). An icon is a shape made of numbers for a value (shape), painted onto its
+   svg (paint); a tap tweens from the shape it shows to the next value's, so a tap mid-motion turns it from where
+   it is. The panel is not redrawn: the icon's motion would be cut off. */
+const lerpShape = (a, b, t) => typeof a === "number" ? lerp(a, b, t)
+  : Array.isArray(a) ? a.map((x, i) => lerpShape(x, b[i], t)) : Object.fromEntries(Object.keys(a).map(k => [k, lerpShape(a[k], b[k], t)]));
+const f2s = n => n.toFixed(2);
+const DISPLAY_ROWS = [
+  /* Thema: moon ⇄ sun, the pie-to-ring way: the whole turns while the shape changes. Moon: a disc of 30 with a
+     disc cut out of it, upper right. Sun: the disc shrinks to 14, the cut slides away, eight dots ride out to a ring */
+  { id:"sTheme", key:"theme", label:"Thema", values:["dark", "light"], text: v => v === "light" ? "Hell" : "Dunkel", ms:560,
+    svg:`<defs><mask id="themeCut"><rect width="72" height="72" style="fill:#fff"/><circle class="cut" style="fill:#000"/></mask></defs>
+      <circle class="disc" cx="36" cy="36" mask="url(#themeCut)"/><g class="rays">${"<circle/>".repeat(8)}</g>`,
+    shape: v => v === "light" ? { r:14, cx:96, cy:-24, cr:0, ray:6, d:29, turn:90 } : { r:30, cx:56, cy:18, cr:24, ray:0, d:18, turn:0 },
+    paint(g, s){
+      g.querySelector(".disc").setAttribute("r", f2s(s.r));
+      const cut = g.querySelector(".cut"); cut.setAttribute("cx", f2s(s.cx)); cut.setAttribute("cy", f2s(s.cy)); cut.setAttribute("r", f2s(s.cr));
+      g.querySelectorAll(".rays circle").forEach((c, i) => { const a = (i * 45 + s.turn) * Math.PI / 180;
+        c.setAttribute("cx", f2s(36 + s.d * Math.cos(a))); c.setAttribute("cy", f2s(36 + s.d * Math.sin(a))); c.setAttribute("r", f2s(s.ray)); });
+      g.style.transform = `rotate(${(-s.turn).toFixed(1)}deg)`;   // the moon turns over into the sun
+    } },
+  /* Sichtbare Tage: as many upright pills as days, 40 high (shorter than the settings icon's columns, so the two
+     never look alike): 3 at the set's 16, 5 at 8, 7 at 6, the whole always 72 wide. Pills beyond the count rest
+     on the last one */
+  { id:"sDens", key:"density", label:"Sichtbare Tage", values:[3, 5, 7], text: String, ms:420,
+    svg:`<g class="cols">${'<rect y="16" height="40"/>'.repeat(7)}</g>`,
+    shape: n => { const w = { 3:16, 5:8, 7:6 }[n] || 6, gap = (72 - n * w) / (n - 1);
+      return Array.from({ length:7 }, (_, i) => i < n ? [i * (w + gap), w, 1] : [72 - w, w, 0]); },
+    paint(g, s){ g.querySelectorAll("rect").forEach((r, i) => { const [x, w, shown] = s[i];
+      r.setAttribute("x", f2s(x)); r.setAttribute("width", f2s(w)); r.setAttribute("rx", f2s(w / 2)); r.setAttribute("opacity", f2s(shown)); }); } },
+  /* Tag beginnt um: a sunrise. The horizon a 12-thick line along the bottom; the later the hour, the higher the sun
+     (the sky is cut 12 above the line): at 5 a sliver, at 8 the whole disc with five rays, the theme sun's upper half */
+  { id:"sDayStart", key:"dayStart", label:"Tag beginnt um", values:[5, 6, 7, 8], text: v => `${v}:00`, ms:420,
+    svg:`<defs><clipPath id="dayStartSky"><rect x="-10" y="-20" width="92" height="68"/></clipPath></defs>
+      <g clip-path="url(#dayStartSky)"><circle class="sun" cx="36" r="14"/><g class="beams">${"<circle/>".repeat(5)}</g></g>
+      <rect x="0" y="60" width="72" height="12" rx="6"/>`,
+    shape: v => ({ cy:{ 5:56, 6:46, 7:38, 8:30 }[v] ?? 46, k:{ 7:.55, 8:1 }[v] ?? 0 }),
+    paint(g, s){
+      g.querySelector(".sun").setAttribute("cy", f2s(s.cy));
+      g.querySelectorAll(".beams circle").forEach((c, i) => { const a = (180 + i * 45) * Math.PI / 180, d = lerp(14, 25, s.k);
+        c.setAttribute("cx", f2s(36 + d * Math.cos(a))); c.setAttribute("cy", f2s(s.cy + d * Math.sin(a))); c.setAttribute("r", f2s(5 * s.k)); });
+    } },
+];
+function wireDisplayRow(row, d){
+  const g = row.querySelector(".glyph"), value = row.querySelector(".row-value");
+  let shown = d.shape(device[d.key]), stop = () => {};
+  d.paint(g, shown);
+  row.onclick = () => {
+    const next = d.values[(d.values.indexOf(device[d.key]) + 1) % d.values.length];   // a value not in the list (none yet): the first
+    setDevice(dv => { dv[d.key] = next; });                        // saved at once; redraws the app, not this panel
+    value.textContent = d.text(next);
+    value.classList.remove("change"); void value.offsetWidth; value.classList.add("change");
+    const from = shown, to = d.shape(next);
+    stop(); stop = tween(d.ms, t => { shown = lerpShape(from, to, t); d.paint(g, shown); });
+  };
+}
+
 /* ── wiring ────────────────────────────────────────────────── */
 function wireSettings(page, c){
   const $ = sel => $set.querySelector(sel);
@@ -182,9 +238,7 @@ function wireSettings(page, c){
       start:todayISO(), end:isoDate(addDays(new Date(), 30)) }));
     on("#sSync", "click", ()=>goSettings({ name:"sync" }));
     on("#sPush", "change", e=>{ e.target.checked = pushState.on; togglePush(); });   // the switch shows what is, not what was tapped
-    on("#sTheme", "change", e=>{ setDevice(dv=>{ dv.theme = e.target.value; }); renderSettings(); });
-    on("#sDens", "change", e=>{ setDevice(dv=>{ dv.density = +e.target.value; }); renderSettings(); });
-    on("#sDayStart", "change", e=>{ setDevice(dv=>{ dv.dayStart = +e.target.value; }); renderSettings(); });
+    DISPLAY_ROWS.forEach(d => wireDisplayRow($(`#${d.id}`), d));
     on("#sExport", "click", ()=>{
       const a = document.createElement("a");
       a.href = URL.createObjectURL(new Blob([JSON.stringify(S,null,2)], {type:"application/json"}));

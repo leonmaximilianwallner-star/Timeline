@@ -72,8 +72,8 @@ const tests = {
   async 'changing theme and days changes device state, not the plan'(page) {
     const first = await stored(page, 'timeline.data.v3');
     await page.click('#btnSettings');
-    await page.selectOption('#sTheme', 'light');
-    await page.selectOption('#sDens', '3');
+    await page.click('#sTheme');                               // the row is the control: dark → light
+    await page.click('#sDens'); await page.click('#sDens');    // 5 → 7 → 3
     const dv = await device(page);
     assert.equal(dv.theme, 'light'); assert.equal(dv.density, 3);
     assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'light');

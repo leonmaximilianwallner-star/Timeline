@@ -147,6 +147,19 @@ await step('timeline: a phase moves by its body (same length); the ghost is a da
   await closeEditor();
 });
 
+await step('timeline: the days under the ghost light up in the row of days, and go with it', async () => {
+  const ppd = await q(() => TL_PPD);
+  const b = await box('#tlInner .phase[data-phase="ph1"]');
+  let lit = null; const x = Math.min(b.r, 1400) - 40;               // clear of its label and arrow
+  await drag({ x, y: b.y + b.h / 2 }, { x: x + ppd, y: b.y + b.h / 2 }, { before: async () => {
+    lit = await q(() => { const l = document.querySelector('#dayHead > .daysLit'), g = document.querySelector('#tlInner .ghost');
+      if(!l) return null; const a = l.getBoundingClientRect(), c = g.getBoundingClientRect();
+      return [Math.round(a.left - c.left), Math.round(a.width - c.width), getComputedStyle(l).backgroundColor !== 'rgba(0, 0, 0, 0)']; }); } });
+  assert.deepEqual(lit, [0, 0, true], 'one band over exactly the ghost\'s days');
+  assert.equal(await q(() => document.querySelectorAll('.daysLit').length), 0, 'gone on release');
+  await q(() => mutate(p => { const t = p.phases.find(x => x.id === 'ph1'); t.start = idxDate(dayIdx(t.start) - 1); t.end = idxDate(dayIdx(t.end) - 1); }));
+});
+
 await step('one ghost everywhere: the same class and look in the day view and the timeline', async () => {
   const css = await q(() => [...document.styleSheets].flatMap(s => { try { return [...s.cssRules]; } catch { return []; } }).filter(r => /dashed/.test(r.cssText) && /\b(ghost|dragPrev|tlCreate|preview)\b/.test(r.selectorText || '')).map(r => r.selectorText));
   assert.deepEqual(css, ['.ghost'], 'one dashed preview rule in the whole app');

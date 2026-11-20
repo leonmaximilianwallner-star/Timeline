@@ -3,19 +3,20 @@
 /* ════════════════════════════════════════════════════════════
    theme       dark / light — chosen per device
    density     3 / 5 / 7 days across the day view — a phone wants fewer than a laptop
-   dayStart    the hour the day view's day starts; the night before it is drawn thin (views/range.js)
+   dayStart    the hour the day view's day starts, 5 to 8; the night before it is drawn thin (views/range.js)
    openPhases  ids of phases whose dropdown is open on the timeline
    canvasTab   id of the canvas tab shown here (views/canvas/tabs.js); missing or gone: the first
    syncSentUpTo / syncSeenUpTo  how far this device has sent and received (data/sync.js)
    pushWanted  push reminders were switched on here: if the browser drops the subscription, it is renewed (reminders.js)
+   selectMode  what the canvas's marquee selects: "touch" (what it touches) or "enclose" (input/canvas-select.js)
    wordmarkSeen  the drawn wordmark was shown here, at the first sign-in (ui/wordmark-draw.js)
    Changes here are not undoable and don't count as changes to the plan.
    ════════════════════════════════════════════════════════════ */
 function loadDevice(){
-  const fallback = { theme:"dark", density:5, dayStart:6, openPhases:[], syncSentUpTo:null, syncSeenUpTo:null };
+  const fallback = { theme:"dark", density:5, dayStart:6, selectMode:"touch", openPhases:[], syncSentUpTo:null, syncSeenUpTo:null };
   try{
     const raw = localStorage.getItem(DEVICE_KEY);
-    if(raw) return Object.assign(fallback, JSON.parse(raw));
+    if(raw){ const d = Object.assign(fallback, JSON.parse(raw)); if(d.dayStart === 0) d.dayStart = 5; return d; }   // 0:00 is gone (Max, 20 Nov): the nearest
   }catch(e){ console.warn("device load failed", e); }
   return fallback;
 }

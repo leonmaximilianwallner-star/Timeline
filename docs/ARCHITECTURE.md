@@ -368,13 +368,16 @@ input/
   add-mode.js               add mode (the + button)
   day-drag.js               creating, moving and resizing events by drag
   timeline-drag.js          creating and resizing phases, opening editors on the timeline (onTimelineClick: also the rail's)
-  canvas-pull.js            the pull between the week and the canvas; panning the canvas; the rail on hover
-  canvas-drag.js            the canvas's rules for the one drag (pointer.js dragRect): drawing, moving, resizing ideas
+  canvas-pull.js            the pull between the week and the canvas; panning the canvas (Space, Shift, the middle button, two fingers) and which gesture a press on it starts; the rail on hover
+  canvas-drag.js            the canvas's rules for the one drag (pointer.js dragRect): drawing, moving (with the selection), resizing ideas
+  canvas-select.js          the canvas's selection (view state): the marquee and its two modes, Shift + click, the select button
 
 ui/
   snake-pill.js             the snake pill, the one waiting animation: start-up (only if it takes > 0.3 s; the hourglass past 4.8 s) and Jetzt synchronisieren (ends with a check or an X); switches to the hourglass only at the end of a lap, ends at the next dot
   wordmark-draw.js          the drawn wordmark, once per device at the first sign-in (was the loading screen)
   toast.js                  toast message
+  motion.js                 the one tween for drawn motion (tween, lerp, reducedMotion), in the loader's curve (--ease)
+  header-icons.js           the header's icons and the add button's: one measure, each follows its thing's state (setIcon) or plays with its action (playIcon)
   editor.js                 editor and its todo list
   time-budget.js            time budget
   settings.js               settings: one panel, four pages (main, a colour, new, sync)
@@ -383,7 +386,7 @@ ui/
   focus-morph.js            from the event editor to Fokus in one motion (a container transform)
   canvas-morph.js           between the week and the canvas: the timeline becomes the rail and back (§6.1)
 
-styles/   tokens · base · timeline · canvas · day · focus · add-button · lists (rows, overlines, switches: shared by editor and settings) · editor · todos (todo rows, the celebration) · settings · time-budget · toast · device · snake-pill · wordmark-draw
+styles/   tokens · base · timeline · canvas · day · focus · add-button · header-icons · lists (rows, overlines, switches: shared by editor and settings) · editor · todos (todo rows, the celebration) · settings · time-budget · toast · device · snake-pill · wordmark-draw
 
 supabase/
   schema.sql                the plan's table (records): who may read it, the server's two rules

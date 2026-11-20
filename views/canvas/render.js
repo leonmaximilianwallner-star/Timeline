@@ -78,9 +78,10 @@ const ideaStyle = (c, row, w, h) => `--c:${c}; --w:${w}; bottom:${row * CANVAS_C
    It wears its category's colour as an event; its handles are an event's and a phase's (styles/base.css) */
 const RESIZE_HANDLES = ["l", "r", "t", "b", "lt", "rt", "lb", "rb"].map(z => `<span class="rez" data-rez="${z}"></span>`).join("");
 function renderIdeas(){
-  const tab = activeCanvasTab().id;
-  document.getElementById("canvasIdeas").innerHTML = S.ideas.filter(i => i.tabId === tab).sort((a, b) => (a.z || 0) - (b.z || 0))
-    .map(i => `<div class="idea" data-idea="${i.id}" style="${ideaStyle(dayIdx(i.day), i.row, i.w, i.h)}; background:${cat(i.categoryId).color}d0">`
+  const tab = activeCanvasTab().id, shown = S.ideas.filter(i => i.tabId === tab);
+  UI.selection = new Set([...UI.selection].filter(id => shown.some(i => i.id === id)));   // only what is shown: another tab, a deletion
+  document.getElementById("canvasIdeas").innerHTML = shown.sort((a, b) => (a.z || 0) - (b.z || 0))
+    .map(i => `<div class="idea${UI.selection.has(i.id) ? " selected" : ""}" data-idea="${i.id}" style="${ideaStyle(dayIdx(i.day), i.row, i.w, i.h)}; background:${cat(i.categoryId).color}d0">`
       + (i.title ? `<span class="idea-title">${esc(i.title)}</span>` : "")
       + (i.h > 1 && i.body ? `<div class="idea-body rich">${sanitize(i.body)}</div>` : "") + RESIZE_HANDLES + `</div>`).join("");
 }

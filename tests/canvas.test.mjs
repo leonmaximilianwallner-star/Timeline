@@ -245,9 +245,11 @@ await step('the rail moves with the canvas, sideways, exactly', async () => {
   assert.equal(Math.round(x0 - x1), Math.round(s1 - s0));
 });
 
-await step('dragging the empty grid pans the canvas', async () => {
+await step('Space + dragging the grid pans the canvas (a plain drag selects: tests/canvas-pan.test.mjs)', async () => {
   const s0 = await q(() => $canvasScene.scrollLeft);
+  await page.keyboard.down('Space');
   await page.mouse.move(800, 300); await page.mouse.down(); await page.mouse.move(600, 300, { steps: 6 }); await page.mouse.up();
+  await page.keyboard.up('Space');
   assert.equal(Math.round(await q(() => $canvasScene.scrollLeft) - s0), 200);
 });
 

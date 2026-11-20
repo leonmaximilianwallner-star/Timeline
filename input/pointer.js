@@ -65,7 +65,7 @@ function panFrame(){
      zone    "move" · the edges dragged ("l" "r" "t" "b", a corner is two) · "new" (from the press to the pointer)
      fix     the axes a new thing keeps from `rect` ("x": a new event stays in its day)
      min     its smallest size { w, h };  bounds  { y:[lo, hi] } it stays within (the day's hours)
-     el      takes the pointer; dim: the thing, faded while it is dragged; layer: where the ghost is drawn;
+     el      takes the pointer; dim: the thing (or things), faded while it is dragged; layer: where the ghost is drawn;
              place(g, r): the ghost's pixels; color: its tint (a ghost wears its thing's colour)
      pan     the week's edge auto-pan, along x, when the drag can change x
      done(r, moved, g)  moved: the snapped rectangle changed. Not moved is a click. Return true to keep the ghost
@@ -91,7 +91,7 @@ function dragRect(e, o){
   let r = r0, moved = false, g = null, armed = e.pointerType === "mouse" || e.pointerType === "pen" || o.zone === "new";
   const arm = setTimeout(() => { armed = true; UI.dragLive = true; vibrate(12); }, armed ? 0 : o.zone === "move" ? LONGPRESS : RESIZE_HOLD);
   if(armed) UI.dragLive = true;
-  o.el.setPointerCapture(e.pointerId);
+  try{ o.el.setPointerCapture(e.pointerId); }catch(_){}           // a pointer already gone (a second finger came first): nothing to capture
   const move = m => {
     if(m.pointerId !== undefined && m.pointerId !== e.pointerId) return;
     if(!armed){ if(Math.hypot(m.clientX - e.clientX, m.clientY - e.clientY) > MOVE_THRESHOLD) end(false); return; }   // a scroll, not a hold
@@ -106,7 +106,7 @@ function dragRect(e, o){
       g.el.className = "ghost";
       if(o.color){ g.el.style.borderColor = o.color; g.el.style.background = o.color + "24"; }
       o.layer.append(g.el);
-      if(o.dim) o.dim.classList.add("dragging");
+      [].concat(o.dim || []).forEach(d => d.classList.add("dragging"));
       document.documentElement.dataset.drag = o.zone;              // its cursor, wherever the pointer goes (styles/base.css)
     }
     o.place(g, r);
@@ -119,7 +119,7 @@ function dragRect(e, o){
     window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", cancel);
     panRelease();
     UI.dragLive = false;
-    if(o.dim) o.dim.classList.remove("dragging");
+    [].concat(o.dim || []).forEach(d => d.classList.remove("dragging"));
     delete document.documentElement.dataset.drag;
     const keep = commit && o.done(r, moved, g);
     if(g && !keep) clearPreview(g);

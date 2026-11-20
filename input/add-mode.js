@@ -4,7 +4,7 @@
 const $fab = document.getElementById("fab");
 function setAddMode(on){
   UI.addMode = on;
-  $fab.classList.toggle("on", on);
+  $fab.classList.toggle("on", on); setIcon($fab, on);   // plus ⇄ X (ui/header-icons.js)
   $fab.title = on ? "Hinzufügen beenden (Esc)" : "Hinzufügen (A)";
   document.getElementById("scene")?.classList.toggle("addmode", on);
   document.getElementById("dayGrid")?.classList.toggle("addmode", on);

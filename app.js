@@ -13,26 +13,32 @@ document.addEventListener("keydown", e=>{
     else if(UI.focus) closeFocus();             // the focus view, back to the week
     else if(UI.settingsOpen) toggleSettings(false);
     else if(UI.drawMode) setDrawMode(false);    // draw mode before leaving the canvas
+    else if(UI.canvas.active && UI.selection.size) clearSelection();   // then the selection (input/canvas-select.js)
     else if(UI.canvas.active && !morph.on){ morphStart(1); morphRelease(0); }   // the canvas, back to the week (ui/canvas-morph.js)
     else if(UI.addMode) setAddMode(false);
     return;
   }
   if(typing) return;
   if(UI.focus && !e.ctrlKey && !e.metaKey) return;  // the week's shortcuts (A, T) don't act under the focus view
-  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==="z"){ e.preventDefault(); e.shiftKey ? redo() : undo(); }
-  else if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==="y"){ e.preventDefault(); redo(); }
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==="z"){ e.preventDefault(); e.shiftKey ? redoShown() : undoShown(); }
+  else if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==="y"){ e.preventDefault(); redoShown(); }
   else if(e.key.toLowerCase()==="a" && !e.ctrlKey && !e.metaKey && !UI.canvas.active){ e.preventDefault(); setAddMode(!UI.addMode); }   // add mode belongs to the week
-  else if(e.key.toLowerCase()==="t" && !e.ctrlKey && !e.metaKey){ scrollToToday(true); }
+  else if(e.key.toLowerCase()==="t" && !e.ctrlKey && !e.metaKey){ todayShown(); }
 });
 
 /* ════════════════════════════════════════════════════════════
    boot
    ════════════════════════════════════════════════════════════ */
-document.getElementById("btnToday").onclick   = ()=>scrollToToday(true);
+/* undo, redo and now: their icon plays whenever the action runs, from the button or a key (ui/header-icons.js) */
+const $btnUndo = document.getElementById("btnUndo"), $btnRedo = document.getElementById("btnRedo"), $btnToday = document.getElementById("btnToday");
+function undoShown(){ playIcon($btnUndo); undo(); }
+function redoShown(){ playIcon($btnRedo); redo(); }
+function todayShown(){ playIcon($btnToday); scrollToToday(true); }
+$btnToday.onclick = todayShown;
 document.getElementById("btnBudget").onclick  = ()=>UI.budgetOpen ? closeBudget() : openBudget();
 document.getElementById("btnSettings").onclick= ()=>toggleSettings();
-document.getElementById("btnUndo").onclick    = undo;
-document.getElementById("btnRedo").onclick    = redo;
+$btnUndo.onclick = undoShown;
+$btnRedo.onclick = redoShown;
 
 let rzT = null;
 window.addEventListener("resize", ()=>{ clearTimeout(rzT); rzT = setTimeout(renderAll, 150); });

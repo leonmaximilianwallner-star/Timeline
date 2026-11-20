@@ -1,0 +1,38 @@
+/* styles/header-icons.css — the header's icons and the add button's (ui/header-icons.js): filled pills and dots,
+   16 thick on a 72 box, drawn at 20 px. Colour is the button's (currentColor), so filled, plain and outlined
+   buttons need nothing of their own. */
+:root:not([data-view="canvas"]) #btnSelect{display:none}   /* the select button belongs to the canvas, as its tabs */
+svg.glyph{width:20px; height:20px; display:block; overflow:visible; flex:none}
+svg.glyph *{fill:currentColor}
+svg.glyph .arc{stroke:currentColor; stroke-linejoin:round}
+svg.glyph .stroke{fill:none; stroke:currentColor; stroke-width:16; stroke-linecap:round; stroke-linejoin:round}
+
+/* Einstellungen: three pills on the 72 box, scaled to 20; rows ⇄ columns through three diagonal dots */
+.glyph.settings{--w:16px; --step:28px; --far:56px; --box:72px;
+  display:block; position:relative; width:var(--box); height:var(--box); flex:none; transform:scale(calc(20 / 72)); margin:-26px}
+.glyph.settings .piece{position:absolute; background:currentColor; border-radius:9999px;
+  transition:left .26s var(--ease), top .26s var(--ease), width .26s var(--ease), height .26s var(--ease)}
+.glyph.settings .p2{transition-delay:45ms} .glyph.settings .p3{transition-delay:90ms}
+.glyph.settings[data-pose="rows"] .p1{left:0; top:0;           width:var(--box); height:var(--w)}
+.glyph.settings[data-pose="rows"] .p2{left:0; top:var(--step); width:var(--box); height:var(--w)}
+.glyph.settings[data-pose="rows"] .p3{left:0; top:var(--far);  width:var(--box); height:var(--w)}
+.glyph.settings[data-pose="dots"] .p1{left:0;           top:0;           width:var(--w); height:var(--w)}
+.glyph.settings[data-pose="dots"] .p2{left:var(--step); top:var(--step); width:var(--w); height:var(--w)}
+.glyph.settings[data-pose="dots"] .p3{left:var(--far);  top:var(--far);  width:var(--w); height:var(--w)}
+.glyph.settings[data-pose="cols"] .p1{left:0;           top:0; width:var(--w); height:var(--box)}
+.glyph.settings[data-pose="cols"] .p2{left:var(--step); top:0; width:var(--w); height:var(--box)}
+.glyph.settings[data-pose="cols"] .p3{left:var(--far);  top:0; width:var(--w); height:var(--box)}
+
+/* Rückgängig / Wiederholen: lines drawn from the point (pathLength 1); played, they gather toward it part of the way
+   (the arrow keeps its shape) while it nudges the way it points */
+.glyph.arrow .ln{stroke-dasharray:1 2; stroke-dashoffset:0}
+.glyph.arrow .nudge{--nx:-8px}
+.glyph.arrow.go .ln{animation:icon-arrow-gather .62s var(--ease)}
+.glyph.arrow.go .nudge{animation:icon-arrow-nudge .62s var(--ease)}
+@keyframes icon-arrow-gather{0%, 100%{stroke-dashoffset:0} 45%, 55%{stroke-dashoffset:.45}}
+@keyframes icon-arrow-nudge{0%, 100%{transform:translate(0, 0)} 50%{transform:translate(var(--nx), 0)}}
+
+@media (prefers-reduced-motion: reduce){
+  .glyph.settings .piece{transition:none}
+  .glyph.arrow.go *{animation:none}
+}

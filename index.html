@@ -11,27 +11,28 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles/tokens.css?v=8f32803bd0">
-<link rel="stylesheet" href="styles/base.css?v=8f32803bd0">
-<link rel="stylesheet" href="styles/timeline.css?v=8f32803bd0">
-<link rel="stylesheet" href="styles/canvas.css?v=8f32803bd0">
-<link rel="stylesheet" href="styles/day.css?v=8f32803bd0">
-<link rel="stylesheet" href="styles/add-button.css?v=8f32803bd0">
-<link rel="stylesheet" href="styles/lists.css?v=8f32803bd0">
-<link rel="stylesheet" href="styles/editor.css?v=8f32803bd0">
-<link rel="stylesheet" href="styles/todos.css?v=8f32803bd0">
-<link rel="stylesheet" href="styles/settings.css?v=8f32803bd0">
-<link rel="stylesheet" href="styles/time-budget.css?v=8f32803bd0">
-<link rel="stylesheet" href="styles/focus.css?v=8f32803bd0">
-<link rel="stylesheet" href="styles/toast.css?v=8f32803bd0">
-<link rel="stylesheet" href="styles/device.css?v=8f32803bd0">
-<link rel="stylesheet" href="styles/snake-pill.css?v=8f32803bd0">
-<link rel="stylesheet" href="styles/wordmark-draw.css?v=8f32803bd0">
+<link rel="stylesheet" href="styles/tokens.css?v=c6e0223928">
+<link rel="stylesheet" href="styles/base.css?v=c6e0223928">
+<link rel="stylesheet" href="styles/timeline.css?v=c6e0223928">
+<link rel="stylesheet" href="styles/canvas.css?v=c6e0223928">
+<link rel="stylesheet" href="styles/day.css?v=c6e0223928">
+<link rel="stylesheet" href="styles/add-button.css?v=c6e0223928">
+<link rel="stylesheet" href="styles/header-icons.css?v=c6e0223928">
+<link rel="stylesheet" href="styles/lists.css?v=c6e0223928">
+<link rel="stylesheet" href="styles/editor.css?v=c6e0223928">
+<link rel="stylesheet" href="styles/todos.css?v=c6e0223928">
+<link rel="stylesheet" href="styles/settings.css?v=c6e0223928">
+<link rel="stylesheet" href="styles/time-budget.css?v=c6e0223928">
+<link rel="stylesheet" href="styles/focus.css?v=c6e0223928">
+<link rel="stylesheet" href="styles/toast.css?v=c6e0223928">
+<link rel="stylesheet" href="styles/device.css?v=c6e0223928">
+<link rel="stylesheet" href="styles/snake-pill.css?v=c6e0223928">
+<link rel="stylesheet" href="styles/wordmark-draw.css?v=c6e0223928">
 </head>
 <body>
 <!-- the snake pill while the app starts (ui/snake-pill.js) -->
 <div class="snake-pill-layer dim after-a-moment" id="bootSnakePill"><div class="snake-pill loading" role="status" aria-label="Lädt"><div class="snake-pill-body lap"></div></div></div>
-<script src="ui/snake-pill.js?v=8f32803bd0"></script>
+<script src="ui/snake-pill.js?v=c6e0223928"></script>
 
 <!-- the drawn wordmark, kept for a first sign-in on a device (ui/wordmark-draw.js) -->
 <template id="wordmarkDrawTemplate">
@@ -103,11 +104,12 @@
     <span id="topdate"></span>
     <div id="canvasTabs"></div>
     <div class="spacer"></div>
-    <button class="cbtn" id="btnUndo" title="Rückgängig (Strg+Z)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></svg></button>
-    <button class="cbtn" id="btnRedo" title="Wiederholen (Strg+Y)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 15-6.7L21 13"/></svg></button>
-    <button class="cbtn" id="btnToday" title="Heute (T)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none"/></svg></button>
-    <button class="cbtn" id="btnBudget" title="Zeitbudget"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 3v9h9"/></svg></button>
-    <button class="cbtn" id="btnSettings" title="Einstellungen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.01a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55h.01a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.01a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1z"/></svg></button>
+    <button class="cbtn" id="btnSelect" aria-pressed="false"></button>
+    <button class="cbtn" id="btnUndo" title="Rückgängig (Strg+Z)"></button>
+    <button class="cbtn" id="btnRedo" title="Wiederholen (Strg+Y)"></button>
+    <button class="cbtn" id="btnToday" title="Heute (T)"></button>
+    <button class="cbtn" id="btnBudget" title="Zeitbudget"></button>
+    <button class="cbtn" id="btnSettings" title="Einstellungen"></button>
   </div>
 
   <div id="views">
@@ -124,49 +126,52 @@
 </div>
 
 <div id="addMenu" inert></div>
-<button id="fab" title="Hinzufügen (A)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+<button id="fab" title="Hinzufügen (A)"></button>
 
 <div id="setPanel" role="dialog" aria-label="Einstellungen"></div>
 <div id="toast"></div>
 
-<script src="core/model.js?v=8f32803bd0"></script>
-<script src="core/dates.js?v=8f32803bd0"></script>
-<script src="core/text.js?v=8f32803bd0"></script>
-<script src="core/repeat.js?v=8f32803bd0"></script>
-<script src="core/todos.js?v=8f32803bd0"></script>
-<script src="core/hierarchy.js?v=8f32803bd0"></script>
-<script src="core/actuals.js?v=8f32803bd0"></script>
-<script src="core/focus.js?v=8f32803bd0"></script>
-<script src="ui/toast.js?v=8f32803bd0"></script>
-<script src="data/device.js?v=8f32803bd0"></script>
-<script src="data/changes.js?v=8f32803bd0"></script>
-<script src="data/store.js?v=8f32803bd0"></script>
-<script src="data/merge.js?v=8f32803bd0"></script>
-<script src="data/sync.js?v=8f32803bd0"></script>
-<script src="views/range.js?v=8f32803bd0"></script>
-<script src="views/timeline/lanes.js?v=8f32803bd0"></script>
-<script src="views/render-all.js?v=8f32803bd0"></script>
-<script src="views/timeline/render.js?v=8f32803bd0"></script>
-<script src="views/day/render.js?v=8f32803bd0"></script>
-<script src="views/focus/render.js?v=8f32803bd0"></script>
-<script src="views/canvas/render.js?v=8f32803bd0"></script>
-<script src="views/canvas/tabs.js?v=8f32803bd0"></script>
-<script src="views/viewport.js?v=8f32803bd0"></script>
-<script src="input/pointer.js?v=8f32803bd0"></script>
-<script src="input/add-mode.js?v=8f32803bd0"></script>
-<script src="input/day-drag.js?v=8f32803bd0"></script>
-<script src="input/timeline-drag.js?v=8f32803bd0"></script>
-<script src="input/canvas-pull.js?v=8f32803bd0"></script>
-<script src="input/canvas-drag.js?v=8f32803bd0"></script>
-<script src="ui/editor.js?v=8f32803bd0"></script>
-<script src="ui/day-todos.js?v=8f32803bd0"></script>
-<script src="ui/time-budget.js?v=8f32803bd0"></script>
-<script src="ui/recording.js?v=8f32803bd0"></script>
-<script src="ui/focus-morph.js?v=8f32803bd0"></script>
-<script src="ui/canvas-morph.js?v=8f32803bd0"></script>
-<script src="ui/wordmark-draw.js?v=8f32803bd0"></script>
-<script src="ui/settings.js?v=8f32803bd0"></script>
-<script src="reminders.js?v=8f32803bd0"></script>
-<script src="app.js?v=8f32803bd0"></script>
+<script src="core/model.js?v=c6e0223928"></script>
+<script src="core/dates.js?v=c6e0223928"></script>
+<script src="core/text.js?v=c6e0223928"></script>
+<script src="core/repeat.js?v=c6e0223928"></script>
+<script src="core/todos.js?v=c6e0223928"></script>
+<script src="core/hierarchy.js?v=c6e0223928"></script>
+<script src="core/actuals.js?v=c6e0223928"></script>
+<script src="core/focus.js?v=c6e0223928"></script>
+<script src="ui/toast.js?v=c6e0223928"></script>
+<script src="ui/motion.js?v=c6e0223928"></script>
+<script src="ui/header-icons.js?v=c6e0223928"></script>
+<script src="data/device.js?v=c6e0223928"></script>
+<script src="data/changes.js?v=c6e0223928"></script>
+<script src="data/store.js?v=c6e0223928"></script>
+<script src="data/merge.js?v=c6e0223928"></script>
+<script src="data/sync.js?v=c6e0223928"></script>
+<script src="views/range.js?v=c6e0223928"></script>
+<script src="views/timeline/lanes.js?v=c6e0223928"></script>
+<script src="views/render-all.js?v=c6e0223928"></script>
+<script src="views/timeline/render.js?v=c6e0223928"></script>
+<script src="views/day/render.js?v=c6e0223928"></script>
+<script src="views/focus/render.js?v=c6e0223928"></script>
+<script src="views/canvas/render.js?v=c6e0223928"></script>
+<script src="views/canvas/tabs.js?v=c6e0223928"></script>
+<script src="views/viewport.js?v=c6e0223928"></script>
+<script src="input/pointer.js?v=c6e0223928"></script>
+<script src="input/add-mode.js?v=c6e0223928"></script>
+<script src="input/day-drag.js?v=c6e0223928"></script>
+<script src="input/timeline-drag.js?v=c6e0223928"></script>
+<script src="input/canvas-pull.js?v=c6e0223928"></script>
+<script src="input/canvas-drag.js?v=c6e0223928"></script>
+<script src="input/canvas-select.js?v=c6e0223928"></script>
+<script src="ui/editor.js?v=c6e0223928"></script>
+<script src="ui/day-todos.js?v=c6e0223928"></script>
+<script src="ui/time-budget.js?v=c6e0223928"></script>
+<script src="ui/recording.js?v=c6e0223928"></script>
+<script src="ui/focus-morph.js?v=c6e0223928"></script>
+<script src="ui/canvas-morph.js?v=c6e0223928"></script>
+<script src="ui/wordmark-draw.js?v=c6e0223928"></script>
+<script src="ui/settings.js?v=c6e0223928"></script>
+<script src="reminders.js?v=c6e0223928"></script>
+<script src="app.js?v=c6e0223928"></script>
 </body>
 </html>

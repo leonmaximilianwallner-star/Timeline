@@ -395,3 +395,39 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **Sync, one at a time:** a press while it shows does nothing. **When it worked, settings close** once the check is done; after an X they stay open, with the reason in the status line. *Max; Claude (stays open after an X)*
 - **The logo:** red pill, amber and blue dots on white (`--c-red`, `--c-amber`, `--c-blue`); box 64, thickness 24, gap 16. `logo.svg` is the source and the favicon; the app icons (192, 512, any + maskable, the logo inside the safe circle), the iOS icon (180) and a white notification badge (96) are drawn from it. The base64 JPEG favicon and the unused `icon-192.png` are gone. *Max (colours, white, 3 : 8); Claude (the files)*
 - **The splash stays dark** (`background_color` #111118): the white icon on the app's own base, then the app, with no white flash between. **The loader keeps its own size** (24 dots on 72), not the logo's. *Max (own size); Claude (dark splash)*
+
+## 2026-11-20 · The days under a phase's ghost light up
+- **Drawing, moving or resizing a phase lights the days it covers** in the row of days below it: the day view's header under the timeline view, the rail's own days in the canvas, as the day view's ghost marks its times on the hour rail. **One band over the range**, not a label per day, so it reads at every tier (at the rail's scale only the weeks are labelled). It is a part of the ghost and goes with it. *Max (the feature, tiers); Claude (one band)*
+
+## 2026-11-20 · The header's icons: filled pills and dots
+- **Every header icon and the add button's are the reference set** (`timeline-header-icons.html`): undo and redo a 45° chevron, Jetzt a dot in a ring, the time budget a pie ⇄ ring, settings rows ⇄ columns, the add button plus ⇄ X; and the select icon (crossing corners ⇄ the selection frame) for the canvas. Each still drives the function it drove. *Max*
+- **An icon follows its thing's state, not its button's clicks.** Settings closed by Escape or a tap outside turn the columns back into rows; the budget, add mode and draw mode the same. A one-shot icon plays when its action runs, from the button or the key. *Max (the rule); Claude (where it hooks)*
+- **One tween, `ui/motion.js`**, in the loader's curve, now the token `--ease` (it was the snake pill's own). The app had no JavaScript tween; a path's shape can't be animated by CSS. A new motion stops the running one and starts from where it is. `reducedMotion()` moved there from `ui/focus-morph.js`. *Claude*
+- **The canvas tabs' + is the add icon at rest**: the same function, the same look. *Claude*
+- **Fingerprint**: compared with `main`, every step differs only inside the header's icons and the add button (checked by masking those two areas: nothing else changed). *Claude*
+
+## 2026-11-20 · Settings: the row is the control
+- **No menus in settings.** Thema, Sichtbare Tage and Tag beginnt um were rows with a hidden native picker; a tap now moves to the next value and saves it. Two values toggle, more cycle. The other settings rows already worked this way (the push switch) or choose inline (colours, Kategorie/Projekt). *Max*
+- **0:00 (the whole day) is gone**; a device that was on it starts at 5:00. *Max*
+- **The icons from the reference** (`timeline-settings-rows.html`): moon ⇄ sun, the days as pills, a sunrise whose sun climbs with the hour; the value rises in. Each icon is a shape of numbers per value, tweened from the shape it shows, so a tap mid-motion turns from where it is. *Max (the icons); Claude (the build)*
+- **The panel is not redrawn on a tap** (it would cut the motion off); only the row's value and icon change. The app below redraws as before. *Claude*
+- **Kept:** the label "Tag beginnt um" (the reference says "Aufstehen"; not decided). The editor's rows (Gehört zu, Wiederholung, Erinnerung) keep their pickers. *Open for Max*
+
+## 2026-11-20 · Panning the canvas moves off the plain drag
+- **The plain drag on the empty canvas is left for selecting** (part E). The canvas pans by **Space + drag, Shift + drag** (as in CAD software, where Shift moves the view), **the middle button**, a trackpad's two-finger scroll (the browser's own, unchanged), and on touch **two fingers**. Pinch and Ctrl + wheel stay what they were: toward the week or the canvas. *Max (the inputs, Shift); Claude (the touch rules)*
+- **A pan press decides first**, before the rail's and the ideas' own handlers: Space, Shift or the middle button pan over an idea or the rail too, and change nothing there. *Claude*
+- **Two fingers pan until their spread changes by 24 px (`PINCH_SLOP`)**, then pinch: two fingers never move quite together, and without it every pan began a switch to the week. A second finger undoes what the first began (a hold on an idea, a drawing). *Claude*
+- **The canvas has the touch to itself** (`touch-action:none` while it is the view; before, only in draw mode), so one finger can select. *Claude*
+- **Cursor:** the open hand while Space is held, the closed hand while panning; the empty canvas no longer shows the hand at rest (it doesn't pan any more). *Max (the hands); Claude (none at rest)*
+- **Shift + click on an idea** is part E's (add it to or take it from the selection); Shift + drag stays a pan. *Max*
+
+## 2026-11-20 · Selecting on the canvas
+- **A plain drag on the empty canvas draws the marquee**; a drag on an idea still moves it, the add button still draws. *Max*
+- **Touch is the default mode** (anything the marquee overlaps), **enclose the other** (wholly inside). The marquee isn't snapped and a finger is imprecise, so enclosing would ask for an exact overshoot; touching forgives it. The select icon fits: crossing corners at rest (touching), the closed marquee when active (enclosing). Per device, not synced. *Max (touch); Claude (the reason, per device)*
+- **A click on an idea opens it, and it is then the selection.** Shift + click adds or takes away one idea; Shift + drag pans (part D). Ctrl/Cmd + marquee adds or takes away what it hits. A click on the empty canvas, or Escape, clears (Escape: after draw mode, before leaving the canvas). *Max (click opens, Shift pans); Claude (Ctrl for the marquee, since Shift pans)*
+- **Group move is the one drag**: the pressed idea's ghost, and one more ghost for each other selected idea at the same offset, as parts of it; all faded; one `mutate`, so one undo step; their order front to back is kept. Pressing an idea that isn't selected makes it the selection, so it moves alone. Out of scope: group resize, delete, copy, align. *Max (scope); Claude (the build)*
+- **The marquee's line is an svg**: a CSS dashed border can't set its gaps. Same 1.5 px line in `--fg-muted` as the ghost, dashes 4.5, gaps 7.5; the ideas' radius, kept to half the shorter side. *Claude*
+- **The selected look:** the hard ring of C.2, 2 px in `--text`, 2 px off the idea, following its radius. *Claude, from the rulebook*
+- **The selection is view state**: `UI.selection`, pruned to the shown tab's ideas whenever they are drawn (a tab change, a deletion from another device). *Claude*
+- **Text in ideas can't be selected by a drag** (`user-select:none`, as events and phases): the marquee was selecting titles. *Claude (found)*
+- **Not done:** auto-panning at the screen's edge while drawing the marquee (the edge pan moves the week only). *Claude, for later*

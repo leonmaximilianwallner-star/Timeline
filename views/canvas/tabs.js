@@ -21,7 +21,7 @@ function renderCanvasTabs(){
   $canvasTabs.innerHTML = canvasTabList().map(t =>
     `<button class="canvas-tab${t === active ? " active" : ""}" data-id="${t.id}" data-letter="${esc([...t.name][0].toUpperCase())}"
       title="${esc(t.name)}" aria-label="${esc(t.name)}"><span>${esc(t.name)}</span></button>`).join("")
-    + `<button class="cbtn" data-create title="Neuer Tab" aria-label="Neuer Tab">${icon("plus")}</button>`;
+    + `<button class="cbtn" data-create title="Neuer Tab" aria-label="Neuer Tab">${addIconHTML()}</button>`;   // the add icon, at rest (ui/header-icons.js)
   canvasTabNeed = null;                                           // names may have changed: measure again
   fitCanvasTabs();
 }
