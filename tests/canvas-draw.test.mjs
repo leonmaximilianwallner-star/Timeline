@@ -1,4 +1,4 @@
-// The add button in every view, and draw mode on the canvas (input/canvas-draw.js).
+// The add button in every view, and draw mode on the canvas (input/canvas-drag.js).
 // Run from the repo root:  node tests/canvas-draw.test.mjs
 import { chromium } from 'playwright';
 import { createServer } from 'node:http';
@@ -68,12 +68,12 @@ await step('in the canvas the same button turns draw mode on and off; Escape end
   assert.equal(await q(() => UI.canvas.active && !morph.on), true, 'still in the canvas');
 });
 
-await step('one row: a pill on the cells, corners on the dots; draw mode ends after one', async () => {
+await step('one row: a pill (one radius, half a row) on the cells, corners on the dots; draw mode ends after one', async () => {
   await page.click('#fab');
   const a = await cell(0, 0), b = await cell(3, 0);
   await drag(a, b, { release: false });
-  const pv = await q(() => { const p = document.querySelector('.idea.preview'), r = p.getBoundingClientRect(), g = $canvasGrid.getBoundingClientRect();
-    return { pill: p.classList.contains('pill'), l: r.left - g.left, b: g.bottom - r.bottom, w: r.width, h: r.height }; });
+  const pv = await q(() => { const p = document.querySelector('#canvasIdeas .ghost'), r = p.getBoundingClientRect(), g = $canvasGrid.getBoundingClientRect();
+    return { pill: r.height === 40 && getComputedStyle(p).borderRadius === '20px', l: r.left - g.left, b: g.bottom - r.bottom, w: r.width, h: r.height }; });
   assert.equal(pv.pill, true);
   assert.deepEqual([pv.l % 40, pv.b % 40, pv.w, pv.h], [0, 0, 160, 40], 'snapped: four cells, one row, edges on the 40 px lattice');
   await page.mouse.up();
@@ -81,22 +81,22 @@ await step('one row: a pill on the cells, corners on the dots; draw mode ends af
   assert.equal(list.length, 1);
   assert.deepEqual([list[0].w, list[0].h], [4, 1]);
   assert.equal(await q(() => UI.drawMode), false, 'one-shot');
-  assert.equal(await q(() => document.querySelectorAll('#canvasIdeas .idea.pill:not(.preview)').length), 1);
-  assert.equal(await q(() => document.querySelectorAll('.idea.preview').length), 0);
+  assert.equal(await q(() => document.querySelectorAll('#canvasIdeas .idea').length), 1);
+  assert.equal(await q(() => document.querySelectorAll('#canvasIdeas .ghost').length), 0);
 });
 
-await step('the type follows the rows live; up and to the left works; a squircle covers the cells', async () => {
+await step('the height follows the rows live; up and to the left works; a taller idea covers the cells', async () => {
   await page.click('#fab');
   const a = await cell(6, 0);
   await drag(a, await cell(4, 0), { release: false });
-  assert.equal(await q(() => document.querySelector('.idea.preview').classList.contains('pill')), true);
+  assert.equal(await q(() => document.querySelector('#canvasIdeas .ghost').offsetHeight), 40, 'one row');
   const up = await cell(4, 2);
   await page.mouse.move(up.x, up.y);
-  assert.equal(await q(() => document.querySelector('.idea.preview').classList.contains('pill')), false, 'crossing a row: a squircle, at once');
+  assert.equal(await q(() => document.querySelector('#canvasIdeas .ghost').offsetHeight), 120, 'crossing a row: taller, at once');
   await page.mouse.up();
   const i = (await ideas()).at(-1);
   assert.deepEqual([i.w, i.h], [3, 3]);
-  assert.equal(await q(() => getComputedStyle(document.querySelectorAll('#canvasIdeas .idea')[1]).borderRadius), '8px');
+  assert.equal(await q(() => getComputedStyle(document.querySelectorAll('#canvasIdeas .idea')[1]).borderRadius), '20px', 'one radius for every idea');
 });
 
 await step('a click or a drag inside one cell draws nothing and keeps draw mode', async () => {
@@ -114,17 +114,17 @@ await step('Escape, the add button or pointercancel mid-drag leave nothing behin
   await drag(a, b, { release: false });
   await page.keyboard.press('Escape');
   await page.mouse.up();
-  assert.equal((await ideas()).length, n); assert.equal(await q(() => !!document.querySelector('.idea.preview') || UI.drawMode), false);
+  assert.equal((await ideas()).length, n); assert.equal(await q(() => !!document.querySelector('#canvasIdeas .ghost') || UI.drawMode), false);
   await page.click('#fab');
   await drag(a, b, { release: false });
   await q(() => setDrawMode(!UI.drawMode));                      // what the button's click runs
   await page.mouse.up();
-  assert.equal((await ideas()).length, n); assert.equal(await q(() => !!document.querySelector('.idea.preview')), false);
+  assert.equal((await ideas()).length, n); assert.equal(await q(() => !!document.querySelector('#canvasIdeas .ghost')), false);
   await page.click('#fab');
   await drag(a, b, { release: false });
   await q(() => document.dispatchEvent(new PointerEvent('pointercancel', { pointerId: 1, bubbles: true })));
   await page.mouse.up();
-  assert.equal((await ideas()).length, n); assert.equal(await q(() => !!document.querySelector('.idea.preview')), false);
+  assert.equal((await ideas()).length, n); assert.equal(await q(() => !!document.querySelector('#canvasIdeas .ghost')), false);
   assert.equal(await q(() => UI.drawMode), true, 'a cancel keeps the mode');
   await page.keyboard.press('Escape');
 });
@@ -185,7 +185,7 @@ await step('the rail is the timeline: in draw mode a drag on it creates a phase;
   const ed = await q(() => UI.editor && UI.editor.type);
   assert.equal(ed, 'phase', 'the phase editor, as on the timeline');
   assert.equal(await q(() => UI.drawMode), false, 'one thing created ends draw mode');
-  assert.equal(await q(() => document.querySelectorAll('.idea.preview').length + S.ideas.length), 2, 'no idea drawn');
+  assert.equal(await q(() => document.querySelectorAll('#canvasIdeas .ghost').length + S.ideas.length), 2, 'no idea drawn');
   await page.keyboard.press('Escape');
   await q(() => openRail(true)); await page.waitForTimeout(400);
   const h = await q(() => { const el = document.querySelector('#railInner .phase .ph-handle.r'); const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, id: el.closest('.phase').dataset.phase }; });

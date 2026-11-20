@@ -116,5 +116,5 @@
 .todayLine{position:absolute; top:0; bottom:0; width:2px; background:var(--now); z-index:3; pointer-events:none; opacity:.85}
 .todayLine::before{content:""; position:absolute; top:0; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color:var(--now)}
 .tlHover{position:absolute; top:0; bottom:0; width:1.5px; background:var(--fg-muted); z-index:4; pointer-events:none; display:none}
-.tlCreate{position:absolute; height:24px; border:1.5px dashed var(--fg-muted); border-radius:9999px; z-index:4; pointer-events:none; background:rgba(100,152,192,.10)}
+:is(.laneRow, .tlRow) > .ghost{top:4px; height:24px; border-radius:9999px}   /* a phase's ghost is shaped as a phase (.phase) */
 

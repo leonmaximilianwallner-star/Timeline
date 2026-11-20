@@ -348,3 +348,12 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **In the canvas, draw mode creates a phase when the drag starts on the rail**, an idea when it starts on the grid. *Max*
 - **Deleting a tab**: right-click → one row; a tab with ideas asks in that row (the app has no confirm window, C.3); its ideas are deleted with it. *Max; Claude (the in-row confirm)*
 
+## 2026-11-20 · One drag for every rectangle
+- **Rule: things that do the same job are the same thing.** A difference stays only where the task needs it; otherwise it is a design bug (the timeline's blue ghost tint was one). *Max*
+- **One drag** (`dragRect`, `input/pointer.js`) for creating, moving and resizing events, phases and ideas; each view gives only its rules (RULEBOOK B.6, One drag). It replaces six copies of the same lifecycle (event create, event move/resize, phase resize, phase create, idea draw) and adds idea move/resize without new mechanics. App code −97 lines. *Max (the rule); Claude (the design)*
+- **Phases move** on the timeline and the open rail, by their body, as events and ideas do. *Max*
+- **One ghost** (`.ghost`, the day view's look), shaped and tinted as its thing; the dragged thing fades (`.dragging`). *Max*
+- **Ideas: one radius, half a row.** No pill class: the browser's clamp makes the pill, as for 15-minute events. *Max*
+- **Small behaviour changes, on purpose:** a cancelled pointer (the browser took the gesture) never saves; a touch scroll that starts on an event no longer opens its editor; a click is "the snapped rectangle never changed", so a few pixels of jitter on an event still opens it. *Claude*
+- **Corners of a rounded idea:** near the arc counts for both sides; the exact corner point is outside the shape. *Claude*
+

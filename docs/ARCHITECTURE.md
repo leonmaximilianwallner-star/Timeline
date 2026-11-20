@@ -369,7 +369,7 @@ input/
   day-drag.js               creating, moving and resizing events by drag
   timeline-drag.js          creating and resizing phases, opening editors on the timeline (onTimelineClick: also the rail's)
   canvas-pull.js            the pull between the week and the canvas; panning the canvas; the rail on hover
-  canvas-draw.js            draw mode: a drag on the canvas draws an idea on the cells
+  canvas-drag.js            the canvas's rules for the one drag (pointer.js dragRect): drawing, moving, resizing ideas
 
 ui/
   loader.js                 loading screen

@@ -116,7 +116,7 @@ None of these counts toward progress.
 **Idea** · *Idee* · `idea` · item `kind: 'idea'`
 The free thing you draw and type into on the canvas, drawn as a squircle. Untimed unless given a date. When a phase lists it, it becomes a block. **Never say:** card, field, Fläche, note, shape.
 
-*In the app (19 Nov):* `ideas` records `{ id, tabId, day, row, w, h }`, drawn in draw mode (B.6.1): `day` the date of its left column, `row` its lowest row counted up from the floor, `w`/`h` in cells. One row is drawn as a pill, more as a squircle; the look follows `h`, nothing else is stored. Frei grey; no name, editing, moving or deleting yet (undo only). Whether a pill may become a phase is open (B.8).
+*In the app (19 Nov):* `ideas` records `{ id, tabId, day, row, w, h }`, drawn in draw mode (B.6.1): `day` the date of its left column, `row` its lowest row counted up from the floor, `w`/`h` in cells. **One radius, half a row** (**Max**, 20 Nov), as events share one radius: the browser keeps a radius to half the shorter side, so a one-row idea is a pill and taller ones are pills drawn out. Moved and resized by the one drag (B.6). Frei grey; no name or editing yet; deleted only with its tab (or undo). Whether a pill may become a phase is open (B.8).
 
 **Group** · *Gruppe* · `group` · `groups` row
 Ideas within one cell of each other. Emerges; becomes fixed only when named. Named groups never fuse. An open phase counts with its whole squircle. **Never say:** cluster.
@@ -506,6 +506,17 @@ Time is one continuous space seen at different scales (**Max**, 17 Nov). What is
 - **On a Monday** its day label goes first, then its KW comes: two texts never share a place. The day header's KW corner does the same while the scale changes.
 - **Where it shows:** the week view (every day, unchanged), the in-between of the switch (days thin out to Mon/Wed/Fri, then to the weeks), and the open rail. The rail's lowest row is the day view's header, built by the same rule (`appendDayCells`), shown only when the rail is open, and never cut: the rail's height cap applies to the plan rows above it (the morph's day header lands on it, sliding over what the cap hides). It sits above the phone's home indicator (safe area). Its lines are the weeks'.
 - **The canvas's dots, the same rule** (19 Nov; Max): one dot a day at the canvas (40 px, the base unit = one rail day column); while the switch runs they take the timeline's scale and anchor, so dots and day lines move as one system; as days widen, 12 h then 6 h dots fade in (`tiersFor(ppd, MIN_DOT_PX)`: whole from 40 px apart, gone at 32). Thinning past a day uses the timeline's tiers (not every second dot: that would leave the Mondays). Dots keep their size; rows don't scale. Real canvas zoom: later.
+
+### One drag *(Max, 20 Nov)*
+Every thing in every view is a rectangle in its view's units: `{ x, y, w, h }`. **Creating, moving and resizing are one interaction**: press, a dashed ghost at the snapped target, commit on release. A press that never changes the snapped rectangle is a click. Views differ only in their rules:
+
+| | x | y | moves | resizes from | smallest |
+|---|---|---|---|---|---|
+| Day view (event) | a day | minutes, every 15 | both | top, bottom | 15 min |
+| Timeline (phase) | a day | its lane (computed) | x | left, right | 1 day |
+| Canvas (idea) | a day | a row | both | every side and corner | 1 cell |
+
+A day and a row are **cells** (an edge goes past the cell under the pointer); a time is a **line** (an edge lands on it). Creating is resizing from the press. The ghost wears its thing's shape and colour; the thing itself fades while it is dragged. Mouse starts at once, touch after a hold. Code: `dragRect` (`input/pointer.js`); each view gives its rules (`input/day-drag.js`, `timeline-drag.js`, `canvas-drag.js`).
 
 ## B.7 Data
 

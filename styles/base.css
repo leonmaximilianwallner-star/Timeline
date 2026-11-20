@@ -66,3 +66,7 @@ input,select,textarea{font-family:inherit; font-size:14px; color:var(--text)}
 button:focus-visible{outline:2px solid var(--text); outline-offset:2px}
 .cbtn[disabled]{opacity:.35; pointer-events:none}
 
+/* one drag everywhere (input/pointer.js dragRect): the dashed ghost at the snapped target, the thing itself faded.
+   Each view shapes the ghost as its things (styles/timeline.css, canvas.css); a ghost wears its thing's colour */
+.ghost{position:absolute; border:1.5px dashed var(--fg-muted); border-radius:var(--r-small); background:rgba(127,127,140,.08); z-index:12; pointer-events:none; box-sizing:border-box}
+:is(.event, .phase, .idea).dragging{opacity:.35}
