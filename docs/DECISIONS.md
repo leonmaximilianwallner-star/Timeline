@@ -405,3 +405,10 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **One tween, `ui/motion.js`**, in the loader's curve, now the token `--ease` (it was the snake pill's own). The app had no JavaScript tween; a path's shape can't be animated by CSS. A new motion stops the running one and starts from where it is. `reducedMotion()` moved there from `ui/focus-morph.js`. *Claude*
 - **The canvas tabs' + is the add icon at rest**: the same function, the same look. *Claude*
 - **Fingerprint**: compared with `main`, every step differs only inside the header's icons and the add button (checked by masking those two areas: nothing else changed). *Claude*
+
+## 2026-11-20 · Settings: the row is the control
+- **No menus in settings.** Thema, Sichtbare Tage and Tag beginnt um were rows with a hidden native picker; a tap now moves to the next value and saves it. Two values toggle, more cycle. The other settings rows already worked this way (the push switch) or choose inline (colours, Kategorie/Projekt). *Max*
+- **0:00 (the whole day) is gone**; a device that was on it starts at 5:00. *Max*
+- **The icons from the reference** (`timeline-settings-rows.html`): moon ⇄ sun, the days as pills, a sunrise whose sun climbs with the hour; the value rises in. Each icon is a shape of numbers per value, tweened from the shape it shows, so a tap mid-motion turns from where it is. *Max (the icons); Claude (the build)*
+- **The panel is not redrawn on a tap** (it would cut the motion off); only the row's value and icon change. The app below redraws as before. *Claude*
+- **Kept:** the label "Tag beginnt um" (the reference says "Aufstehen"; not decided). The editor's rows (Gehört zu, Wiederholung, Erinnerung) keep their pickers. *Open for Max*
