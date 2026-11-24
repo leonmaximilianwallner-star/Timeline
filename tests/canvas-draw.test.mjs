@@ -211,27 +211,27 @@ await step('a tab\'s menu: right-click → Löschen; one with ideas asks once; t
   await page.click('#canvasTabs [data-create]'); await page.keyboard.type('Leer'); await page.keyboard.press('Enter');
   await page.click(`#canvasTabs [data-id="${first}"]`);
   await page.click(`#canvasTabs [data-id="${first}"]`, { button: 'right' });
-  assert.equal(await q(() => !!document.querySelector('.tab-menu')), true);
-  assert.equal(await q(id => { const m = document.querySelector('.tab-menu').getBoundingClientRect(), t = document.querySelector(`[data-id="${id}"]`).getBoundingClientRect();
-    return m.top >= t.bottom && m.bottom <= innerHeight && Math.abs(m.left - t.left) < 1 && document.elementFromPoint(m.left + 20, m.top + 10)?.closest('.tab-menu') !== null; }, first), true, 'seen: under its tab, on screen, on top');
+  assert.equal(await q(() => !!document.querySelector('.choice-menu')), true);
+  assert.equal(await q(id => { const m = document.querySelector('.choice-menu').getBoundingClientRect(), t = document.querySelector(`[data-id="${id}"]`).getBoundingClientRect();
+    return [m.top >= t.bottom, m.bottom <= innerHeight, Math.abs(m.left - t.left) < 1, document.elementFromPoint(m.left + 20, m.top + 10)?.closest('.choice-menu') !== null].join(); }, first), 'true,true,true,true', 'seen: under its tab, on screen, on top');
   await page.keyboard.press('Escape');
-  assert.equal(await q(() => !!document.querySelector('.tab-menu') || !UI.canvas.active), false, 'Escape closes the menu only');
+  assert.equal(await q(() => !!document.querySelector('.choice-menu') || !UI.canvas.active), false, 'Escape closes the menu only');
   await page.click(`#canvasTabs [data-id="${first}"]`, { button: 'right' });
   await page.mouse.click(700, 500);
-  assert.equal(await q(() => !!document.querySelector('.tab-menu')), false, 'a click outside closes it');
+  assert.equal(await q(() => !!document.querySelector('.choice-menu')), false, 'a click outside closes it');
   const n = (await tabs()).length;
   await page.click(`#canvasTabs [data-id="${first}"]`, { button: 'right' });
-  await page.click('.tab-menu .row');
+  await page.click('.choice-menu .row');
   assert.equal((await tabs()).length, n, 'with ideas: it asks first');
-  assert.match(await q(() => document.querySelector('.tab-menu .row-label').textContent), /Mit 2 Ideen löschen\?/);
-  await page.click('.tab-menu .row');
+  assert.match(await q(() => document.querySelector('.choice-menu .row-label').textContent), /Mit 2 Ideen löschen\?/);
+  await page.click('.choice-menu .row');
   assert.equal((await tabs()).length, n - 1);
   assert.equal(await q(() => S.ideas.length), 0, 'its ideas went with it');
   assert.equal(await q(() => S.deleted && Object.keys(S.deleted).length > 0), true, 'remembered as deleted, for sync');
   assert.equal((await tabs())[0].endsWith('*'), true, 'its neighbour is shown');
-  while ((await tabs()).length > 1) { await page.click('#canvasTabs .canvas-tab.active', { button: 'right' }); await page.click('.tab-menu .row'); }
+  while ((await tabs()).length > 1) { await page.click('#canvasTabs .canvas-tab.active', { button: 'right' }); await page.click('.choice-menu .row'); }
   await page.click('#canvasTabs .canvas-tab.active', { button: 'right' });
-  assert.equal(await q(() => document.querySelector('.tab-menu .row').disabled), true, 'the last tab cannot go');
+  assert.equal(await q(() => document.querySelector('.choice-menu .row').disabled), true, 'the last tab cannot go');
   await page.keyboard.press('Escape');
   const keep = await tabs();
   await page.reload(); await page.waitForTimeout(300); await enter();

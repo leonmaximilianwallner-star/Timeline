@@ -431,3 +431,11 @@ Max asked for a thorough check before Supabase. Every file was read; his five is
 - **The selection is view state**: `UI.selection`, pruned to the shown tab's ideas whenever they are drawn (a tab change, a deletion from another device). *Claude*
 - **Text in ideas can't be selected by a drag** (`user-select:none`, as events and phases): the marquee was selecting titles. *Claude (found)*
 - **Not done:** auto-panning at the screen's edge while drawing the marquee (the edge pan moves the week only). *Claude, for later*
+
+## 2026-11-24 · Four fixes from Max's notes
+- **A · The tab menu is seen again.** #44 dropped its CSS rule while rewriting the idea styles, so it opened below the window; its test only checked that it existed. Now it checks that it is on screen. *Claude (own regression)*
+- **B · The start-up pill shows only while the page loads** (not under 0.3 s). The temporary 7.2 s preview is gone. *Max*
+- **C · A ghost marks its bounds as text on its ruler, in every view** (`markBounds`): the day view's times on the hour rail; the timeline's and the rail's first and last day in the row of days, drawn as that day's own cell, lit — whatever the row shows at that scale. Replaces the band over the days (20 Nov). *Max*
+- **D · A repeating event asks before a drag changes it**, as its delete does: this one or this and every later one (`splitOccurrence`). *Max*
+- **One floating choice** (`openChoiceMenu`, `ui/choice-menu.js`) for a tab's delete and a series' question: the same look and the same closing (Escape, a press outside). *Claude*
+

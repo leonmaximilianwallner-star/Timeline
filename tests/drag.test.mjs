@@ -105,6 +105,50 @@ await step('day view, add mode: a drag creates an event; its ghost stays behind 
   if (await q(() => UI.addMode)) await page.click('#fab');
 });
 
+await step('day view: a repeating event asks before a drag changes it; Escape leaves all as it was', async () => {
+  await q(() => mutate(p => { p.events.push({ id: 'rep', title: 'Serie', date: idxDate(dayIdx(todayISO()) - 1), startMin: 780, endMin: 840, repeat: 'daily', categoryId: null,
+    todosByDate: { [todayISO()]: [{ id: 't1', text: 'heute', state: 'open' }], [idxDate(dayIdx(todayISO()) + 1)]: [{ id: 't2', text: 'morgen', state: 'open' }] } }); }));
+  await page.waitForTimeout(150);
+  const before = await q(() => JSON.stringify(S.events.find(e => e.id === 'rep')));
+  const b = await box(`.event[data-ev="rep"][data-date="${await q(() => todayISO())}"]`), s = await slot();
+  await drag({ x: b.x + b.w / 2, y: b.b - 3 }, { x: b.x + b.w / 2, y: b.b - 3 + 2 * s });
+  assert.deepEqual(await q(() => [...document.querySelectorAll('.choice-menu .row-label')].map(e => e.textContent)), ['Nur diesen Termin', 'Auch alle folgenden']);
+  assert.equal(await q(() => document.querySelectorAll('#dayGrid .ghost').length), 1, 'the ghost waits beside the choice');
+  assert.equal(await q(() => JSON.stringify(S.events.find(e => e.id === 'rep'))), before, 'nothing changed yet');
+  await page.keyboard.press('Escape');
+  assert.equal(await q(() => document.querySelectorAll('.choice-menu, #dayGrid .ghost').length), 0);
+  assert.equal(await q(() => JSON.stringify(S.events.find(e => e.id === 'rep'))), before, 'Escape: as it was');
+});
+
+await step('"Nur diesen Termin": that day leaves the series with its todos; the other days keep their times', async () => {
+  const today = await q(() => todayISO()), b = await box(`.event[data-ev="rep"][data-date="${today}"]`), s = await slot();
+  await drag({ x: b.x + b.w / 2, y: b.b - 3 }, { x: b.x + b.w / 2, y: b.b - 3 + 2 * s });
+  await page.click('.choice-menu .row:first-child');
+  const r = await q(t => { const ser = S.events.find(e => e.id === 'rep'), one = S.events.find(e => e.id !== 'rep' && e.title === 'Serie');
+    return { except: ser.except, serTimes: [ser.startMin, ser.endMin], serToday: !!ser.todosByDate[t], one: one && [one.date, one.repeat, one.startMin, one.endMin, one.todosByDate[t]?.[0]?.text] }; }, today);
+  assert.deepEqual(r, { except: [today], serTimes: [780, 840], serToday: false, one: [today, 'none', 780, 870, 'heute'] });
+  assert.equal(await q(() => document.querySelectorAll('.choice-menu, #dayGrid .ghost').length), 0);
+});
+
+await step('"Auch alle folgenden": the series ends the day before; from that day on a series of its own', async () => {
+  const tom = await q(() => idxDate(dayIdx(todayISO()) + 1)), b = await box(`.event[data-ev="rep"][data-date="${tom}"]`), s = await slot();
+  await drag({ x: b.x + b.w / 2, y: b.y + 3 }, { x: b.x + b.w / 2, y: b.y + 3 - 2 * s });
+  await page.click('.choice-menu .row:nth-child(2)');
+  const r = await q(t => { const ser = S.events.find(e => e.id === 'rep'), next = S.events.find(e => e.id !== 'rep' && e.title === 'Serie' && e.repeat === 'daily');
+    return { serEnd: ser.end, serTimes: [ser.startMin, ser.endMin], next: next && [next.date, next.startMin, next.endMin, next.todosByDate[t]?.[0]?.text] }; }, tom);
+  assert.deepEqual(r, { serEnd: tom, serTimes: [780, 840], next: [tom, 750, 840, 'morgen'] });
+});
+
+await step('from the first day the second row is "Ganze Serie", and changes the series itself', async () => {
+  const first = await q(() => S.events.find(e => e.id !== 'rep' && e.title === 'Serie' && e.repeat === 'daily'));
+  const b = await box(`.event[data-ev="${first.id}"][data-date="${first.date}"]`), s = await slot();
+  await drag({ x: b.x + b.w / 2, y: b.b - 3 }, { x: b.x + b.w / 2, y: b.b - 3 + 2 * s });
+  assert.equal(await q(() => document.querySelector('.choice-menu .row:nth-child(2) .row-label').textContent), 'Ganze Serie');
+  await page.click('.choice-menu .row:nth-child(2)');
+  assert.deepEqual(await q(id => { const e = S.events.find(x => x.id === id); return [e.startMin, e.endMin, e.date]; }, first.id), [750, 870, first.date]);
+  await q(() => mutate(p => { p.events = p.events.filter(e => e.title !== 'Serie'); }));
+});
+
 const ph = () => q(() => { const p = S.phases.find(x => x.id === 'ph1'); return [dayIdx(p.start), diffDays(p.start, p.end)]; });
 await step('timeline: the right handle lengthens a phase by two days, the left shortens it by one', async () => {
   await q(() => { $scene.scrollTop = 0; $scene.scrollLeft = (dayIdx(todayISO()) - 1) * TL_PPD; }); await page.waitForTimeout(400);

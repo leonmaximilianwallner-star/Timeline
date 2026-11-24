@@ -379,6 +379,7 @@ ui/
   motion.js                 the one tween for drawn motion (tween, lerp, reducedMotion), in the loader's curve (--ease)
   header-icons.js           the header's icons and the add button's: one measure, each follows its thing's state (setIcon) or plays with its action (playIcon)
   editor.js                 editor and its todo list
+  choice-menu.js            a choice floating beside its thing: a tab's delete, a series' question
   time-budget.js            time budget
   settings.js               settings: one panel, four pages (main, a colour, new, sync)
   day-todos.js              todos of a day without an event: the dots in the day header, the day's panel

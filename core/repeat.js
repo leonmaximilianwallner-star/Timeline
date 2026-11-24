@@ -45,6 +45,22 @@ function deleteOccurrence(s, id, dateISO, following){
   drop(dateISO);
   return "one";
 }
+/* change one occurrence, or this one and every later one, leaving the rest as it was (Max, 24 Nov): they leave the series
+   as an event of their own, with their todos, hand ticks and notes (one day: no repeat; following: a series from that
+   day). From the first occurrence, "following" is the whole series, so nothing splits. Returns the event to change. */
+function splitOccurrence(s, id, dateISO, following){
+  const ev = s.events.find(x=>x.id===id); if(!ev) return null;
+  if(following && dateISO <= ev.date) return ev;
+  const part = o => o && Object.fromEntries(Object.entries(o).filter(([d]) => following ? d >= dateISO : d === dateISO));
+  const t = { ...structuredClone(ev), id:uid(), date:dateISO, todosByDate:part(ev.todosByDate) || {} };
+  if(ev.gapNotes) t.gapNotes = part(ev.gapNotes);
+  if(ev.doneByDate) t.doneByDate = part(ev.doneByDate);
+  if(following) t.except = (ev.except||[]).filter(d => d > dateISO);
+  else { t.repeat = "none"; delete t.end; delete t.except; }
+  deleteOccurrence(s, id, dateISO, following);
+  s.events.push(t);
+  return t;
+}
 /* all occurrences (ev × date) in [fromISO, toISO] inclusive */
 function occurrencesIn(fromISO, toISO){
   const out = [];

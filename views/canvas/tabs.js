@@ -116,28 +116,17 @@ function renameCanvasTab(b, isNew){
 
 /* right-click (long-press where the browser makes it one) on a tab: one row, "Löschen". The last tab can't go;
    a tab with ideas asks once, in the row itself (no window: C.3) */
-let $tabMenu = null;
 $canvasTabs.addEventListener("contextmenu", e => {
   const b = e.target.closest(".canvas-tab[data-id]");
   if(!b) return;
   e.preventDefault();                                              // the browser's own menu: not on tabs
-  closeTabMenu();
   const id = b.dataset.id, n = S.ideas.filter(i => i.tabId === id).length, r = b.getBoundingClientRect();
-  $tabMenu = document.createElement("div");
-  $tabMenu.className = "list tab-menu";
-  $tabMenu.innerHTML = rowHTML({ icon:"bin", label:"Löschen", cls:"danger", attrs: S.canvasTabs.length < 2 ? "disabled" : "" });
-  $tabMenu.style.left = r.left + "px"; $tabMenu.style.top = r.bottom + 4 + "px";
-  document.body.append($tabMenu);
-  const row = $tabMenu.firstElementChild;
-  row.addEventListener("click", () => {
-    if(n && !row.dataset.sure){ row.dataset.sure = 1; row.querySelector(".row-label").textContent = `Mit ${n} ${n === 1 ? "Idee" : "Ideen"} löschen?`; return; }
-    closeTabMenu();
-    deleteCanvasTab(id);
-  });
+  openChoiceMenu({ left:r.left, top:r.bottom + 4 }, [{ icon:"bin", label:"Löschen", cls:"danger", disabled: S.canvasTabs.length < 2,
+    act: row => {
+      if(n && !row.dataset.sure){ row.dataset.sure = 1; row.querySelector(".row-label").textContent = `Mit ${n} ${n === 1 ? "Idee" : "Ideen"} löschen?`; return true; }
+      deleteCanvasTab(id);
+    } }]);
 });
-function closeTabMenu(){ if($tabMenu){ $tabMenu.remove(); $tabMenu = null; } }
-document.addEventListener("pointerdown", e => { if($tabMenu && !$tabMenu.contains(e.target)) closeTabMenu(); }, true);
-document.addEventListener("keydown", e => { if($tabMenu && e.key === "Escape"){ e.stopPropagation(); closeTabMenu(); } }, true);   // before app.js: not back to the week
 
 /* a tab and its ideas go (remembered as deleted, so sync can't bring them back); the shown one hands over to its neighbour */
 function deleteCanvasTab(id){

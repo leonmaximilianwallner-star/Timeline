@@ -83,3 +83,6 @@
 .row:has(.row-pick:focus-visible){outline:2px solid var(--text); outline-offset:-2px; border-radius:var(--r-row)}
 /* typing into a row shows the cursor, not a frame (Max, 22 Oct: the lines around a todo being typed) */
 .list .row-input:focus, .list .row-input:focus-visible{outline:none}
+/* a choice beside its thing (ui/choice-menu.js): a raised list with a hairline edge, floating (C.2) */
+.choice-menu{position:fixed; z-index:40; min-width:220px; width:max-content; max-width:min(320px, calc(100vw - 16px)); background:var(--raised); border:1px solid var(--hairline)}
+
