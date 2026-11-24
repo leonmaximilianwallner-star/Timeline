@@ -211,6 +211,8 @@ await step('a tab\'s menu: right-click → Löschen; one with ideas asks once; t
   await page.click(`#canvasTabs [data-id="${first}"]`);
   await page.click(`#canvasTabs [data-id="${first}"]`, { button: 'right' });
   assert.equal(await q(() => !!document.querySelector('.tab-menu')), true);
+  assert.equal(await q(id => { const m = document.querySelector('.tab-menu').getBoundingClientRect(), t = document.querySelector(`[data-id="${id}"]`).getBoundingClientRect();
+    return m.top >= t.bottom && m.bottom <= innerHeight && Math.abs(m.left - t.left) < 1 && document.elementFromPoint(m.left + 20, m.top + 10)?.closest('.tab-menu') !== null; }, first), true, 'seen: under its tab, on screen, on top');
   await page.keyboard.press('Escape');
   assert.equal(await q(() => !!document.querySelector('.tab-menu') || !UI.canvas.active), false, 'Escape closes the menu only');
   await page.click(`#canvasTabs [data-id="${first}"]`, { button: 'right' });
