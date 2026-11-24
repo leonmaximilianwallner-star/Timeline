@@ -167,6 +167,7 @@ The dot on a thing's edge, dragged onto the timeline to give it a date. **Never 
 A rule that makes one event occur on many days. Each day it appears is an **occurrence** (`occurrence`).
 A repeating event is a **series**. A series may **end** (`end`: the day after its last occurrence, exclusive like every stored end) and may leave out single days (`except`: deleted occurrences). Both are read only by `occursOn` (`core/repeat.js`, and its copy on the server), so every view agrees.
 **Deleting from a series** (**Max**, 22 Oct): the bin asks *Nur diesen Termin* (the day goes into `except`) or *Auch alle folgenden* (the series ends the day before; from the first occurrence, *Ganze Serie*). Moving a series moves its `except` days and its `end` with it (`shiftSeries`).
+**Dragging an occurrence** (moving or resizing it, **Max**, 24 Nov) asks the same way, beside its ghost: *Nur diesen Termin* (that day leaves the series as an event of its own, with its todos) or *Auch alle folgenden* (the series ends the day before; from that day a series of its own; from the first occurrence, *Ganze Serie*). Escape or a press outside leaves it as it was. Code: `splitOccurrence` (`core/repeat.js`).
 
 **Reminder** · *Erinnerung* · `reminderMin`
 Minutes before an event's start when a notification fires. **Never say:** alarm.

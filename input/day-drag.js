@@ -59,8 +59,7 @@ const DAY_RULES = { at:dayAt, cells:"x", min:{ h:SNAP }, bounds:{ y:[HOUR_START*
 function placeDayGhost(g, r){
   const y1 = minToY(r.y), y2 = minToY(r.y + r.h);
   Object.assign(g.el.style, { left:r.x*UI.dayPPD+4+"px", width:UI.dayPPD-8+"px", top:y1+"px", height:Math.max(y2-y1, 4)+"px" });
-  if(!g.parts.length) g.parts = [0, 1].map(() => { const l = document.createElement("span"); l.className = "snapLab"; document.getElementById("hourRail").append(l); return l; });
-  [[y1, r.y], [y2, r.y + r.h]].forEach(([y, m], i) => { g.parts[i].style.top = y+"px"; g.parts[i].textContent = fmtMin(m); });
+  markBounds(g, document.getElementById("hourRail"), "y", [[y1+"px", fmtMin(r.y)], [y2+"px", fmtMin(r.y + r.h)]]);
 }
 
 function startCreateDrag(e, p, fromHold=false){
@@ -89,17 +88,24 @@ function eventPointerDown(e, eventEl){
       if(g.parts.length < 3){ const f = eventEl.cloneNode(true); f.classList.add("floatCopy"); f.removeAttribute("data-ev"); grid.append(f); g.parts.push(f); }
       Object.assign(g.parts[2].style, { left:parseFloat(g.el.style.left)+6+"px", top:parseFloat(g.el.style.top)-6+"px", width:g.el.style.width, height:g.el.style.height });
     },
-    done:(r, moved)=>{
+    done:(r, moved, g)=>{
       if(!moved){ openEditor({ type:"event", edit:ev, occurrence:dateISO }); return; }   // a plain click opens the editor
       const day = idxDate(r.x), dayDelta = r.x - dayIdx(dateISO);
       if(copy){
         mutate(s=>{ s.events.push({ ...structuredClone(ev), id:uid(), repeat:"none", date:day, startMin:r.y, endMin:r.y + r.h,
           todosByDate:{ [day]: todosOf(ev, dateISO).map(t=>({...t, id:uid()})) } }); });   // the copied day's todos
         toast("Kopie erstellt");
-      } else mutate(s=>{
-        const t = s.events.find(x=>x.id===ev.id);
-        t.startMin = r.y; t.endMin = r.y + r.h;
-        if(dayDelta) shiftSeries(t, dayDelta);                     // series shifts as a whole: each day's todos, removed days and end with it
-      });
+        return;
+      }
+      const change = t => { t.startMin = r.y; t.endMin = r.y + r.h; if(dayDelta) shiftSeries(t, dayDelta); };   // a series shifts with its todos, removed days and end
+      if(!ev.repeat || ev.repeat === "none") return mutate(s=>change(s.events.find(x=>x.id===ev.id)));
+      /* a repeating event asks, as its delete does (Max, 24 Nov): the ghost waits beside the choice; Escape or a press
+         outside leaves everything as it was */
+      const first = dateISO <= ev.date, at = g.el.getBoundingClientRect();
+      openChoiceMenu({ left:at.right + 8, top:at.top }, [
+        { label:"Nur diesen Termin", act:()=>{ clearPreview(g); mutate(s=>change(splitOccurrence(s, ev.id, dateISO, false))); } },
+        { label: first ? "Ganze Serie" : "Auch alle folgenden", act:()=>{ clearPreview(g); mutate(s=>change(splitOccurrence(s, ev.id, dateISO, true))); } },
+      ], ()=>clearPreview(g));
+      return true;                                                 // the ghost stays until the choice
     } });
 }

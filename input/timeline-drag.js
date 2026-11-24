@@ -39,18 +39,13 @@ function onTimelinePointerDown(e){
 }
 $tlWrap.addEventListener("pointerdown", onTimelinePointerDown);
 
-/* the timeline's ghost: in the lane it was pressed in, shaped as a phase there (styles/timeline.css). Its days light up in
-   the row of days below it, as the day view's ghost marks its times on the hour rail: one of the ghost's parts, so it
-   goes with it (clearPreview). One band over the days, not a label each, so it reads at every tier (Max, 20 Nov) */
+/* the timeline's ghost: in the lane it was pressed in, shaped as a phase there (styles/timeline.css). Its first and last
+   day are marked in the row of days below, as the day view's ghost marks its times (markBounds, input/pointer.js) */
 function placeTimelineGhost(g, r, inner){
-  const rail = inner === $railInner, ppd = rail ? CANVAS_CELL : TL_PPD;
+  const rail = inner === $railInner, ppd = rail ? CANVAS_CELL : TL_PPD, pad = rail ? 0 : railW();
   g.el.style.left = r.x*ppd+"px"; g.el.style.width = Math.max(r.w*ppd, 26)+"px";
-  if(!g.parts.length){
-    const row = rail ? $railDays.firstChild : document.getElementById("dayHead");
-    if(!row) return;
-    const lit = document.createElement("div"); lit.className = "daysLit"; row.append(lit); g.parts.push(lit);
-  }
-  Object.assign(g.parts[0].style, { left:dayX(r.x, rail ? 0 : railW()), width:dayX(Math.max(r.w, 1)) });
+  const ruler = rail ? $railDays.firstChild : document.getElementById("dayHead"), day = i => { const d = parseISO(idxDate(i)); return `<span class="dw">${WD[d.getDay()]}</span><span class="dn">${d.getDate()}</span><span class="dh-dots"></span>`; };   // as its day's own cell, so it sits exactly over it
+  if(ruler) markBounds(g, ruler, "x", [[dayX(r.x + .5, pad), day(r.x)], [dayX(r.x + Math.max(r.w, 1) - .5, pad), day(r.x + Math.max(r.w, 1) - 1)]], "dh");
 }
 
 /* phase / milestone creation drag on the empty timeline (shared by add-mode + long-press) */

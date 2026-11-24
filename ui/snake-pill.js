@@ -16,8 +16,6 @@
      pill.stop({ result })          ends at the next dot; result "done" | "cancel" draws that mark first
    Loaded before the app's own scripts: the start-up one is in index.html from the first frame.
    ════════════════════════════════════════════════════════════ */
-const SNAKE_PILL_BOOT_PREVIEW_MS = 7200;   // TEMPORARY: start-up holds two loops and one hourglass so both can be seen.
-                                           // Set to 0 (or delete) when done looking.
 const SNAKE_PILL_UNSEEN_MS = 300;          // a start-up quicker than this shows nothing (.after-a-moment in the CSS)
 const SNAKE_PILL_LONG_MS   = 4800;         // two loops; a wait still going then becomes the hourglass
 const SNAKE_PILL_MARK_MS   = { done:1500, cancel:1700 };   // the check / X keyframes in the CSS
@@ -86,12 +84,11 @@ function showSnakePill(kind, { dim = true } = {}){
   return snakePillOn(layer, kind);
 }
 
-/* start-up: the one in index.html goes once the page has loaded (and the preview time has passed) */
+/* start-up: the one in index.html goes once the page has loaded; a quick start shows nothing (SNAKE_PILL_UNSEEN_MS) */
 (function(){
   const layer = document.getElementById("bootSnakePill");
   if(!layer) return;
   const pill    = snakePillOn(layer, "loading", 0);   // 0: it exists from the page's first moment
   const loaded  = new Promise(r => document.readyState === "complete" ? r() : window.addEventListener("load", r, { once:true }));
-  const preview = new Promise(r => setTimeout(r, navigator.webdriver ? 0 : SNAKE_PILL_BOOT_PREVIEW_MS));   // tests don't sit through the preview
-  Promise.all([loaded, preview]).then(()=>pill.stop());
+  loaded.then(()=>pill.stop());
 })();
