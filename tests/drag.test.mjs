@@ -147,16 +147,21 @@ await step('timeline: a phase moves by its body (same length); the ghost is a da
   await closeEditor();
 });
 
-await step('timeline: the days under the ghost light up in the row of days, and go with it', async () => {
+await step('timeline: the ghost\'s first and last day are marked as text in the row of days, as the day view marks times', async () => {
   const ppd = await q(() => TL_PPD);
   const b = await box('#tlInner .phase[data-phase="ph1"]');
-  let lit = null; const x = Math.min(b.r, 1400) - 40;               // clear of its label and arrow
+  let lit = null, over = null; const x = Math.min(b.r, 1400) - 40;   // clear of its label and arrow
   await drag({ x, y: b.y + b.h / 2 }, { x: x + ppd, y: b.y + b.h / 2 }, { before: async () => {
-    lit = await q(() => { const l = document.querySelector('#dayHead > .daysLit'), g = document.querySelector('#tlInner .ghost');
-      if(!l) return null; const a = l.getBoundingClientRect(), c = g.getBoundingClientRect();
-      return [Math.round(a.left - c.left), Math.round(a.width - c.width), getComputedStyle(l).backgroundColor !== 'rgba(0, 0, 0, 0)']; }); } });
-  assert.deepEqual(lit, [0, 0, true], 'one band over exactly the ghost\'s days');
-  assert.equal(await q(() => document.querySelectorAll('.daysLit').length), 0, 'gone on release');
+    over = await q(() => { const l = document.querySelector('#dayHead > .snapLab.x .dn').getBoundingClientRect(), d = [...document.querySelectorAll('#dayHead .dh[data-day] .dn')].map(e => e.getBoundingClientRect()).find(r => Math.abs(r.left + r.width / 2 - l.left - l.width / 2) < r.width);
+      return d && [Math.round(l.top - d.top), Math.round(l.left - d.left)]; });
+    lit = await q(() => { const ls = [...document.querySelectorAll('#dayHead > .snapLab.x')], g = document.querySelector('#tlInner .ghost').getBoundingClientRect(), ppd = TL_PPD;
+      return ls.map(l => { const r = l.getBoundingClientRect(); return [l.textContent, Math.round((r.left + r.width / 2 - g.left) / ppd * 2) / 2]; }).concat([[Math.round(g.width / ppd)]]); }); } });
+  const w = lit.pop()[0];
+  assert.equal(lit.length, 2, 'two labels');
+  assert.deepEqual(over, [0, 0], 'exactly over its day\'s own date');
+  assert.deepEqual(lit.map(l => l[1]), [0.5, w - 0.5], 'centred on the first and the last day');
+  assert.match(lit[0][0], /^(Mo|Di|Mi|Do|Fr|Sa|So)\d+$/, 'its weekday and date, as its cell');
+  assert.equal(await q(() => document.querySelectorAll('.snapLab').length), 0, 'gone on release');
   await q(() => mutate(p => { const t = p.phases.find(x => x.id === 'ph1'); t.start = idxDate(dayIdx(t.start) - 1); t.end = idxDate(dayIdx(t.end) - 1); }));
 });
 

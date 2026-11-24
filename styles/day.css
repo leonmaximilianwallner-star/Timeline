@@ -6,9 +6,7 @@
 #dayInner{position:relative}
 #dayHead{position:sticky; top:0; z-index:20}
 #dayHead, #rail .day-row{display:flex; background:var(--base); border-bottom:1px solid var(--hairline); height:52px}   /* one row of days, two places */
-#rail .day-row{position:relative; isolation:isolate}
-/* the days under a phase's ghost (input/timeline-drag.js): lit as the hover lights a button, under the labels, over the row */
-.daysLit{position:absolute; top:0; bottom:0; z-index:-1; background:color-mix(in srgb, var(--text) 8%, transparent); pointer-events:none}
+#rail .day-row{position:relative}
 #dayHeadCorner{
   position:sticky; left:0; z-index:21; flex:0 0 var(--rail-w); width:var(--rail-w);
   background:var(--base); border-right:1px solid var(--line-soft);
@@ -80,6 +78,9 @@
   opacity:.96;
 }
 .floatCopy .rez{display:none}
+/* a ghost's bounds on its ruler (markBounds): the hour rail's times (y), the row of days' first and last day (x) */
+.snapLab.x{right:auto; top:0; bottom:0; transform:translateX(-50%); width:var(--ppd); min-width:40px; padding:0}   /* over its day's cell, as that cell lit */
+.snapLab.dh :is(.dw, .dn){color:var(--text)}
 .snapLab{position:absolute; z-index:16; right:6px; transform:translateY(-50%);
   font-size:var(--fs-label); font-variant-numeric:tabular-nums; color:var(--text); background:var(--base); padding:0 3px; pointer-events:none}
 

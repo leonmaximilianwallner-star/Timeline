@@ -59,8 +59,7 @@ const DAY_RULES = { at:dayAt, cells:"x", min:{ h:SNAP }, bounds:{ y:[HOUR_START*
 function placeDayGhost(g, r){
   const y1 = minToY(r.y), y2 = minToY(r.y + r.h);
   Object.assign(g.el.style, { left:r.x*UI.dayPPD+4+"px", width:UI.dayPPD-8+"px", top:y1+"px", height:Math.max(y2-y1, 4)+"px" });
-  if(!g.parts.length) g.parts = [0, 1].map(() => { const l = document.createElement("span"); l.className = "snapLab"; document.getElementById("hourRail").append(l); return l; });
-  [[y1, r.y], [y2, r.y + r.h]].forEach(([y, m], i) => { g.parts[i].style.top = y+"px"; g.parts[i].textContent = fmtMin(m); });
+  markBounds(g, document.getElementById("hourRail"), "y", [[y1+"px", fmtMin(r.y)], [y2+"px", fmtMin(r.y + r.h)]]);
 }
 
 function startCreateDrag(e, p, fromHold=false){

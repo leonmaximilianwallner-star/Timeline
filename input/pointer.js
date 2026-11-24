@@ -130,5 +130,12 @@ function dragRect(e, o){
   window.addEventListener("pointermove", move); window.addEventListener("pointerup", up); window.addEventListener("pointercancel", cancel);
   return () => end(false);
 }
-/* a ghost and its parts (the day view's time labels) go: on release, or when the editor it stood behind closes */
+/* a ghost marks its two bounds on its axis's ruler, lit as text: the day view's times on the hour rail, the timeline's
+   first and last day in the row of days (Max, 24 Nov). Shown whatever the ruler's own labels show at that scale.
+   They are the ghost's first parts, so they go with it. at: CSS positions along the axis ("x" left, "y" top) */
+function markBounds(g, ruler, axis, marks, cls = ""){
+  if(!g.parts.length) g.parts = marks.map(() => { const l = document.createElement("span"); l.className = `snapLab ${axis} ${cls}`; ruler.append(l); return l; });
+  marks.forEach(([at, html], i) => { g.parts[i].style[axis === "x" ? "left" : "top"] = at; g.parts[i].innerHTML = html; });   // html: the app's own text only
+}
+/* a ghost and its parts (its bounds' labels) go: on release, or when the editor it stood behind closes */
 function clearPreview(g){ if(g){ g.el.remove(); g.parts.forEach(p => p.remove()); } }
